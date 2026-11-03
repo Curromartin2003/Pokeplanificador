@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+"""Actualiza data/convocatorias.json (lo ejecuta cada día .github/workflows/convocatorias.yml).
+
+- España: revisa la sección II.B del BOE (oposiciones y concursos) de los últimos días con los datos abiertos del BOE y
+  se queda con las plazas de Bombero/a de turno libre (oposición o concurso-oposición). Nada de promoción interna ni
+  movilidad. Calcula el fin del plazo de instancias.
+- Mis convocatorias (data/mis_convocatorias.json): apunta como novedad cualquier anuncio del BOE que las nombre y avisa
+  cuando cambia alguna de las páginas oficiales que se vigilan.
+
+Solo usa la biblioteca estándar. Uso: python3 scripts/convocatorias.py [--dias N]
+"""
+import hashlib, html, json, re, sys, urllib.request
+from concurrent.futures import ThreadPoolExecutor
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+
+RAIZ = Path(__file__).resolve().parent.parent
+SALIDA = RAIZ / "data" / "convocatorias.json"
+REVISADOS = RAIZ / "data" / "revisados.json"  # anuncios ya mirados (para no volver a descargarlos)
+MIAS = RAIZ / "data" / "mis_convocatorias.json"
+UA = {"User-Agent": "Pokeplanificador/1.0 (convocatorias de bombero)", "Accept": "application/json"}
+NUM = {"una": 1, "un": 1, "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5, "seis": 6, "siete": 7, "ocho": 8, "nueve": 9,
+       "diez": 10, "once": 11, "doce": 12, "trece": 13, "catorce": 14, "quince": 15, "dieciséis": 16, "diecisiete": 17,
+       "dieciocho": 18, "diecinueve": 19, "veinte": 20, "veintiuna": 21, "veintiuno": 21, "veintidós": 22, "veintitrés": 23, "veinticuatro": 24, "veinticinco": 25, "veintiséis": 26, "veintisiete": 27,
+       "veintiocho": 28, "veintinueve": 29,
+       "treinta": 30, "cuarenta": 40, "cincuenta": 50, "sesenta": 60, "setenta": 70, "ochenta": 80, "noventa": 90, "cien": 100}
+# Festivos nacionales (para contar días hábiles; los autonómicos y locales no se tienen en cuenta: la fecha es aproximada).
+FESTIVOS = {"01-01", "01-06", "05-01", "08-15", "10-12", "11-01", "12-06", "12-08", "12-25"}
+BOMBERO = re.compile(r"bomber[oa]s?(?:/a)?\b|conductor[a]?[-/ ]bomber|bombero[a]?[-/ ]conductor", re.I)
+NO_VALE = re.compile(r"promoci[oó]n interna|movilidad|cabo|sargento|suboficial|oficial|inspector|jef[ea]|intendente|mando|"
+                     r"m[eé]dic|enfermer|psic[oó]log|ingenier|arquitect|t[eé]cnic", re.I)
+
+
+def get(url, binario=False, timeout=30):
+    req = urllib.request.Request(url, headers=UA)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        b = r.read()
+    return b if binario else b.decode("utf-8", "replace")
+
+
+def items_2b(fecha):
+    """Anuncios de la sección II.B del BOE de un día: [(id, titulo, departamento)]."""
+    try:
+        d = json.loads(get(f"https://www.boe.es/datosabiertos/api/boe/sumario/{fecha:%Y%m%d}"))
+    except Exception:
+        return []
+    out = []
+
+    def lista(x):
+        return x if isinstance(x, list) else [x] if x else []
+
+    for diario in lista(d.get("data", {}).get("sumario", {}).get("diario")):
+        for sec in lista(diario.get("seccion")):
+            if sec.get("codigo") != "2B":
+                continue
+            for dep in lista(sec.get("departamento")):
+                its = lista(dep.get("item"))
+                for ep in lista(dep.get("epigrafe")):
+                    its += lista(ep.get("item"))
+                for it in its:
+                    out.append((it["identificador"], it["titulo"], dep.get("nombre", "")))
+    return out
+
+
+def texto_boe(ident):
+    x = get(f"https://www.boe.es/diario_boe/xml.php?id={ident}")
+    notas = [html.unescape(re.sub(r"<[^>]+>", "", n)) for n in re.findall(r"<nota[^>]*>(.*?)</nota>", x, re.S)]
+    parrafos = [html.unescape(re.sub(r"<[^>]+>", "", p)).strip() for p in re.findall(r"<p[^>]*>(.*?)</p>", x, re.S)]
+    pub = re.search(r"<fecha_publicacion>(\d{8})</fecha_publicacion>", x)
+    return notas, parrafos, pub.group(1) if pub else None
+
+
+def fin_plazo(pub, n, tipo):
+    d = datetime.strptime(pub, "%Y%m%d").date()
+    if tipo.startswith("natural"):
+        f = d + timedelta(days=n)
+    else:
+        f, k = d, 0
+        while k < n:
+            f += timedelta(days=1)
+            if f.weekday() < 5 and f.strftime("%m-%d") not in FESTIVOS:
+                k += 1
+    return f.isoformat()
+
+
+def plazas_de(p):
+    pal = "|".join(sorted(NUM, key=len, reverse=True))
+    m = re.search(r"\b(\d+|(?:" + pal + r")(?:\s+y\s+(?:" + pal + r"))?)\s+plazas?\b", p, re.I)
+    if not m:
+        return None
+    v = m.group(1).lower()
+    if v.isdigit():
+        return int(v)
+    return sum(NUM.get(x, 0) for x in re.split(r"\s+y\s+", v)) or None
+
+
+def analizar(ident, titulo, dep):
+    notas, parrafos, pub = texto_boe(ident)
+    todo = " ".join(notas + parrafos)
+    if not BOMBERO.search(todo):
+        return None
+    # Párrafos (o notas) que convocan plazas de bombero válidas: turno libre por oposición o concurso-oposición.
+    validas, sistemas, plazas, plazas_notas = [], set(), 0, 0
+    for p in parrafos + notas:
+        if not BOMBERO.search(p) or not re.search(r"plaza", p, re.I):
+            continue
+        antes = p[:BOMBERO.search(p).start()]
+        if NO_VALE.search(antes) or re.search(r"promoci[oó]n interna|movilidad", p, re.I):
+            continue
+        if re.search(r"concurso[- ]oposici[oó]n", p, re.I):
+            sistemas.add("Concurso-oposición")
+        elif re.search(r"oposici[oó]n", p, re.I):
+            sistemas.add("Oposición libre")
+        elif re.search(r"\bconcurso\b", p, re.I):
+            continue  # solo concurso (sin oposición): no
+        validas.append(p)
+        if p in notas:
+            plazas_notas += plazas_de(p) or 0
+        else:
+            plazas += plazas_de(p) or 0
+    plazas = plazas or plazas_notas  # las notas del BOE repiten el texto: no se suman dos veces
+    if not validas:
+        return None
+    org = re.search(r",\s*(?:del|de la|de los|de las)\s+(.+?),\s*(?:referente|por la que|sobre|relativa)", titulo)
+    organismo = org.group(1) if org else dep
+    prov = re.findall(r"\(([^()]+)\)", organismo) or re.findall(r"\bde\s+((?:[A-ZÁÉÍÓÚÑ][\wáéíóúñü'-]*)(?:\s+(?:de\s+)?[A-ZÁÉÍÓÚÑ][\wáéíóúñü'-]*)*)$", organismo)
+    plazo = re.search(r"plazo de presentaci[oó]n de (?:solicitudes|instancias)[^.]*?(\w+)\s+d[ií]as\s+(h[aá]biles|naturales)", todo, re.I)
+    fin = None
+    plazo_txt = None
+    if plazo and pub:
+        n = plazo.group(1).lower()
+        n = int(n) if n.isdigit() else NUM.get(n)
+        if n:
+            tipo = "naturales" if plazo.group(2).lower().startswith("n") else "hábiles"
+            plazo_txt = f"{n} días {tipo} desde el día siguiente a la publicación en el BOE"
+            fin = fin_plazo(pub, n, tipo)
+    bases = next((n.split(":", 1)[1].strip() for n in notas if n.lower().startswith("bases")), None)
+    return {
+        "id": ident, "fecha": f"{pub[:4]}-{pub[4:6]}-{pub[6:]}" if pub else None, "titulo": titulo,
+        "organismo": re.sub(r"\s*\([^()]*\)\s*$", "", organismo), "provincia": prov[-1] if prov else None,
+        "plazas": plazas or None, "sistema": " / ".join(sorted(sistemas)) or "Oposición",
+        "detalle": validas[0][:400], "bases": bases, "plazo": plazo_txt, "fin": fin,
+        "url": f"https://www.boe.es/diario_boe/txt.php?id={ident}",
+    }
+
+
+def menciona(ident, claves, titulo=""):
+    for _ in range(3):
+        try:
+            notas, parrafos, pub = texto_boe(ident)
+            break
+        except Exception:
+            continue
+    else:
+        return False
+    t = " ".join([titulo] + notas + parrafos)
+    if re.search(r"promoci[oó]n interna", t, re.I) and not re.search(r"turno libre|oposici[oó]n libre", t, re.I):
+        return False  # solo promoción interna: no es la tuya
+    return all(re.search(c, t, re.I) for c in claves)
+
+
+def main():
+    dias = int(sys.argv[sys.argv.index("--dias") + 1]) if "--dias" in sys.argv else 5
+    hoy = date.today()
+    datos = json.loads(SALIDA.read_text()) if SALIDA.exists() else {}
+    espana = {c["id"]: c for c in datos.get("espana", [])}
+    revisados = json.loads(REVISADOS.read_text()) if REVISADOS.exists() else datos.get("revisados", {})
+    mias = json.loads(MIAS.read_text())
+
+    fechas = [hoy - timedelta(days=i) for i in range(dias)]
+    with ThreadPoolExecutor(6) as ex:
+        sumarios = list(ex.map(items_2b, fechas))
+    nuevos = [(i, t, d) for s in sumarios for (i, t, d) in s if i not in revisados]
+    print(f"{len(nuevos)} anuncios nuevos de la sección II.B en {dias} días")
+
+    def revisar(x):
+        i, t, d = x
+        try:
+            return i, analizar(i, t, d)
+        except Exception as e:
+            return i, "error"
+
+    with ThreadPoolExecutor(6) as ex:
+        res = list(ex.map(revisar, nuevos))
+    for i, r in res:
+        if r == "error":
+            continue
+        revisados[i] = hoy.isoformat()
+        if r:
+            espana[i] = r
+            print("  +", r["organismo"], r["plazas"], r["sistema"], r["fin"])
+    # Mis convocatorias: anuncios del BOE (cualquier sección II.B) que las nombran.
+    hechos = {n["url"] for c in mias for n in c.get("novedades", [])}
+    for c in mias:
+        for claves in c.get("boe", []):
+            for fecha, sumario in zip(fechas, sumarios):
+                for (i, t, d) in sumario:
+                    url = f"https://www.boe.es/diario_boe/txt.php?id={i}"
+                    if url in hechos or not re.search(claves[0], t, re.I):
+                        continue
+                    if menciona(i, claves, t):
+                        c.setdefault("novedades", []).append({"fecha": fecha.isoformat(), "texto": f"BOE: {t}", "url": url, "auto": True})
+                        hechos.add(url)
+        # Páginas oficiales que se vigilan: aviso si cambian.
+        for v in c.get("vigilar", []):
+            try:
+                pag = get(v["url"], timeout=40)
+                # Solo cuenta el texto que importa (enlaces y líneas sobre bomberos, listas, exámenes...): así no
+                # salta por cambios de fecha, contadores o banners de la página.
+                txt = re.sub(r"<script.*?</script>|<style.*?</style>", " ", pag, flags=re.S)
+                enlaces = re.findall(r'href="([^"]+\.pdf[^"]*)"', txt, re.I)
+                lineas = [html.unescape(re.sub(r"\s+", " ", l)).strip() for l in re.sub(r"<[^>]+>", "\n", txt).split("\n")]
+                clave = re.compile(r"bomber|admitid|exclu|examen|ejercicio|tribunal|calificaci|nota|listado|convocatoria|IC10|prueba", re.I)
+                util = sorted(set(enlaces)) + [l for l in lineas if l and clave.search(l)]
+                h = hashlib.sha256("\n".join(util).encode()).hexdigest()[:16]
+            except Exception:
+                continue
+            if v.get("hash") and v["hash"] != h:
+                c.setdefault("novedades", []).append({"fecha": hoy.isoformat(), "auto": True, "url": v["url"],
+                                                       "texto": f"Ha cambiado la página «{v['nombre']}»: revísala, puede haber listas, fechas o notas nuevas."})
+            v["hash"] = h
+            v["revisada"] = hoy.isoformat()
+
+    # Limpieza: los revisados de más de 15 días ya no hacen falta; las de España, un año.
+    limite = (hoy - timedelta(days=15)).isoformat()
+    revisados = {k: v for k, v in revisados.items() if v >= limite}
+    hace_un_ano = (hoy - timedelta(days=365)).isoformat()
+    lista = sorted((c for c in espana.values() if (c["fecha"] or "") >= hace_un_ano), key=lambda c: c["fecha"] or "", reverse=True)
+    MIAS.write_text(json.dumps(mias, ensure_ascii=False, indent=1) + "\n")
+    SALIDA.write_text(json.dumps({
+        "actualizado": datetime.now(timezone.utc).isoformat(timespec="minutes"),
+        "fuente": "BOE, sección II.B (datos abiertos)",
+        "mias": mias, "espana": lista,
+    }, ensure_ascii=False, indent=1) + "\n")
+    REVISADOS.write_text(json.dumps(revisados, separators=(",", ":")) + "\n")
+
+
+if __name__ == "__main__":
+    main()

@@ -58,7 +58,7 @@ try {
   // Al día siguiente, el punto de ayer cuenta.
   await p.goto(URL("2026-11-11"));
   await p.waitForSelector(".marcador");
-  ok((await p.textContent("#puntos")).includes("+1"), "el día cerrado suma 1 punto");
+  ok((await p.textContent("#puntos")).includes("+8"), "empieza en 7 y el día cerrado suma 1 punto");
   await p.click("nav [data-v=semana]");
   if (shots) await p.screenshot({path: shots + "/3-semana.png", fullPage: true});
   ok((await p.$$(".semana .dia")).length === 6, "la semana va del martes (inicio del plan) al domingo");
@@ -78,6 +78,14 @@ try {
   await p.dispatchEvent("#examen", "change");
   ok((await p.textContent("#vista")).includes("vueltas antes del examen"), "con fecha de examen compara ritmos");
   if (shots) await p.screenshot({path: shots + "/6-ajustes.png", fullPage: true});
+  await p.click("nav [data-v=convocatorias]");
+  await p.waitForSelector(".conv");
+  const tc = await p.textContent("#vista");
+  ok(tc.includes("Mis convocatorias") && tc.includes("Aena") && tc.includes("Alcalá de Guadaíra") && tc.includes("Cazorla"), "convocatorias: las tuyas");
+  ok(tc.includes("Convocatorias España") && tc.includes("Zaragoza"), "convocatorias: España");
+  await p.click("[data-a=filtroConv][data-f=andalucia]");
+  ok(!(await p.textContent("#vista")).includes("Zaragoza"), "filtro Andalucía");
+  if (shots) await p.screenshot({path: shots + "/7-convocatorias.png", fullPage: true});
   await p.goto(URL("2026-11-15"));
   await p.waitForSelector(".libre");
   ok(true, "el domingo libre no tiene objetivos");

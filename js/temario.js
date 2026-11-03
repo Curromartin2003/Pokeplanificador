@@ -222,14 +222,18 @@ export const CAMBIOS = [
   {id: "c1", fecha: "2026-11-03", texto: "Legislación completa con tus PDF y ritmo de subrayado salvo Constitución, PRL y TREBEP."},
   {id: "c2", fecha: "2026-11-03", texto: "Vueltas a la par: acabada la legislación, solo específico hasta acabarlo; luego se empieza todo."},
   {id: "c3", fecha: "2026-11-03", texto: "Específico con tus PDF (temas 1, 3-10, 12-18). Los temas sin PDF quedan fuera de la vuelta hasta que los subas."},
+  {id: "c5", fecha: "2026-11-03", texto: "Los puntos empiezan en 7. En Temario verás lo que tardas en cada tema. Nueva pestaña «Convocatorias»."},
   {id: "c4", fecha: "2026-11-03", texto: "Solo lo que pide el decreto y solo lo subrayado: fuera las partes de las leyes que no entran y menos tiempo en todo. Al marcar el estudio, apunta cuánto has tardado y las vueltas se ajustan a tu ritmo real."},
 ];
 
-// Lo que me contaste por el chat y se aplica una sola vez al abrir la app (no hace falta tocar nada).
-export const SEMILLA = {
+// Lo que me contaste por el chat: cada bloque se aplica una sola vez al abrir la app (no hace falta tocar nada).
+export const SEMILLAS = [{
   id: 1,
   semanas: {"2026-11-02": {libre: 5, luis: [3, 6]}},   // esta semana: libre el sábado, clases de Luis jueves y domingo
   horas: {"2026-11-03": 60},                            // este martes solo 1 h
   vistos: {esp: [1, 3]},                                // específico: temas 1 y 3 ya vistos
   empiezaEn: {leg: {n: 1, nombre: "Título I: Cap. III, IV y V (arts. 39-55)"}},  // Constitución: empiezo el Cap. III del Título I
-};
+}, {
+  id: 2,
+  puntosIniciales: 7,                                   // ya llevaba avanzado: los puntos empiezan en 7
+}];

@@ -1,6 +1,6 @@
 // Lógica del planificador, sin nada de interfaz (se prueba con `node --test tests/`).
 // Todo se calcula a partir del estado guardado; nada del plan se guarda salvo lo ya hecho.
-import {LEGISLACION, ESPECIFICO, SEMILLA} from "./temario.js";
+import {LEGISLACION, ESPECIFICO, SEMILLAS} from "./temario.js";
 import {DOCS_ESP} from "./docs_esp.js";
 
 export const OBJETIVOS = [
@@ -355,7 +355,9 @@ export function resumen(st, hoy) {
   let mejor = 0, cur = 0;
   for (const h of hist) { if (h.p === null) continue; cur = h.p === 1 ? cur + 1 : 0; mejor = Math.max(mejor, cur); }
   const dHoy = infoDia(st, hoy);
-  return {total, racha, mejor, hist, nDias, cumple: cumple.map(c => (nDias ? c / nDias : 0)),
+  const ini = st.puntosIniciales || 0;
+  for (const h of hist) h.acum += ini;
+  return {total: total + ini, inicial: ini, racha, mejor, hist, nDias, cumple: cumple.map(c => (nDias ? c / nDias : 0)),
     hoy: puntosDia(dHoy, st.dias[hoy]), hoyLibre: dHoy.tipo === "libre"};
 }
 
@@ -410,19 +412,42 @@ export function temaVisto(st, hoy, t, n) {
   return cs.length > 0 && cs.every(c => hechoDe(h, c.id) >= 1 - EPS);
 }
 
-// Lo que me contaste por el chat (temario.js → SEMILLA): se aplica una vez.
+// Lo que me contaste por el chat (temario.js → SEMILLAS): cada bloque se aplica una vez, en orden.
 export function semilla(st, hoy) {
-  if ((st.semilla || 0) >= SEMILLA.id) return null;
-  const p = {semilla: SEMILLA.id, semanas: {...SEMILLA.semanas}, dias: {}, manual: {}};
-  for (const [f, m] of Object.entries(SEMILLA.horas)) if (f >= hoy) p.dias[f] = {...(st.dias[f] || {}), h: m};
-  let s2 = completar({...st, semanas: {...st.semanas, ...p.semanas}});
-  for (const [t, ns] of Object.entries(SEMILLA.vistos)) for (const n of ns) Object.assign(p.manual, visto(s2, hoy, t, n).manual);
-  s2 = completar({...s2, manual: {...s2.manual, ...p.manual}});
-  for (const [t, x] of Object.entries(SEMILLA.empiezaEn)) {
-    const c = cola(s2, t).items.find(z => z.v === 1 && z.n === x.n && z.nombre === x.nombre);
-    if (c) Object.assign(p.manual, irA(s2, hoy, t, c.id).manual);
+  const pend = SEMILLAS.filter(x => x.id > (st.semilla || 0));
+  if (!pend.length) return null;
+  const p = {semilla: pend[pend.length - 1].id, semanas: {}, dias: {}, manual: {}};
+  let s2 = st;
+  for (const S of pend) {
+    if (S.semanas) Object.assign(p.semanas, S.semanas);
+    for (const [f, m] of Object.entries(S.horas || {})) if (f >= hoy) p.dias[f] = {...(st.dias[f] || {}), h: m};
+    if (typeof S.puntosIniciales === "number") p.puntosIniciales = S.puntosIniciales;
+    s2 = completar({...s2, semanas: {...s2.semanas, ...p.semanas}, manual: {...s2.manual, ...p.manual}});
+    for (const [t, ns] of Object.entries(S.vistos || {})) for (const n of ns) Object.assign(p.manual, visto(s2, hoy, t, n).manual);
+    s2 = completar({...s2, manual: {...s2.manual, ...p.manual}});
+    for (const [t, x] of Object.entries(S.empiezaEn || {})) {
+      const c = cola(s2, t).items.find(z => z.v === 1 && z.n === x.n && z.nombre === x.nombre);
+      if (c) Object.assign(p.manual, irA(s2, hoy, t, c.id).manual);
+    }
   }
   return p;
+}
+
+// Lo que has tardado en cada tema (por vuelta): el tiempo real apuntado cada día (o el previsto si no lo apuntaste),
+// repartido entre los trozos que se estudiaron ese día. Clave: "leg1|1" (materia, tema, vuelta).
+export function tiemposTema(st, hoy) {
+  const q = {leg: cola(st, "leg"), esp: cola(st, "esp")}, out = {};
+  for (const [f, r] of Object.entries(st.dias)) {
+    if (f < st.inicio || f > hoy || !r || !r.s || !r.s.items) continue;
+    const trozos = r.s.items.map(([id, fr]) => ({c: q.leg.porId.get(id) || q.esp.porId.get(id), fr})).filter(x => x.c);
+    const prev = trozos.reduce((a, x) => a + x.fr * x.c.min, 0);
+    const total = typeof r.s.real === "number" ? r.s.real : (r.s.m || 0) + (r.s.x ? r.s.x.m : 0);
+    for (const x of trozos) {
+      const k = `${x.c.t}${x.c.n}|${x.c.v}`;
+      out[k] = (out[k] || 0) + (prev ? total * x.fr * x.c.min / prev : 0);
+    }
+  }
+  return out;
 }
 
 export function fijarBase(st, hoy) {

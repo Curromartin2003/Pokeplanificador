@@ -24,6 +24,13 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   normas largas como consulta.
 - Lo que el usuario cuenta por el chat y afecta a sus datos va en `SEMILLA` (temario.js): se aplica una vez al abrir la
   app (sube `id` para una nueva). Las novedades del plan van en `CAMBIOS` y la app las avisa con el cambio de fecha.
+- Puntos: `puntosIniciales` (7, por SEMILLAS) + los de cada día. `tiemposTema` reparte el tiempo real de cada día entre
+  los temas estudiados (se muestra en Temario).
+- Convocatorias: `data/convocatorias.json` lo genera `scripts/convocatorias.py` (solo stdlib) cada mañana con
+  `.github/workflows/convocatorias.yml`: España = BOE sección II.B, bombero/a turno libre (oposición o concurso-oposición),
+  sin promoción interna ni movilidad, con fin de plazo calculado; Mis convocatorias = `data/mis_convocatorias.json`
+  (fichas escritas a mano + novedades automáticas: anuncios del BOE que las nombran y cambios en las páginas vigiladas).
+  `data/revisados.json` guarda los anuncios ya mirados.
 - Los PDF no se suben al repositorio.
 - Probar: `python3 -m http.server` y abrir `/?local&hoy=AAAA-MM-DD`. `node tests/e2e.mjs` (Playwright).
 - Si cambias archivos que se precargan, sube la versión de `CACHE` en `sw.js`.

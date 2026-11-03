@@ -1,0 +1,39 @@
+# Cada mañana revisa el BOE y las páginas de tus convocatorias y, si hay algo nuevo, actualiza data/convocatorias.json.
+# Al subirse el cambio a main, Cloudflare Pages publica la web y la app lo muestra en «Convocatorias».
+name: Convocatorias
+
+on:
+  schedule:
+    - cron: "41 6 * * *"   # 06:41 UTC: después de publicarse el BOE del día
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: convocatorias
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Revisar BOE y páginas
+        run: python3 scripts/convocatorias.py --dias 5
+      - name: Guardar si hay cambios
+        run: |
+          # La hora de actualización cambia siempre: solo se sube si cambia algo más (para no publicar sin motivo).
+          if git diff --quiet -I '"actualizado"' -I '"revisada"' -- data/convocatorias.json data/mis_convocatorias.json \
+             && [ "$(date -u +%u)" != "1" ]; then
+            echo "Sin novedades"; exit 0
+          fi
+          git config user.name "convocatorias-bot"
+          git config user.email "convocatorias-bot@users.noreply.github.com"
+          git add data/convocatorias.json data/mis_convocatorias.json data/revisados.json
+          git commit -m "Convocatorias: actualización $(date -u +%Y-%m-%d)" || exit 0
+          git push

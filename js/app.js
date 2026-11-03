@@ -120,7 +120,8 @@ function pintar() {
   $("#puntos").innerHTML = `<b>${res.total > 0 ? "+" : ""}${res.total}</b><span>puntos</span>`;
   $("#puntos").className = "puntos " + (res.total > 0 ? "pos" : res.total < 0 ? "neg" : "");
   document.querySelectorAll("nav.tabs button").forEach(b => b.classList.toggle("on", b.dataset.v === ui.vista));
-  const f = {hoy: vHoy, semana: vSemana, temario: vTemario, progreso: vProgreso, ajustes: vAjustes}[ui.vista] || vHoy;
+  const f = {hoy: vHoy, semana: vSemana, temario: vTemario, progreso: vProgreso, ajustes: vAjustes, convocatorias: vConvocatorias}[ui.vista] || vHoy;
+  badgeConv();
   pantalla(f(hoy, res));
   enlazar();
   // Al empezar la semana (o si aún no está puesta) se pregunta el día libre y las clases de Luis.
@@ -251,7 +252,7 @@ function vSemana(hoy) {
 
 /* ---------- Temario ---------- */
 function vTemario(hoy) {
-  const pr = E.progreso(st, hoy), h = pr.leg.h;
+  const pr = E.progreso(st, hoy), h = pr.leg.h, tiempos = E.tiemposTema(st, hoy);
   const bloque = t => {
     const p = pr[t], v = p.vuelta, ts = E.temas(st, t), q = E.cola(st, t);
     const lista = ts.map(tm => {
@@ -274,7 +275,10 @@ function vTemario(hoy) {
       ${t === "esp" && tm.n > 33 ? `<button class="enlace peque" data-a="renombrar" data-k="${k}">Cambiar el título de este tema</button>` : ""}
       <p class="contenido">${tm.material.length ? `<b>Tu material:</b> ${esc(tm.material.join(" · "))}<br>` : "<b>Sin material todavía:</b> partes según el decreto.<br>"}${esc(tm.contenido)}</p>` : "";
       return `<li class="tema ${est}"><button class="cab" data-a="abrirTema" data-k="${k}">
-        <span class="num">${tm.n > 33 && t === "esp" ? "S" + (tm.n - 33) : tm.n}</span><span class="nom">${esc(tm.titulo)}${tm.material.length ? ` <span class="pdf" title="Con tu material">📄</span>` : ""}${visto && v === 1 ? ` <span class="chip visto">visto</span>` : ""}</span>
+        <span class="num">${tm.n > 33 && t === "esp" ? "S" + (tm.n - 33) : tm.n}</span><span class="nom">${esc(tm.titulo)}${tm.material.length ? ` <span class="pdf" title="Con tu material">📄</span>` : ""}${visto && v === 1 ? ` <span class="chip visto">visto</span>` : ""}${(() => {
+          const tt = Math.round(tiempos[`${k}|${v}`] || 0);
+          return tt > 0 ? `<span class="tiempo-tema ${est === "hecho" ? "fin" : ""}">⏱ ${est === "hecho" ? "Estudiado en" : "Llevas"} ${E.textoMin(tt)}</span>` : "";
+        })()}</span>
         <span class="barra"><i style="width:${Math.round(pct * 100)}%"></i></span></button>${partes}</li>`;
     }).join("");
     const sin = t === "esp" ? E.temasSinMaterial(st) : [];
@@ -401,6 +405,67 @@ function grafica(v) {
   return `<svg class="graf" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" class="cero"/><path d="${d}"/></svg>`;
 }
 
+/* ---------- Convocatorias ---------- */
+// data/convocatorias.json lo actualiza cada mañana la tarea de GitHub (scripts/convocatorias.py).
+let conv = null, convCargando = false;
+async function cargarConv() {
+  if (convCargando) return;
+  convCargando = true;
+  try {
+    const r = await fetch("data/convocatorias.json?t=" + Math.floor(Date.now() / 600000), {cache: "no-cache"});
+    if (r.ok) conv = await r.json();
+  } catch (e) {}
+  convCargando = false;
+  pintar();
+}
+const ANDALUCIA = /almer[ií]a|c[aá]diz|c[oó]rdoba|granada|huelva|ja[eé]n|m[aá]laga|sevilla/i;
+function novedadesSinVer() {
+  if (!conv) return 0;
+  const v = st.convVisto || E.sumaDias(HOY(), -7);
+  return conv.mias.reduce((a, c) => a + (c.novedades || []).filter(n => n.fecha > v).length, 0)
+    + conv.espana.filter(c => c.fin && c.fin >= HOY() && (c.fecha || "") > v).length;
+}
+function badgeConv() {
+  const b = $("#badgeConv"); if (!b) return;
+  const n = ui.vista === "convocatorias" ? 0 : novedadesSinVer();
+  b.hidden = !n; b.textContent = n;
+}
+function vConvocatorias(hoy) {
+  if (!conv) { cargarConv(); return `<h1>Convocatorias</h1><div class="vacio"><p>Cargando…</p></div>`; }
+  const visto = ui.convVistoAntes ?? (st.convVisto || E.sumaDias(hoy, -7));
+  const fecha = f => f ? E.fechaLarga(f, false) + (f.slice(0, 4) !== String(new Date().getFullYear()) ? "" : "") : "pendiente";
+  const mias = conv.mias.map(c => {
+    const nov = [...(c.novedades || [])].sort((a, b) => b.fecha.localeCompare(a.fecha));
+    const fases = c.fases.map(f => `<li class="${f.hecho ? "hecho" : ""}"><span>${f.hecho ? "✓" : "○"}</span><span class="f">${f.fecha ? E.fechaLarga(f.fecha, false) : "pendiente"}</span><span>${esc(f.texto)}</span></li>`).join("");
+    return `<div class="conv"><span class="estado">${esc(c.estado)}</span><h3>${esc(c.nombre)}</h3>
+      <p class="meta">${esc(c.lugar)} · ${esc(c.plazas)} · ${esc(c.sistema)}</p>
+      <ul class="fases">${fases}</ul>
+      ${nov.length ? `<b class="small">Novedades</b><ul class="novedades">${nov.map(n => `<li class="${n.fecha > visto ? "nueva" : ""}"><small>${E.fechaLarga(n.fecha, false)}</small> ${n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.texto)}</a>` : esc(n.texto)}</li>`).join("")}</ul>` : ""}
+      <details><summary>Más información</summary><p class="nota">${esc(c.resumen)}</p><p class="nota">${esc(c.aviso || "")}</p></details>
+      <div class="enlaces">${c.enlaces.map(e => `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.texto)}</a>`).join("")}</div></div>`;
+  }).join("");
+  const f = ui.filtroConv || "todas";
+  let lista = conv.espana.map(c => ({...c, abierta: !!(c.fin && c.fin >= hoy)}));
+  if (f === "abiertas") lista = lista.filter(c => c.abierta);
+  if (f === "andalucia") lista = lista.filter(c => ANDALUCIA.test(c.provincia || "") || ANDALUCIA.test(c.organismo));
+  lista.sort((a, b) => (b.abierta - a.abierta) || (b.fecha || "").localeCompare(a.fecha || ""));
+  const espana = lista.map(c => {
+    const quedan = c.abierta ? E.difDias(hoy, c.fin) : null;
+    return `<div class="conv"><span class="estado ${c.abierta ? "abierta" : "cerrada"}">${c.abierta ? `Plazo abierto: quedan ${quedan} ${quedan === 1 ? "día" : "días"} (hasta el ${E.fechaLarga(c.fin, false)})` : `Plazo cerrado${c.fin ? " el " + E.fechaLarga(c.fin, false) : ""}`}</span>
+      <h3>${esc(c.organismo)}${c.provincia && !c.organismo.includes(c.provincia) ? ` (${esc(c.provincia)})` : ""}</h3>
+      <p class="meta">${c.plazas ? `${c.plazas} ${c.plazas === 1 ? "plaza" : "plazas"} · ` : ""}${esc(c.sistema)} · BOE del ${E.fechaLarga(c.fecha, false)}${c.fecha > visto ? " · <b>nueva</b>" : ""}</p>
+      <details><summary>Detalles</summary><p class="nota">${esc(c.detalle)}</p>${c.bases ? `<p class="nota"><b>Bases:</b> ${esc(c.bases)}</p>` : ""}${c.plazo ? `<p class="nota"><b>Plazo:</b> ${esc(c.plazo)} (fecha de fin aproximada: no cuenta festivos autonómicos ni locales).</p>` : ""}</details>
+      <div class="enlaces"><a href="${esc(c.url)}" target="_blank" rel="noopener">Anuncio en el BOE</a></div></div>`;
+  }).join("") || `<div class="vacio"><p>No hay convocatorias con este filtro.</p></div>`;
+  const abiertas = conv.espana.filter(c => c.fin && c.fin >= hoy).length;
+  return `<h1>Convocatorias</h1><p class="sub">Se revisan cada mañana (BOE y páginas oficiales). Última revisión con cambios: ${E.fechaLarga(conv.actualizado.slice(0, 10), false)}.</p>
+    <section class="bloque"><div class="bcab"><h2>Mis convocatorias</h2></div>${mias}</section>
+    <section class="bloque"><div class="bcab"><h2>Convocatorias España</h2><span>${abiertas} con plazo abierto</span></div>
+      <p class="nota">Bombero/a por turno libre (oposición o concurso-oposición), sin promoción interna ni movilidad, del último año. Primero las que tienen el plazo de instancias abierto. Salen cuando el BOE abre el plazo; el anuncio dice dónde están las bases.</p>
+      <div class="filtros">${[["todas", "Todas"], ["abiertas", "Plazo abierto"], ["andalucia", "Andalucía"]].map(([k, t]) => `<button class="${f === k ? "on" : ""}" data-a="filtroConv" data-f="${k}">${t}</button>`).join("")}</div>
+      ${espana}</section>`;
+}
+
 /* ---------- Ajustes ---------- */
 function vAjustes(hoy) {
   const comp = E.comparaRitmos(st, hoy);
@@ -498,6 +563,8 @@ function enlazar() {
       const t = b.dataset.t, n = +b.dataset.n;
       if (b.dataset.v === "1" && !confirm("¿Quitar esta parte de todas las vueltas? (No entra por decreto o no la estudias)")) return;
       guardar(E.noEntra(t, n, {key: b.dataset.key}, b.dataset.v === "1"));
+    } else if (a === "filtroConv") {
+      ui.filtroConv = b.dataset.f; pintar();
     } else if (a === "visto") {
       guardar(E.visto(st, hoy, b.dataset.t, +b.dataset.n, b.dataset.v === "1"));
     } else if (a === "quitarPdf") {
@@ -521,9 +588,18 @@ function enlazar() {
   const td = $("#tiempoDia"); if (td) td.onchange = () => { const f = ui.fecha || hoy; guardar({dias: {[f]: {...(st.dias[f] || {}), h: td.value ? +td.value : null}}}); };
   document.querySelectorAll("[data-subir]").forEach(inp => inp.onchange = () => { if (inp.files[0]) subirPdf(inp.dataset.subir, inp.files[0]); });
 }
-function ir(v) { ui.vista = v; if (v !== "semana") ui.semana = null; pintar(); window.scrollTo(0, 0); }
+function ir(v) {
+  if (v === "convocatorias") {
+    // Lo nuevo se resalta en esta visita; la próxima vez ya cuenta como visto.
+    ui.convVistoAntes = st.convVisto || E.sumaDias(HOY(), -7);
+    if (st.convVisto !== HOY()) guardar({convVisto: HOY()});
+    conv = null;
+  }
+  ui.vista = v; if (v !== "semana") ui.semana = null; pintar(); window.scrollTo(0, 0);
+}
 document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => { if (b.dataset.v === "hoy") ui.fecha = null; ir(b.dataset.v); });
 $("#btnAjustes").onclick = () => ir("ajustes");
 
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 main();
+setTimeout(cargarConv, 1500); // para el aviso de novedades en la pestaña

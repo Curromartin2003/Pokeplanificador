@@ -183,3 +183,16 @@ test("«No entra» quita una parte de todas las vueltas y se puede volver a mete
   const st3 = E.completar({...st2, fuera: {esp8: {...st2.fuera.esp8, ...E.noEntra("esp", 8, c, false).fuera.esp8}}});
   assert.ok(E.cola(st3, "esp").items.some(x => x.id === c.id));
 });
+
+test("puntos iniciales (7) y tiempo por tema con lo apuntado", () => {
+  const st0 = E.completar(E.estadoNuevo(HOY));
+  const st = aplicar(st0, E.semilla(st0, HOY));
+  assert.equal(st.puntosIniciales, 7);
+  assert.equal(E.resumen(st, HOY).total, 7);
+  let s2 = aplicar(st, E.marcar(st, HOY, HOY, E.I_ESTUDIO, true));
+  s2 = E.completar({...s2, dias: {...s2.dias, [HOY]: {...s2.dias[HOY], s: {...s2.dias[HOY].s, real: 50}}}});
+  const t = E.tiemposTema(s2, HOY);
+  const total = Object.values(t).reduce((a, b) => a + b, 0);
+  assert.ok(Math.abs(total - 50) < 0.5);
+  assert.ok(t["leg1|1"] > 0);
+});

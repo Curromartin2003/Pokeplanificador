@@ -1,0 +1,223 @@
+[
+ {
+  "id": "aena-ic10",
+  "nombre": "Aena · IC10 Técnico/a de Equipamiento y Salvamento: Bombero/a (bolsa 2026)",
+  "organismo": "Aena S.M.E., S.A.",
+  "lugar": "Aeropuerto de Gran Canaria (tu elección)",
+  "plazas": "Bolsa de empleo (selección externa, nivel D)",
+  "sistema": "Prueba general (test) + pruebas físicas y de tolerancias",
+  "estado": "En proceso: pendiente de pruebas físicas y tolerancias",
+  "resumen": "Prueba general: 140 preguntas, de 0 a 70 puntos, mínimo 35. Pruebas físicas eliminatorias, de 0 a 36 puntos; hace falta certificado médico con fecha posterior a la convocatoria. Sustituye a la bolsa de 2022, que acaba en 2027.",
+  "fases": [
+   {
+    "fecha": "2026-04-29",
+    "texto": "Abre el plazo de solicitudes",
+    "hecho": true
+   },
+   {
+    "fecha": "2026-05-10",
+    "texto": "Fin del plazo de solicitudes (23:59, hora peninsular)",
+    "hecho": true
+   },
+   {
+    "fecha": "2026-05-31",
+    "texto": "Listas provisionales: 4.508 admitidos de 4.515 solicitudes. Fin de la subsanación de excluidos",
+    "hecho": true
+   },
+   {
+    "fecha": "2026-07-11",
+    "texto": "Prueba general tipo test (fecha prevista según academias)",
+    "hecho": true
+   },
+   {
+    "fecha": "2026-11-16",
+    "texto": "Pruebas físicas y de tolerancias: segunda quincena de noviembre (fecha aproximada, sin confirmar)",
+    "hecho": false
+   }
+  ],
+  "enlaces": [
+   {
+    "texto": "Portal de empleo de Aena (oficial)",
+    "url": "https://empleo.aena.es/"
+   },
+   {
+    "texto": "Programa de selección IC10 2026 (PDF oficial)",
+    "url": "https://empleo.aena.es/ocupaciones/Lists/Ocupaciones/Attachments/40/3.Programa_IC10.pdf"
+   }
+  ],
+  "boe": [
+   [
+    "Aena",
+    "bomber"
+   ]
+  ],
+  "vigilar": [
+   {
+    "nombre": "Portal de empleo de Aena",
+    "url": "https://empleo.aena.es/",
+    "revisada": "2026-11-03",
+    "hash": "1a82e3440c2325c2"
+   },
+   {
+    "nombre": "Programa IC10 (PDF)",
+    "url": "https://empleo.aena.es/ocupaciones/Lists/Ocupaciones/Attachments/40/3.Programa_IC10.pdf",
+    "revisada": "2026-11-03",
+    "hash": "8b0d482f844d991d"
+   }
+  ],
+  "aviso": "Aena no publica en el BOE: las listas, notas y citaciones salen en su portal de empleo. Las fechas marcadas como previstas vienen de academias; confírmalas en el portal.",
+  "novedades": []
+ },
+ {
+  "id": "jaen-cazorla-segura",
+  "nombre": "Consorcios SPEIS Sierra de Cazorla y Sierra de Segura (Jaén) · Bombero/a",
+  "organismo": "Consorcios Comarcales de Prevención y Extinción de Incendios y Salvamento (Diputación de Jaén)",
+  "lugar": "Jaén: Sierra de Cazorla y Sierra de Segura",
+  "plazas": "2 plazas en Sierra de Cazorla + 2 en Sierra de Segura (C1, escala operativa)",
+  "sistema": "Oposición libre",
+  "estado": "Plazo cerrado: pendiente de listas de admitidos",
+  "resumen": "Sierra de Cazorla: bases en el BOP de Jaén n.º 102 (28-05-2026) y anuncio en el BOE n.º 224 (10-09-2026); plazas de las OEP 2024 y 2025. Examen: 50 preguntas tipo test con 4 opciones en 50 minutos, sobre 10 puntos y mínimo 5. Sierra de Segura es una convocatoria aparte (2 plazas), con plazo hasta el 9-10-2026. Requisitos: Bachiller o Técnico y permisos B y C.",
+  "fases": [
+   {
+    "fecha": "2026-05-28",
+    "texto": "Bases de Sierra de Cazorla en el BOP de Jaén n.º 102",
+    "hecho": true
+   },
+   {
+    "fecha": "2026-09-10",
+    "texto": "Anuncio en el BOE n.º 224: abre el plazo de 20 días hábiles",
+    "hecho": true
+   },
+   {
+    "fecha": "2026-10-08",
+    "texto": "Fin del plazo de Sierra de Cazorla (el de Sierra de Segura, el 9 de octubre)",
+    "hecho": true
+   },
+   {
+    "fecha": null,
+    "texto": "Listas provisionales de admitidos y excluidos (BOP de Jaén y tablón del consorcio)",
+    "hecho": false
+   },
+   {
+    "fecha": null,
+    "texto": "Tribunal y fecha del primer ejercicio",
+    "hecho": false
+   }
+  ],
+  "enlaces": [
+   {
+    "texto": "Diputación de Jaén: ofertas de empleo de los consorcios de bomberos",
+    "url": "https://www.dipujaen.es/conoce-diputacion/areas-organismos-empresas/areaD/recursos-humanos/oferta-empleo-consorcios/"
+   },
+   {
+    "texto": "BOP de Jaén",
+    "url": "https://bop.dipujaen.es/"
+   }
+  ],
+  "boe": [
+   [
+    "Cazorla",
+    "bomber"
+   ],
+   [
+    "Segura",
+    "bomber"
+   ]
+  ],
+  "vigilar": [
+   {
+    "nombre": "Ofertas de empleo de los consorcios (Diputación de Jaén)",
+    "url": "https://www.dipujaen.es/conoce-diputacion/areas-organismos-empresas/areaD/recursos-humanos/oferta-empleo-consorcios/",
+    "revisada": "2026-11-03",
+    "hash": "5fcefc2825472de8"
+   }
+  ],
+  "aviso": "Las listas y la fecha de examen salen en el BOP de Jaén y en la página de la Diputación, que se revisa cada día.",
+  "novedades": [
+   {
+    "fecha": "2026-09-10",
+    "texto": "BOE: Resolución de 2 de septiembre de 2026, del Consorcio Comarcal para la Prestación del Servicio de Prevención y Extinción de Incendios y Salvamento de la Comarca Sierra de Cazorla (Jaén), referente a la convocatoria para proveer varias plazas.",
+    "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-18938",
+    "auto": true
+   },
+   {
+    "fecha": "2026-09-12",
+    "texto": "BOE: Resolución de 2 de septiembre de 2026, del Consorcio Comarcal para la Prestación del Servicio de Prevención y Extinción de Incendios y Salvamento de la Comarca Sierra de Segura (Jaén), referente a la convocatoria para proveer varias plazas.",
+    "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-19080",
+    "auto": true
+   }
+  ]
+ },
+ {
+  "id": "alcala-guadaira",
+  "nombre": "Ayuntamiento de Alcalá de Guadaíra (Sevilla) · Bombero/a turno libre",
+  "organismo": "Ayuntamiento de Alcalá de Guadaíra",
+  "lugar": "Alcalá de Guadaíra (Sevilla)",
+  "plazas": "5 plazas por turno libre (más 1 por movilidad), OEP 2026",
+  "sistema": "Oposición, turno libre",
+  "estado": "Plazo cerrado: pendiente de listas de admitidos",
+  "resumen": "Bases en el BOP de Sevilla n.º 123 (29-06-2026), modificadas el 2-07-2026; extracto en el BOJA n.º 148 (3-08-2026); anuncio en el BOE n.º 193 (8-08-2026). Solicitud solo por vía electrónica. No confundir con la de 25 plazas por promoción interna (BOP n.º 144), que no es la tuya.",
+  "fases": [
+   {
+    "fecha": "2026-06-29",
+    "texto": "Bases en el BOP de Sevilla n.º 123",
+    "hecho": true
+   },
+   {
+    "fecha": "2026-08-03",
+    "texto": "Extracto en el BOJA n.º 148",
+    "hecho": true
+   },
+   {
+    "fecha": "2026-08-08",
+    "texto": "Anuncio en el BOE n.º 193: abre el plazo de 10 días hábiles",
+    "hecho": true
+   },
+   {
+    "fecha": "2026-08-21",
+    "texto": "Fin del plazo de solicitudes",
+    "hecho": true
+   },
+   {
+    "fecha": null,
+    "texto": "Listas provisionales de admitidos y excluidos (BOP de Sevilla y sede del Ayuntamiento)",
+    "hecho": false
+   },
+   {
+    "fecha": null,
+    "texto": "Tribunal y fecha del primer ejercicio",
+    "hecho": false
+   }
+  ],
+  "enlaces": [
+   {
+    "texto": "Anuncio en el BOE (BOE-A-2026-17314)",
+    "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-17314"
+   },
+   {
+    "texto": "Extracto en el BOJA n.º 148",
+    "url": "https://www.juntadeandalucia.es/boja/2026/148/48.html"
+   },
+   {
+    "texto": "BOP de Sevilla",
+    "url": "https://www.dipusevilla.es/bop/"
+   }
+  ],
+  "boe": [
+   [
+    "Alcal[aá] de Guada[ií]ra",
+    "bomber"
+   ]
+  ],
+  "vigilar": [],
+  "aviso": "Los siguientes anuncios (listas, tribunal, examen) salen en el BOP de Sevilla y en la sede electrónica del Ayuntamiento: la app avisa si aparece algo en el BOE, pero conviene mirar el BOP.",
+  "novedades": [
+   {
+    "fecha": "2026-08-08",
+    "texto": "BOE: Resolución de 3 de agosto de 2026, del Ayuntamiento de Alcalá de Guadaíra (Sevilla), referente a la convocatoria para proveer varias plazas.",
+    "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-17314",
+    "auto": true
+   }
+  ]
+ }
+]
