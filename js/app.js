@@ -145,7 +145,7 @@ function vHoy(hoy) {
   let aviso = "";
   if (fecha === hoy && d.dow === 6 && !st.semanas[E.lunes(E.sumaDias(hoy, 1))])
     aviso = `<div class="aviso">Mañana empieza semana. <button class="btn peque" data-a="semanaSig">Elegir día libre y clases de Luis</button></div>`;
-  if (fecha === hoy) aviso = avisoCambios(hoy) + aviso + camino(hoy);
+  if (fecha === hoy) aviso = avisoCambios(hoy) + avisoConv() + aviso + camino(hoy);
   if (antes) return nav + `<div class="vacio"><p>El plan empieza el ${E.fechaLarga(st.inicio)}.</p></div>`;
   if (d.tipo === "libre") return nav + aviso + `<div class="libre"><div class="big">🌴</div><h2>Día libre</h2><p>Hoy no hay objetivos ni estudio: descansa de verdad. La puntuación no cambia.</p></div>` + manana(hoy, fecha);
 
@@ -187,6 +187,18 @@ function vHoy(hoy) {
       .map(([v, t]) => `<option value="${v}" ${(d.horasCambiadas ? String(d.total) : "") === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
     ${d.horasCambiadas ? `<span class="nota">Cambiado solo este día.</span>` : ""}</div>`;
   return nav + aviso + marcador + `<ul class="objs">${items}</ul>` + tiempo + manana(hoy, fecha);
+}
+
+// Novedades de tus convocatorias sin ver, con el enlace directo a cada documento.
+function avisoConv() {
+  if (!conv) return "";
+  const v = st.convVisto || E.sumaDias(HOY(), -7);
+  const nov = conv.mias.flatMap(c => (c.novedades || []).filter(n => n.fecha > v).map(n => ({...n, conv: c.nombre.split(" · ")[0]})))
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  if (!nov.length) return "";
+  return `<div class="avisoconv"><b>📢 Novedades en tus convocatorias</b><ul>${nov.slice(0, 4).map(n =>
+    `<li><small>${esc(n.conv)} · ${E.fechaLarga(n.fecha, false)}</small>${n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.texto)}</a>` : esc(n.texto)}</li>`).join("")}</ul>
+    <button class="btn peque" data-a="verConv">Ver todo</button></div>`;
 }
 
 // «De aquí a tu plaza»: cuenta atrás a tu próxima cita, avance del temario, racha y frase del día.
@@ -464,7 +476,7 @@ function vConvocatorias(hoy) {
   const fecha = f => f ? E.fechaLarga(f, false) + (f.slice(0, 4) !== String(new Date().getFullYear()) ? "" : "") : "pendiente";
   const mias = conv.mias.map(c => {
     const nov = [...(c.novedades || [])].sort((a, b) => b.fecha.localeCompare(a.fecha));
-    const fases = c.fases.map(f => `<li class="${f.hecho ? "hecho" : ""}"><span>${f.hecho ? "✓" : "○"}</span><span class="f">${f.fecha ? E.fechaLarga(f.fecha, false) : "pendiente"}</span><span>${esc(f.texto)}</span></li>`).join("");
+    const fases = c.fases.map(f => `<li class="${f.hecho ? "hecho" : ""}"><span>${f.hecho ? "✓" : "○"}</span><span class="f">${f.fecha ? E.fechaLarga(f.fecha, false) : "pendiente"}</span><span>${f.url ? `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.texto)}</a>` : esc(f.texto)}</span></li>`).join("");
     return `<div class="conv"><span class="estado">${esc(c.estado)}</span><h3>${esc(c.nombre)}</h3>
       <p class="meta">${esc(c.lugar)} · ${esc(c.plazas)} · ${esc(c.sistema)}</p>
       <ul class="fases">${fases}</ul>
@@ -591,6 +603,8 @@ function enlazar() {
       const t = b.dataset.t, n = +b.dataset.n;
       if (b.dataset.v === "1" && !confirm("¿Quitar esta parte de todas las vueltas? (No entra por decreto o no la estudias)")) return;
       guardar(E.noEntra(t, n, {key: b.dataset.key}, b.dataset.v === "1"));
+    } else if (a === "verConv") {
+      ir("convocatorias");
     } else if (a === "filtroConv") {
       ui.filtroConv = b.dataset.f; pintar();
     } else if (a === "visto") {

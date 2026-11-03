@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-11-03T16:14+00:00",
+ "actualizado": "2026-11-03T23:24+00:00",
  "fuente": "BOE, sección II.B (datos abiertos)",
  "mias": [
   {
@@ -59,13 +59,15 @@
      "nombre": "Portal de empleo de Aena",
      "url": "https://empleo.aena.es/",
      "revisada": "2026-11-03",
-     "hash": "1a82e3440c2325c2"
+     "hash": "1a82e3440c2325c2",
+     "pdfs": []
     },
     {
      "nombre": "Programa IC10 (PDF)",
      "url": "https://empleo.aena.es/ocupaciones/Lists/Ocupaciones/Attachments/40/3.Programa_IC10.pdf",
      "revisada": "2026-11-03",
-     "hash": "8b0d482f844d991d"
+     "hash": "8b0d482f844d991d",
+     "pdfs": []
     }
    ],
    "aviso": "Aena no publica en el BOE: las listas, notas y citaciones salen en su portal de empleo. Las fechas marcadas como previstas vienen de academias; confírmalas en el portal.",
@@ -78,39 +80,67 @@
    "lugar": "Jaén: Sierra de Cazorla y Sierra de Segura",
    "plazas": "2 plazas en Sierra de Cazorla + 2 en Sierra de Segura (C1, escala operativa)",
    "sistema": "Oposición libre",
-   "estado": "Plazo cerrado: pendiente de listas de admitidos",
+   "estado": "Listas provisionales publicadas: plazo para subsanar hasta el 11 de noviembre (aprox.)",
    "resumen": "Sierra de Cazorla: bases en el BOP de Jaén n.º 102 (28-05-2026) y anuncio en el BOE n.º 224 (10-09-2026); plazas de las OEP 2024 y 2025. Examen: 50 preguntas tipo test con 4 opciones en 50 minutos, sobre 10 puntos y mínimo 5. Sierra de Segura es una convocatoria aparte (2 plazas), con plazo hasta el 9-10-2026. Requisitos: Bachiller o Técnico y permisos B y C.",
    "fases": [
     {
      "fecha": "2026-05-28",
-     "texto": "Bases de Sierra de Cazorla en el BOP de Jaén n.º 102",
-     "hecho": true
+     "texto": "Bases de Cazorla y Segura en el BOP de Jaén n.º 102",
+     "hecho": true,
+     "url": "https://bop.dipujaen.es/bop/28-05-2026"
     },
     {
      "fecha": "2026-09-10",
-     "texto": "Anuncio en el BOE n.º 224: abre el plazo de 20 días hábiles",
-     "hecho": true
+     "texto": "Anuncio de Cazorla en el BOE n.º 224 (Segura: BOE n.º 226, 12-09): abre el plazo de 20 días hábiles",
+     "hecho": true,
+     "url": "https://www.boe.es/boe/dias/2026/09/10/"
     },
     {
      "fecha": "2026-10-08",
-     "texto": "Fin del plazo de Sierra de Cazorla (el de Sierra de Segura, el 9 de octubre)",
+     "texto": "Fin del plazo de Cazorla (el de Segura, el 9 de octubre)",
      "hecho": true
     },
     {
-     "fecha": null,
-     "texto": "Listas provisionales de admitidos y excluidos (BOP de Jaén y tablón del consorcio)",
+     "fecha": "2026-10-28",
+     "texto": "Listas provisionales de admitidos y excluidos en el BOP de Jaén n.º 211: Cazorla 188 admitidos y 150 excluidos; Segura 166 admitidos y 132 excluidos",
+     "hecho": true,
+     "url": "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2026/BOP_Lista_prov_Cazorla.pdf"
+    },
+    {
+     "fecha": "2026-11-11",
+     "texto": "Fin del plazo para subsanar de los excluidos: 10 días hábiles desde el 29 de octubre (fecha aproximada)",
      "hecho": false
     },
     {
      "fecha": null,
-     "texto": "Tribunal y fecha del primer ejercicio",
+     "texto": "Listas definitivas, tribunal y fecha del primer ejercicio (BOP de Jaén)",
      "hecho": false
     }
    ],
    "enlaces": [
     {
-     "texto": "Diputación de Jaén: ofertas de empleo de los consorcios de bomberos",
-     "url": "https://www.dipujaen.es/conoce-diputacion/areas-organismos-empresas/areaD/recursos-humanos/oferta-empleo-consorcios/"
+     "texto": "Lista provisional de Sierra de Cazorla (PDF)",
+     "url": "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2026/BOP_Lista_prov_Cazorla.pdf"
+    },
+    {
+     "texto": "Lista provisional de Sierra de Segura (PDF)",
+     "url": "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2026/BOP_Lista_Prov_Segura_OL.pdf"
+    },
+    {
+     "texto": "Ficha del proceso de Cazorla (Diputación)",
+     "url": "https://www.dipujaen.es/diputacion/dipujaen/conoce-diputacion/areas-organismos-empresas/areaD/recursos-humanos/ofertas-de-empleo/oferta-publica-permanente/_detalles/index.html?uid=c8238fcc-5a60-11f1-8361-005056b0675f"
+    },
+    {
+     "texto": "Ficha del proceso de Segura (Diputación)",
+     "url": "https://www.dipujaen.es/diputacion/dipujaen/conoce-diputacion/areas-organismos-empresas/areaD/recursos-humanos/ofertas-de-empleo/oferta-publica-permanente/_detalles/index.html?uid=1c84f482-5a68-11f1-8361-005056b0675f"
+    },
+    {
+     "texto": "Bases de Cazorla (PDF)",
+     "url": "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2025/BOP_Bases_Cazorla_OL.pdf"
+    },
+    {
+     "texto": "Bases de Segura (PDF)",
+     "url": "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2025/BOP_Bases_Segura_OL.pdf"
     },
     {
      "texto": "BOP de Jaén",
@@ -129,13 +159,42 @@
    ],
    "vigilar": [
     {
+     "nombre": "Ficha del proceso de Cazorla",
+     "url": "https://www.dipujaen.es/diputacion/dipujaen/conoce-diputacion/areas-organismos-empresas/areaD/recursos-humanos/ofertas-de-empleo/oferta-publica-permanente/_detalles/index.html?uid=c8238fcc-5a60-11f1-8361-005056b0675f",
+     "pdfs": [
+      "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2025/BOP_Bases_Cazorla_OL.pdf",
+      "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2026/BOP_Lista_prov_Cazorla.pdf"
+     ],
+     "hash": "a415bee941b58bab",
+     "revisada": "2026-11-03"
+    },
+    {
+     "nombre": "Ficha del proceso de Segura",
+     "url": "https://www.dipujaen.es/diputacion/dipujaen/conoce-diputacion/areas-organismos-empresas/areaD/recursos-humanos/ofertas-de-empleo/oferta-publica-permanente/_detalles/index.html?uid=1c84f482-5a68-11f1-8361-005056b0675f",
+     "pdfs": [
+      "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2025/BOP_Bases_Segura_OL.pdf",
+      "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2026/BOP_Lista_Prov_Segura_OL.pdf"
+     ],
+     "hash": "97a5efa42cbb684d",
+     "revisada": "2026-11-03"
+    },
+    {
      "nombre": "Ofertas de empleo de los consorcios (Diputación de Jaén)",
      "url": "https://www.dipujaen.es/conoce-diputacion/areas-organismos-empresas/areaD/recursos-humanos/oferta-empleo-consorcios/",
-     "revisada": "2026-11-03",
-     "hash": "5fcefc2825472de8"
+     "pdfs": [
+      "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2019/Bases_4_bomberos_S._Cazorla.pdf",
+      "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2019/Bases_7_bomberos_S.Segura.pdf",
+      "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2025/BOP-Bases_Cazorla.pdf",
+      "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2025/BOP-Bases_Segura.pdf",
+      "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2025/BOP-Bases_Sierra_Magina_Oriental.pdf",
+      "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2025/BOP_Bases_Cazorla_OL.pdf",
+      "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2025/BOP_Bases_Segura_OL.pdf"
+     ],
+     "hash": "c579f5e0202fcade",
+     "revisada": "2026-11-03"
     }
    ],
-   "aviso": "Las listas y la fecha de examen salen en el BOP de Jaén y en la página de la Diputación, que se revisa cada día.",
+   "aviso": "Las listas, el tribunal y la fecha de examen salen en el BOP de Jaén y en la ficha de cada proceso de la Diputación. La app revisa las dos fichas cada mañana y te pone el enlace directo de cada documento nuevo.",
    "novedades": [
     {
      "fecha": "2026-09-10",
@@ -148,6 +207,16 @@
      "texto": "BOE: Resolución de 2 de septiembre de 2026, del Consorcio Comarcal para la Prestación del Servicio de Prevención y Extinción de Incendios y Salvamento de la Comarca Sierra de Segura (Jaén), referente a la convocatoria para proveer varias plazas.",
      "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-19080",
      "auto": true
+    },
+    {
+     "fecha": "2026-10-28",
+     "texto": "Lista provisional de admitidos y excluidos de Sierra de Cazorla (BOP de Jaén n.º 211): 188 admitidos, 150 excluidos. Los excluidos tienen 10 días hábiles para subsanar.",
+     "url": "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2026/BOP_Lista_prov_Cazorla.pdf"
+    },
+    {
+     "fecha": "2026-10-28",
+     "texto": "Lista provisional de admitidos y excluidos de Sierra de Segura (BOP de Jaén n.º 211): 166 admitidos, 132 excluidos. Los excluidos tienen 10 días hábiles para subsanar.",
+     "url": "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2026/BOP_Lista_Prov_Segura_OL.pdf"
     }
    ]
   },
@@ -158,7 +227,7 @@
    "lugar": "Alcalá de Guadaíra (Sevilla)",
    "plazas": "5 plazas por turno libre (más 1 por movilidad), OEP 2026",
    "sistema": "Oposición, turno libre",
-   "estado": "Plazo cerrado: pendiente de listas de admitidos",
+   "estado": "Lista provisional y tribunal publicados (16-10). Plazo de subsanación terminado el 30-10: pendiente de lista definitiva y fecha de examen",
    "resumen": "Bases en el BOP de Sevilla n.º 123 (29-06-2026), modificadas el 2-07-2026; extracto en el BOJA n.º 148 (3-08-2026); anuncio en el BOE n.º 193 (8-08-2026). Solicitud solo por vía electrónica. No confundir con la de 25 plazas por promoción interna (BOP n.º 144), que no es la tuya.",
    "fases": [
     {
@@ -182,17 +251,27 @@
      "hecho": true
     },
     {
-     "fecha": null,
-     "texto": "Listas provisionales de admitidos y excluidos (BOP de Sevilla y sede del Ayuntamiento)",
-     "hecho": false
+     "fecha": "2026-10-16",
+     "texto": "Lista provisional de admitidos y excluidos y composición del tribunal (BOP de Sevilla n.º 201, anuncio BOP-SE-2026-201005)",
+     "hecho": true,
+     "url": "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-16-10-2026/"
+    },
+    {
+     "fecha": "2026-10-30",
+     "texto": "Fin del plazo de subsanación: 10 días hábiles desde el 19 de octubre (fecha aproximada)",
+     "hecho": true
     },
     {
      "fecha": null,
-     "texto": "Tribunal y fecha del primer ejercicio",
+     "texto": "Lista definitiva de admitidos y fecha del primer ejercicio (BOP de Sevilla y sede del Ayuntamiento)",
      "hecho": false
     }
    ],
    "enlaces": [
+    {
+     "texto": "BOP de Sevilla n.º 201 (16-10-2026): lista provisional y tribunal",
+     "url": "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-16-10-2026/"
+    },
     {
      "texto": "Anuncio en el BOE (BOE-A-2026-17314)",
      "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-17314"
@@ -213,15 +292,24 @@
     ]
    ],
    "vigilar": [],
-   "aviso": "Los siguientes anuncios (listas, tribunal, examen) salen en el BOP de Sevilla y en la sede electrónica del Ayuntamiento: la app avisa si aparece algo en el BOE, pero conviene mirar el BOP.",
+   "aviso": "Los anuncios (listas, tribunal, examen) salen en el BOP de Sevilla: la app revisa su sumario cada mañana y te pone el enlace directo de cada anuncio nuevo de Alcalá sobre bomberos.",
    "novedades": [
     {
      "fecha": "2026-08-08",
      "texto": "BOE: Resolución de 3 de agosto de 2026, del Ayuntamiento de Alcalá de Guadaíra (Sevilla), referente a la convocatoria para proveer varias plazas.",
      "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-17314",
      "auto": true
+    },
+    {
+     "fecha": "2026-10-16",
+     "texto": "Lista provisional de personas admitidas y excluidas y composición del tribunal de las cinco plazas de Bombero por turno libre (BOP de Sevilla n.º 201, BOP-SE-2026-201005). Plazo de subsanación: 10 días hábiles.",
+     "url": "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-16-10-2026/"
     }
-   ]
+   ],
+   "bop_sevilla": {
+    "org": "Alcal[aá] de Guada[ií]ra",
+    "claves": "bomber"
+   }
   }
  ],
  "espana": [

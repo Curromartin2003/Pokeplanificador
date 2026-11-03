@@ -10,6 +10,7 @@
 Solo usa la biblioteca estándar. Uso: python3 scripts/convocatorias.py [--dias N]
 """
 import hashlib, html, json, re, sys, urllib.request
+from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -201,21 +202,62 @@ def main():
                     if menciona(i, claves, t):
                         c.setdefault("novedades", []).append({"fecha": fecha.isoformat(), "texto": f"BOE: {t}", "url": url, "auto": True})
                         hechos.add(url)
+        # BOP de Sevilla: anuncios del día cuyo título o bloque nombran el organismo y la plaza (p. ej. listas de
+        # admitidos de Alcalá de Guadaíra). Se mira el sumario de cada día y se apunta el enlace directo al anuncio.
+        bs = c.get("bop_sevilla")
+        if bs:
+            for f in fechas:
+                u = f"https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-{f:%d-%m-%Y}/"
+                try:
+                    pag = get(u, timeout=40)
+                except Exception:
+                    continue
+                for m in re.finditer(r'<a[^>]+href="([^"]*/buscador-anuncios/anuncio/[^"]*)"[^>]*>(.*?)</a>', pag, re.I | re.S):
+                    url = urljoin(u, html.unescape(m.group(1)))
+                    titulo = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", m.group(2)))).strip()
+                    contexto = re.sub(r"<[^>]+>", " ", pag[max(0, m.start() - 2500):m.start()])
+                    if url in hechos or not re.search(bs["claves"], titulo + " " + url, re.I):
+                        continue
+                    if re.search(r"promoci[oó]n interna", titulo, re.I):
+                        continue
+                    if not re.search(bs["org"], titulo + " " + contexto, re.I):
+                        continue
+                    c.setdefault("novedades", []).append({"fecha": f.isoformat(), "auto": True, "url": url,
+                                                           "texto": f"BOP de Sevilla: {titulo or 'anuncio nuevo'}"})
+                    hechos.add(url)
+
         # Páginas oficiales que se vigilan: aviso si cambian.
         for v in c.get("vigilar", []):
             try:
                 pag = get(v["url"], timeout=40)
-                # Solo cuenta el texto que importa (enlaces y líneas sobre bomberos, listas, exámenes...): así no
-                # salta por cambios de fecha, contadores o banners de la página.
-                txt = re.sub(r"<script.*?</script>|<style.*?</style>", " ", pag, flags=re.S)
-                enlaces = re.findall(r'href="([^"]+\.pdf[^"]*)"', txt, re.I)
-                lineas = [html.unescape(re.sub(r"\s+", " ", l)).strip() for l in re.sub(r"<[^>]+>", "\n", txt).split("\n")]
-                clave = re.compile(r"bomber|admitid|exclu|examen|ejercicio|tribunal|calificaci|nota|listado|convocatoria|IC10|prueba", re.I)
-                util = sorted(set(enlaces)) + [l for l in lineas if l and clave.search(l)]
-                h = hashlib.sha256("\n".join(util).encode()).hexdigest()[:16]
             except Exception:
                 continue
-            if v.get("hash") and v["hash"] != h:
+            txt = re.sub(r"<script.*?</script>|<style.*?</style>", " ", pag, flags=re.S)
+            # Documentos (PDF) enlazados en la página, con el texto de su enlace: cada uno nuevo es una novedad
+            # con el enlace directo (listas de admitidos, tribunal, fechas, notas...).
+            docs = {}
+            for href, texto in re.findall(r'<a[^>]+href="([^"]+\.pdf[^"]*)"[^>]*>(.*?)</a>', txt, re.I | re.S):
+                url = urljoin(v["url"], html.unescape(href))
+                t = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", texto))).strip()
+                docs.setdefault(url, t)
+            for href in re.findall(r'href="([^"]+\.pdf[^"]*)"', txt, re.I):
+                docs.setdefault(urljoin(v["url"], html.unescape(href)), "")
+            antes = v.get("pdfs")
+            if antes is not None:
+                for url, t in docs.items():
+                    if url in antes or url in hechos:
+                        continue
+                    nombre = t if len(t) > 6 and not re.fullmatch(r"(descargar|ver|pdf|aqu[ií])", t, re.I) else \
+                        re.sub(r"[_-]+", " ", url.rsplit("/", 1)[-1].rsplit(".", 1)[0])
+                    c.setdefault("novedades", []).append({"fecha": hoy.isoformat(), "auto": True, "url": url,
+                                                           "texto": f"Nuevo documento en «{v['nombre']}»: {nombre}"})
+                    hechos.add(url)
+            v["pdfs"] = sorted(docs)
+            # Además, aviso si cambia el texto importante de la página (sin contar fechas, contadores o banners).
+            lineas = [html.unescape(re.sub(r"\s+", " ", l)).strip() for l in re.sub(r"<[^>]+>", "\n", txt).split("\n")]
+            clave = re.compile(r"bomber|admitid|exclu|examen|ejercicio|tribunal|calificaci|nota|listado|convocatoria|IC10|prueba", re.I)
+            h = hashlib.sha256("\n".join([l for l in lineas if l and clave.search(l)]).encode()).hexdigest()[:16]
+            if v.get("hash") and v["hash"] != h and not any(n.get("fecha") == hoy.isoformat() and n.get("url", "").endswith(".pdf") for n in c.get("novedades", [])):
                 c.setdefault("novedades", []).append({"fecha": hoy.isoformat(), "auto": True, "url": v["url"],
                                                        "texto": f"Ha cambiado la página «{v['nombre']}»: revísala, puede haber listas, fechas o notas nuevas."})
             v["hash"] = h

@@ -29,7 +29,9 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
 - Convocatorias: `data/convocatorias.json` lo genera `scripts/convocatorias.py` (solo stdlib) cada mañana con
   `.github/workflows/convocatorias.yml`: España = BOE sección II.B, bombero/a turno libre (oposición o concurso-oposición),
   sin promoción interna ni movilidad, con fin de plazo calculado; Mis convocatorias = `data/mis_convocatorias.json`
-  (fichas escritas a mano + novedades automáticas: anuncios del BOE que las nombran y cambios en las páginas vigiladas).
+  (fichas escritas a mano + novedades automáticas con enlace directo: anuncios del BOE que las nombran, PDF nuevos en las
+  páginas vigiladas (`vigilar[].pdfs`), anuncios del BOP de Sevilla (`bop_sevilla`) y cambios de texto en las páginas).
+  Las novedades sin ver salen también en Hoy.
   `data/revisados.json` guarda los anuncios ya mirados.
 - Los PDF no se suben al repositorio.
 - Probar: `python3 -m http.server` y abrir `/?local&hoy=AAAA-MM-DD`. `node tests/e2e.mjs` (Playwright).
