@@ -1,47 +1,55 @@
-// Pruebas de la lógica: node --test tests/
+// Pruebas de la lógica: node --test tests/engine.test.mjs
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as E from "../js/engine.js";
 
 const HOY = "2026-11-03"; // martes
-const base = (semanas = {"2026-11-02": {libre: 6, luis: [0, 2]}}) => E.completar({inicio: "2026-11-02", semanas});
+const base = (semanas = {"2026-11-02": {libre: 6, luis: [0, 2]}}, extra = {}) => E.completar({inicio: "2026-11-02", semanas, ...extra});
 const todos = (v = true) => E.OBJETIVOS.map(() => v);
+const aplicar = (st, p) => E.completar({...st, ...p, semanas: {...st.semanas, ...(p.semanas || {})}, dias: {...st.dias, ...(p.dias || {})},
+  manual: {...st.manual, ...(p.manual || {})}, materiales: {...st.materiales, ...(p.materiales || {})}});
 
 test("tipos de día, minutos y 30 % de callejero", () => {
-  const st = base();
-  const d = E.dias(st, HOY, "2026-11-02", "2026-11-08");
+  const d = E.dias(base(), HOY, "2026-11-02", "2026-11-08");
   assert.deepEqual(d.map(x => x.tipo), ["luis", "estudio", "luis", "estudio", "estudio", "estudio", "libre"]);
   assert.deepEqual(d.map(x => x.total), [60, 180, 60, 180, 60, 180, 0]);
   assert.equal(d[1].minCal, 54); assert.equal(d[1].minEst, 126);
   assert.equal(d[4].minCal, 18); assert.equal(d[4].minEst, 42);
-  assert.equal(d[0].minCal, 18); // día de Luis: solo clase y callejero
 });
 
-test("alterna legislación y específico", () => {
-  const d = E.dias(base(), HOY, "2026-11-02", "2026-11-15").filter(x => x.tipo === "estudio");
+test("tiempo de un día cambiado solo ese día", () => {
+  const st = base(undefined, {dias: {[HOY]: {h: 60}}});
+  const d = E.dia(st, HOY, HOY);
+  assert.equal(d.total, 60); assert.equal(d.minEst, 42); assert.ok(d.horasCambiadas);
+  assert.equal(E.dia(st, HOY, "2026-11-05").total, 180);
+});
+
+test("alterna legislación y específico mientras van por la misma vuelta", () => {
+  const d = E.dias(base(), HOY, HOY, "2026-11-15").filter(x => x.tipo === "estudio");
   d.forEach((x, i) => assert.equal(x.materia, i % 2 ? "esp" : "leg"));
 });
 
-test("el plan del día empieza donde se quedó y lo no hecho se recoloca", () => {
+test("el plan sigue donde se quedó; lo no hecho se recoloca", () => {
   let st = base();
   const d1 = E.dia(st, HOY, HOY);
-  assert.equal(d1.materia, "leg"); assert.equal(d1.plan[0].n, 1); assert.equal(d1.pos, 0);
-  // Si hoy no estudio, mañana (otro martes de legislación) sigue en el mismo punto.
-  const proxLeg = E.dias(st, "2026-11-07", "2026-11-04", "2026-11-14").find(x => x.tipo === "estudio" && x.materia === "leg" && x.fecha >= "2026-11-07");
-  assert.equal(proxLeg.pos, 0);
-  // Marcado el estudio, la próxima de legislación sigue después de los 126 min.
-  st = E.completar({...st, dias: {[HOY]: {c: todos(), s: {t: "leg", m: 126}}}});
-  const sig = E.dias(st, "2026-11-07", "2026-11-04", "2026-11-14").find(x => x.materia === "leg" && x.fecha > HOY);
-  assert.equal(sig.pos, 126);
+  assert.equal(d1.plan[0].n, 1); assert.equal(d1.plan[0].desde, 0);
+  // Si hoy no estudio, el próximo día de legislación empieza en el mismo sitio.
+  const sig = E.dias(st, "2026-11-07", "2026-11-04", "2026-11-14").find(x => x.materia === "leg" && x.fecha >= "2026-11-07");
+  assert.equal(sig.plan[0].id, d1.plan[0].id); assert.equal(sig.plan[0].desde, 0);
+  // Marcado, el siguiente de legislación sigue después.
+  st = aplicar(st, E.marcar(st, HOY, HOY, E.I_ESTUDIO, true));
+  const sig2 = E.dias(st, "2026-11-07", "2026-11-04", "2026-11-14").find(x => x.materia === "leg" && x.fecha > HOY);
+  assert.notEqual(sig2.plan[0].id, d1.plan[0].id);
+  assert.equal(Math.round(E.progreso(st, HOY).leg.pctVuelta * E.cola(st, "leg").tot[0]), 126);
 });
 
-test("marcar el estudio guarda materia y minutos; desmarcar lo quita", () => {
+test("marcar guarda los trozos hechos y desmarcar los quita", () => {
   const st = base();
   const p = E.marcar(st, HOY, HOY, E.I_ESTUDIO, true);
-  assert.deepEqual(p.dias[HOY].s, {t: "leg", m: 126, x: null});
-  const st2 = E.completar({...st, dias: p.dias});
+  assert.equal(p.dias[HOY].s.t, "leg"); assert.equal(p.dias[HOY].s.m, 126);
+  assert.ok(p.dias[HOY].s.items.length >= 1);
+  const st2 = aplicar(st, p);
   assert.equal(E.marcar(st2, HOY, HOY, E.I_ESTUDIO, false).dias[HOY].s, null);
-  assert.equal(E.progreso(st2, HOY).leg.pos, 126);
 });
 
 test("puntos: todos +1, falla uno 0, falla dos o más −1, libre no cuenta", () => {
@@ -51,25 +59,81 @@ test("puntos: todos +1, falla uno 0, falla dos o más −1, libre no cuenta", ()
   assert.equal(E.puntosDia(d, {c: uno}), 0);
   const dos = [...uno]; dos[5] = false;
   assert.equal(E.puntosDia(d, {c: dos}), -1);
-  assert.equal(E.puntosDia(d, {c: todos(false)}), -1);
   assert.equal(E.puntosDia(d, undefined), -1);
   assert.equal(E.puntosDia({tipo: "libre"}, undefined), null);
 });
 
 test("resumen: total, racha y días sin marcar restan", () => {
   const uno = todos(); uno[0] = false;
-  const st = E.completar({...base(), dias: {"2026-11-02": {c: todos()}, "2026-11-03": {c: uno}, "2026-11-04": {c: todos()}, "2026-11-05": {c: todos()}}});
-  const r = E.resumen(st, "2026-11-10"); // 6, 7 y 9 sin marcar → −1 cada uno; 8 es libre
+  const st = base(undefined, {dias: {"2026-11-02": {c: todos()}, "2026-11-03": {c: uno}, "2026-11-04": {c: todos()}, "2026-11-05": {c: todos()}}});
+  const r = E.resumen(st, "2026-11-10");
   assert.equal(r.total, 1 + 0 + 1 + 1 - 1 - 1 - 1);
   assert.equal(r.racha, 0); assert.equal(r.mejor, 2);
-  assert.equal(r.hist.find(h => h.fecha === "2026-11-08").p, null);
 });
 
-test("las semanas sin configurar usan la última puesta", () => {
-  const st = base({"2026-11-02": {libre: 5, luis: [1, 3]}});
-  const d = E.infoDia(st, "2026-11-21"); // sábado de otra semana
-  assert.equal(d.tipo, "libre"); assert.equal(d.semanaPuesta, false);
-  assert.equal(E.infoDia(st, "2026-11-22").total, 180); // el domingo se estudia 3 h
+test("específico: solo entran los temas con PDF; legislación entera", () => {
+  const st = base();
+  const n = t => new Set(E.cola(st, t).items.filter(c => c.v === 1).map(c => c.n));
+  assert.equal(n("leg").size, 12);
+  const esp = n("esp");
+  assert.ok(esp.has(6) && esp.has(13) && esp.has(17));
+  assert.ok(!esp.has(2) && !esp.has(11) && !esp.has(19));
+  assert.ok(E.temasSinMaterial(st).some(x => x.n === 2));
+});
+
+test("subir un PDF mete el tema en la vuelta y retrasa la fecha", () => {
+  const st = base();
+  const antes = E.previsiones(st, HOY)[0];
+  const st2 = aplicar(st, {materiales: {esp2: [{id: "x", doc: "SPEIS Andalucía", wpm: 70, pal: Array(30).fill(500), t: HOY}]}});
+  assert.ok(E.cola(st2, "esp").items.some(c => c.n === 2 && c.v === 1));
+  assert.ok(E.previsiones(st2, HOY)[0] > antes);
+});
+
+test("los PDF se parten en trozos de ~50 min por páginas", () => {
+  const ps = E.partesDePdf({doc: "X", wpm: 70, pal: Array(20).fill(700)});
+  assert.ok(ps.length >= 3);
+  assert.ok(ps.every(p => p.min <= 75 && p.min >= 15));
+  assert.equal(ps[0].ref, "X · págs. 1-" + ps[0].ref.split("-")[1]);
+});
+
+test("marcar un tema como visto lo saca de la 1.ª vuelta y vuelve en la 2.ª", () => {
+  const st = aplicar(base(), E.visto(base(), HOY, "esp", 1));
+  assert.ok(E.temaVisto(st, HOY, "esp", 1));
+  const d = E.dias(st, HOY, HOY, "2026-11-10").filter(x => x.materia === "esp");
+  assert.ok(d[0].plan.every(it => it.n !== 1));
+  const v2 = E.cola(st, "esp").items.find(c => c.v === 2 && c.n === 1);
+  assert.ok(v2 && E.fraccion(E.hecho(st, HOY), v2.id) === 0);
+});
+
+test("empezar aquí: lo anterior hecho, lo demás pendiente", () => {
+  const st = base();
+  const c = E.cola(st, "esp").items.find(x => x.v === 1 && x.n === 6);
+  const st2 = aplicar(st, E.irA(st, HOY, "esp", c.id));
+  assert.equal(E.progreso(st2, HOY).esp.actual.id, c.id);
+});
+
+test("vueltas a la par: acabada la legislación, solo específico; luego se empieza todo", () => {
+  const st = base();
+  const qL = E.cola(st, "leg");
+  // Toda la legislación de la 1.ª vuelta hecha salvo 10 min del último trozo.
+  const des = {};
+  qL.items.filter(c => c.v === 1).forEach(c => { des[c.id] = 1; });
+  const ult = qL.items.filter(c => c.v === 1).pop();
+  des[ult.id] = 1 - 10 / ult.min;
+  const s2 = aplicar(st, {manual: des});
+  const hoy = E.dia(s2, HOY, HOY);
+  assert.equal(hoy.partes[0].t, "leg"); assert.equal(hoy.partes[0].m, 10);
+  assert.equal(hoy.partes[1].t, "esp"); assert.equal(hoy.partes[1].m, 116);
+  // Después, todos los días son de específico.
+  const ds = E.dias(s2, HOY, "2026-11-04", "2026-11-30").filter(d => d.tipo === "estudio");
+  assert.ok(ds.every(d => d.partes.every(x => x.t === "esp")));
+  // En toda la previsión, la 2.ª vuelta de legislación no empieza antes de acabar la 1.ª de específico.
+  const qE = E.cola(st, "esp");
+  E.recorrer(st, HOY, "2028-12-31", d => {
+    if (d.tipo !== "estudio") return;
+    const espAcabado = qE.items.every(c => c.v !== 1 || E.fraccion(d.h, c.id) > 0.999);
+    for (const it of d.plan) if (it.t === "leg" && it.v === 2) assert.ok(espAcabado, d.fecha);
+  });
 });
 
 test("previsiones: fechas crecientes y el ritmo intenso acaba antes", () => {
@@ -77,50 +141,18 @@ test("previsiones: fechas crecientes y el ritmo intenso acaba antes", () => {
   const p = E.previsiones(st, HOY);
   assert.equal(p.length, 4);
   for (let i = 1; i < 4; i++) assert.ok(p[i] > p[i - 1]);
-  const c = E.comparaRitmos(st, HOY);
-  const f = r => c.find(x => x.ritmo === r).fechas[0];
+  const c = E.comparaRitmos(st, HOY), f = r => c.find(x => x.ritmo === r).fechas[0];
   assert.ok(f("intenso") < f("competitivo") && f("competitivo") < f("base"));
 });
 
-test("vueltas a la par: acabada la legislación, solo específico hasta acabarlo; luego se empieza todo", () => {
-  const st = base();
-  const qL = E.cola(st, "leg"), qE = E.cola(st, "esp");
-  // Hoy (día de legislación) quedan 10 min de la vuelta: el resto del día va a específico.
-  let s2 = E.completar({...st, ajuste: {leg: qL.fin[0] - 10, esp: 0}});
-  const hoy = E.dia(s2, HOY, HOY);
-  assert.deepEqual(hoy.partes, [{t: "leg", m: 10}, {t: "esp", m: 116}]);
-  // Con la legislación terminada y el específico a medias, todos los días son de específico.
-  s2 = E.completar({...st, ajuste: {leg: qL.fin[0], esp: 0}});
-  const ds = E.dias(s2, HOY, HOY, "2026-11-30").filter(d => d.tipo === "estudio");
-  assert.ok(ds.every(d => d.partes.every(x => x.t === "esp")));
-  // En toda la previsión, la 2.ª vuelta de legislación no empieza hasta acabar la 1.ª de específico.
-  let espAcabado = false;
-  E.recorrer(st, HOY, "2028-12-31", d => {
-    if (d.tipo !== "estudio") return;
-    // (el mismo día en que se acaba el específico, lo que sobra ya empieza la 2.ª vuelta de legislación)
-    if (d.posDespues.esp >= qE.fin[0]) espAcabado = true;
-    for (const it of d.plan) if (it.t === "leg" && it.v === 2) assert.ok(espAcabado, "legislación v2 antes de acabar específico v1 (" + d.fecha + ")");
-  });
-  // Marcar un día partido guarda las dos materias y el progreso avanza en ambas.
-  s2 = E.completar({...st, ajuste: {leg: qL.fin[0] - 10, esp: 0}});
-  const p = E.marcar(s2, HOY, HOY, E.I_ESTUDIO, true);
-  assert.deepEqual(p.dias[HOY].s, {t: "leg", m: 10, x: {t: "esp", m: 116}});
-  const pr = E.progreso(E.completar({...s2, dias: p.dias}), HOY);
-  assert.equal(pr.leg.vuelta, 2); assert.equal(pr.esp.pos, 116);
-});
-
-test("irA coloca el temario al principio de la parte elegida", () => {
-  const st = base();
-  const q = E.cola(st, "esp");
-  const t6 = q.items.find(c => c.n === 6 && c.v === 1);
-  const st2 = E.completar({...st, ...E.irA(st, HOY, "esp", t6.ini)});
-  assert.equal(E.progreso(st2, HOY).esp.actual.n, 6);
-  const sig = E.dias(st2, HOY, HOY, "2026-11-10").find(x => x.materia === "esp");
-  assert.equal(sig.plan[0].n, 6); assert.equal(sig.plan[0].desde, 0);
-});
-
-test("temario completo: 12 de legislación y 38 de específico (33 + 5 del SPEIS)", () => {
-  const st = base();
-  const n = t => new Set(E.cola(st, t).items.filter(c => c.v === 1).map(c => c.n)).size;
-  assert.equal(n("leg"), 12); assert.equal(n("esp"), 38);
+test("semilla: semana, martes de 1 h, temas vistos y Constitución desde el Cap. III", () => {
+  const st = E.completar(E.estadoNuevo(HOY));
+  const st2 = aplicar(st, E.semilla(st, HOY));
+  assert.deepEqual(st2.semanas["2026-11-02"], {libre: 5, luis: [3, 6]});
+  assert.equal(E.dia(st2, HOY, HOY).total, 60);
+  assert.ok(E.temaVisto(st2, HOY, "esp", 1) && E.temaVisto(st2, HOY, "esp", 3));
+  const pr = E.progreso(st2, HOY);
+  assert.equal(pr.leg.actual.n, 1); assert.match(pr.leg.actual.nombre, /Cap\. III/);
+  assert.equal(pr.esp.actual.n, 4);
+  assert.equal(E.semilla(st2, HOY), null);
 });

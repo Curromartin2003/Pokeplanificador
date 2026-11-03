@@ -1,7 +1,7 @@
 // Interfaz del planificador. Pinta todo a partir del estado (engine.js) y guarda los cambios con store.js.
 import * as E from "./engine.js";
 import {abrir} from "./store.js";
-import {FUENTE, LEGISLACION, ESPECIFICO} from "./temario.js";
+import {FUENTE, CAMBIOS} from "./temario.js";
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
@@ -44,6 +44,9 @@ function onEstado(raw, definitivo) {
     return;
   }
   st = E.completar(raw);
+  // Lo que se contó por el chat (temario.js → SEMILLA) se aplica una vez.
+  const sem = E.semilla(st, hoy);
+  if (sem && !ui.semillaEnviada) { ui.semillaEnviada = true; guardar(sem); }
   listo = true;
   pintar();
 }
@@ -103,6 +106,12 @@ function errorAcceso(e) {
 
 /* ---------- pintado general ---------- */
 function pantalla(html) { $("#vista").innerHTML = html; }
+let memoPrev = {k: null, v: null};
+function prevs(hoy) {
+  const k = hoy + JSON.stringify([st.dias, st.manual, st.materiales, st.semanas, st.ritmo, st.titulos]);
+  if (memoPrev.k !== k) memoPrev = {k, v: E.previsiones(st, hoy)};
+  return memoPrev.v;
+}
 
 function pintar() {
   if (!st || !listo) return;
@@ -134,6 +143,7 @@ function vHoy(hoy) {
   let aviso = "";
   if (fecha === hoy && d.dow === 6 && !st.semanas[E.lunes(E.sumaDias(hoy, 1))])
     aviso = `<div class="aviso">Mañana empieza semana. <button class="btn peque" data-a="semanaSig">Elegir día libre y clases de Luis</button></div>`;
+  if (fecha === hoy) aviso = avisoCambios(hoy) + aviso;
   if (antes) return nav + `<div class="vacio"><p>El plan empieza el ${E.fechaLarga(st.inicio)}.</p></div>`;
   if (d.tipo === "libre") return nav + aviso + `<div class="libre"><div class="big">🌴</div><h2>Día libre</h2><p>Hoy no hay objetivos ni estudio: descansa de verdad. La puntuación no cambia.</p></div>` + manana(hoy, fecha);
 
@@ -163,7 +173,25 @@ function vHoy(hoy) {
         <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
       <div class="txt"><span class="t">${esc(titulo)}</span>${det}</div></li>`;
   }).join("");
-  return nav + aviso + marcador + `<ul class="objs">${items}</ul>` + manana(hoy, fecha);
+  const tiempo = `<div class="tiempo"><label>Tiempo ${fecha === hoy ? "de hoy" : "de este día"}:
+    <select id="tiempoDia">${[["", `Normal (${E.textoMin(d.horasNormales)})`], ["60", "1 h"], ["120", "2 h"], ["180", "3 h"]]
+      .map(([v, t]) => `<option value="${v}" ${(d.horasCambiadas ? String(d.total) : "") === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+    ${d.horasCambiadas ? `<span class="nota">Cambiado solo este día.</span>` : ""}</div>`;
+  return nav + aviso + marcador + `<ul class="objs">${items}</ul>` + tiempo + manana(hoy, fecha);
+}
+
+// Aviso de cambios en el plan: novedades sin leer y cómo cambia la fecha de las vueltas.
+function avisoCambios(hoy) {
+  const eta = prevs(hoy)[0] || null;
+  const nuevos = [...CAMBIOS.filter(c => !st.leidos[c.id]), ...st.cambios.filter(c => !st.leidos[c.id])];
+  const cambiaEta = st.etaVista && eta && st.etaVista !== eta;
+  if (!nuevos.length && !cambiaEta && st.etaVista) return "";
+  const dd = cambiaEta ? E.difDias(st.etaVista, eta) : 0;
+  const vel = !st.etaVista ? `Tu 1.ª vuelta completa: <b>${E.fechaLarga(eta)}</b>.` : cambiaEta
+    ? `1.ª vuelta: <s>${E.fechaLarga(st.etaVista)}</s> → <b>${E.fechaLarga(eta)}</b> (${Math.abs(dd)} días ${dd > 0 ? "más tarde" : "antes"}).`
+    : `La fecha de tu 1.ª vuelta no cambia: ${E.fechaLarga(eta)}.`;
+  return `<div class="cambios"><b>Cambios en tu plan</b>${nuevos.length ? `<ul>${nuevos.map(c => `<li>${esc(c.texto)}</li>`).join("")}</ul>` : ""}
+    <p>${vel}</p><button class="btn peque" data-a="leidoCambios" data-eta="${eta || ""}">Entendido</button></div>`;
 }
 
 function planHTML(d) {
@@ -219,44 +247,89 @@ function vSemana(hoy) {
 
 /* ---------- Temario ---------- */
 function vTemario(hoy) {
-  const pr = E.progreso(st, hoy);
+  const pr = E.progreso(st, hoy), h = pr.leg.h;
   const bloque = t => {
-    const q = E.cola(st, t), p = pr[t];
-    const v = p.vuelta;
-    const items = q.items.filter(c => c.v === v);
-    const porTema = new Map();
-    for (const c of items) { if (!porTema.has(c.n)) porTema.set(c.n, []); porTema.get(c.n).push(c); }
-    const lista = [...porTema.entries()].map(([n, cs]) => {
-      const ini = cs[0].ini, fin = cs[cs.length - 1].ini + cs[cs.length - 1].min;
-      const est = p.pos >= fin ? "hecho" : p.pos > ini ? "curso" : "pend";
-      const pct = Math.max(0, Math.min(1, (p.pos - ini) / (fin - ini)));
-      const abierto = ui.abierto[t + n];
-      const speis = t === "esp" && n > 33;
+    const p = pr[t], v = p.vuelta, ts = E.temas(st, t), q = E.cola(st, t);
+    const lista = ts.map(tm => {
+      const cs = q.items.filter(c => c.v === v && c.n === tm.n);
+      const tot = cs.reduce((a, c) => a + c.min, 0) || 1, hechoMin = cs.reduce((a, c) => a + E.fraccion(h, c.id) * c.min, 0);
+      const pct = hechoMin / tot, est = pct >= 0.999 ? "hecho" : pct > 0.001 ? "curso" : "pend";
+      const k = t + tm.n, abierto = ui.abierto[k], visto = E.temaVisto(st, hoy, t, tm.n);
+      const subidos = st.materiales[k] || [];
       const partes = abierto ? `<ul class="partes">${cs.map(c => {
-        const e = p.pos >= c.ini + c.min ? "hecho" : p.pos >= c.ini ? "curso" : "pend";
+        const f = E.fraccion(h, c.id), e = f >= 0.999 ? "hecho" : f > 0.001 ? "curso" : "pend";
         return `<li class="${e}"><span>${c.partes > 1 ? c.parte + ". " : ""}${esc(c.nombre)}${c.ref ? `<small class="ref">📄 ${esc(c.ref)}</small>` : ""}</span><span class="m">${c.min} min</span>
-          <button class="enlace peque" data-a="irA" data-t="${t}" data-i="${c.ini}">Empezar aquí</button></li>`;
-      }).join("")}</ul>${speis ? `<button class="enlace peque" data-a="renombrar" data-k="${t}${n}">Cambiar el título de este tema</button>` : ""}
-      <p class="contenido">${temaMaterial(t, n) ? `<b>Tu material:</b> ${esc(temaMaterial(t, n).join(" · "))}<br>` : "<b>Sin material todavía:</b> partes según el decreto.<br>"}${esc(temaContenido(t, n))}</p>` : "";
-      return `<li class="tema ${est}"><button class="cab" data-a="abrirTema" data-k="${t}${n}">
-        <span class="num">${n > 33 && t === "esp" ? "S" + (n - 33) : n}</span><span class="nom">${esc(cs[0].titulo)}${temaMaterial(t, n) ? ` <span class="pdf" title="Con tu material">📄</span>` : ""}</span>
+          <button class="enlace peque" data-a="irA" data-t="${t}" data-id="${c.id}">Empezar aquí</button></li>`;
+      }).join("")}</ul>
+      <div class="acc-tema"><button class="btn peque sec" data-a="visto" data-t="${t}" data-n="${tm.n}" data-v="${visto ? 0 : 1}">${visto ? "Quitar «visto»" : "Marcar como visto"}</button>
+        ${botonSubir(t, tm.n)}</div>
+      ${subidos.length ? `<ul class="subidos">${subidos.map((d, i) => `<li>📎 ${esc(d.doc)} <small>(${d.pal.length} págs., subido el ${E.fechaLarga(d.t, false)})</small> <button class="enlace peque" data-a="quitarPdf" data-k="${k}" data-i="${i}">Quitar</button></li>`).join("")}</ul>` : ""}
+      ${t === "esp" && tm.n > 33 ? `<button class="enlace peque" data-a="renombrar" data-k="${k}">Cambiar el título de este tema</button>` : ""}
+      <p class="contenido">${tm.material.length ? `<b>Tu material:</b> ${esc(tm.material.join(" · "))}<br>` : "<b>Sin material todavía:</b> partes según el decreto.<br>"}${esc(tm.contenido)}</p>` : "";
+      return `<li class="tema ${est}"><button class="cab" data-a="abrirTema" data-k="${k}">
+        <span class="num">${tm.n > 33 && t === "esp" ? "S" + (tm.n - 33) : tm.n}</span><span class="nom">${esc(tm.titulo)}${tm.material.length ? ` <span class="pdf" title="Con tu material">📄</span>` : ""}${visto && v === 1 ? ` <span class="chip visto">visto</span>` : ""}</span>
         <span class="barra"><i style="width:${Math.round(pct * 100)}%"></i></span></button>${partes}</li>`;
     }).join("");
+    const sin = t === "esp" ? E.temasSinMaterial(st) : [];
     return `<section class="bloque"><div class="bcab"><h2>${E.MATERIAS[t]}</h2><span>${v}.ª vuelta · ${Math.round(p.pctVuelta * 100)} %</span></div>
       <div class="barra gruesa"><i style="width:${Math.round(p.pctVuelta * 100)}%"></i></div>
       ${p.actual ? `<p class="nota">Vas por: Tema ${p.actual.n} · ${esc(p.actual.nombre)}</p>` : ""}
-      <ul class="temas">${lista}</ul></section>`;
+      <ul class="temas">${lista}</ul>
+      ${sin.length ? `<h3 class="fuera">Sin PDF: fuera de la vuelta (${sin.length})</h3><p class="nota">Cuando subas su PDF, el tema entra en la vuelta y el plan se recalcula.</p>
+        <ul class="temas sin">${sin.map(x => `<li class="tema pend"><div class="cab"><span class="num">${x.n > 33 ? "S" + (x.n - 33) : x.n}</span><span class="nom">${esc(x.titulo)}</span>${botonSubir("esp", x.n)}</div></li>`).join("")}</ul>` : ""}
+    </section>`;
   };
   return `<h1>Temario</h1><p class="sub">${esc(FUENTE)}</p>
-    <p class="nota">Toca un tema para ver sus partes. Si ya llevas algo estudiado, pulsa «Empezar aquí» en la parte por la que vas y el plan se recoloca.</p>
+    <p class="nota">Toca un tema para ver sus partes. «Empezar aquí» coloca el plan en esa parte; «Marcar como visto» saca el tema de la 1.ª vuelta. Con «Subir PDF» añades material y la vuelta se recalcula.</p>
+    ${ui.subiendo ? `<div class="aviso">${esc(ui.subiendo)}</div>` : ""}
     ${bloque("leg")}${bloque("esp")}`;
 }
-function temaMaterial(t, n) { const x = (t === "leg" ? LEGISLACION : ESPECIFICO).find(z => z.n === n); return x && x.material; }
-function temaContenido(t, n) { const x = (t === "leg" ? LEGISLACION : ESPECIFICO).find(z => z.n === n); return x ? x.contenido : ""; }
+const botonSubir = (t, n) => `<label class="btn peque subir">Subir PDF<input type="file" accept="application/pdf" hidden data-subir="${t}${n}"></label>`;
+
+// Lee un PDF en el navegador (pdf.js) y cuenta las palabras de cada página.
+let pdfjs = null;
+async function cargarPdfjs() {
+  if (pdfjs) return pdfjs;
+  await new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"; s.onload = ok; s.onerror = ko; document.head.appendChild(s); });
+  pdfjs = window.pdfjsLib;
+  pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  return pdfjs;
+}
+async function palabrasPdf(file) {
+  const lib = await cargarPdfjs();
+  const pdf = await lib.getDocument({data: await file.arrayBuffer()}).promise;
+  const pal = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const tc = await (await pdf.getPage(i)).getTextContent();
+    pal.push(tc.items.map(x => x.str).join(" ").split(/\s+/).filter(Boolean).length);
+    if (i % 10 === 0) { ui.subiendo = `Leyendo «${file.name}»: página ${i} de ${pdf.numPages}…`; pintar(); }
+  }
+  return pal;
+}
+async function subirPdf(k, file) {
+  const t = k.startsWith("leg") ? "leg" : "esp", n = +k.slice(3);
+  const ritmo = prompt(`¿Cómo vas a estudiar «${file.name}»?\n1 = a fondo (como la Constitución)\n2 = normal, lo subrayado\n3 = lectura rápida o consulta`, "2");
+  if (ritmo === null) return;
+  const wpm = {1: 40, 2: t === "leg" ? 65 : 70, 3: 130}[ritmo.trim()] || 70;
+  try {
+    ui.subiendo = `Leyendo «${file.name}»…`; pintar();
+    const pal = await palabrasPdf(file);
+    const hoy = HOY(), antes = prevs(hoy)[0] || null;
+    const doc = file.name.replace(/\.pdf$/i, "").replace(/[_]+/g, " ").trim().slice(0, 80);
+    const lista = [...(st.materiales[k] || []), {id: Date.now().toString(36), doc, wpm, pal, t: hoy}];
+    const despues = E.previsiones(E.completar({...st, materiales: {...st.materiales, [k]: lista}}), hoy)[0] || null;
+    const mins = E.partesDePdf({doc, wpm, pal}).reduce((a, x) => a + x.min, 0);
+    const texto = `Añadido «${doc}» al tema ${n} de ${E.MATERIAS[t].toLowerCase()} (${pal.length} págs., ${E.textoMin(mins)} en la 1.ª vuelta).`;
+    ui.subiendo = null;
+    await guardar({materiales: {[k]: lista}, cambios: [...st.cambios, {id: "u" + Date.now().toString(36), fecha: hoy, texto, antes, despues}]});
+  } catch (e) {
+    ui.subiendo = "No se pudo leer el PDF. Prueba con otro archivo o con conexión."; pintar();
+  }
+}
 
 /* ---------- Progreso ---------- */
 function vProgreso(hoy, res) {
-  const prev = E.previsiones(st, hoy);
+  const prev = prevs(hoy);
   const pr = E.progreso(st, hoy);
   const semanas = prev[0] ? Math.ceil(E.difDias(hoy, prev[0]) / 7) : null;
   let retraso = "";
@@ -297,7 +370,9 @@ function vProgreso(hoy, res) {
     <div class="tarjeta"><h3>Puntos acumulados</h3>${graf}</div>
     <div class="tarjeta"><h3>${E.difDias(desde, E.lunes(hoy)) >= 49 ? "Últimas 8 semanas" : "Calendario"}</h3><div class="cal">${E.DIAS_CORTO.map(x => `<b>${x}</b>`).join("")}${cal}</div>
       <p class="leyenda"><i class="pos"></i>+1 <i class="cero"></i>0 <i class="neg"></i>−1 <i class="libre"></i>libre</p></div>
-    <div class="tarjeta"><h3>Cumplimiento de cada objetivo</h3><ul class="cumple">${obj}</ul></div>`;
+    <div class="tarjeta"><h3>Cumplimiento de cada objetivo</h3><ul class="cumple">${obj}</ul></div>
+    <div class="tarjeta"><h3>Historial de cambios del plan</h3><ul class="historial">${[...CAMBIOS, ...st.cambios].slice().reverse().map(c =>
+      `<li><small>${E.fechaLarga(c.fecha, false)}</small> ${esc(c.texto)}${c.antes && c.despues && c.antes !== c.despues ? ` <span class="nota">1.ª vuelta: ${E.fechaLarga(c.antes, false)} → ${E.fechaLarga(c.despues, false)}</span>` : ""}</li>`).join("")}</ul></div>`;
 }
 function grafica(v) {
   if (v.length < 2) return `<p class="nota">La gráfica aparece cuando lleves un par de días.</p>`;
@@ -380,7 +455,17 @@ function enlazar() {
     else if (a === "verDia") { ui.fecha = b.dataset.f === hoy ? null : b.dataset.f; ir("hoy"); }
     else if (a === "abrirTema") { ui.abierto[b.dataset.k] = !ui.abierto[b.dataset.k]; pintar(); }
     else if (a === "irA") {
-      if (confirm("¿Empezar el plan por esta parte? Todo lo anterior de esta vuelta cuenta como estudiado.")) guardar(E.irA(st, hoy, b.dataset.t, +b.dataset.i));
+      if (confirm("¿Empezar el plan por esta parte? Todo lo anterior de esta vuelta cuenta como estudiado.")) guardar(E.irA(st, hoy, b.dataset.t, b.dataset.id));
+    } else if (a === "visto") {
+      guardar(E.visto(st, hoy, b.dataset.t, +b.dataset.n, b.dataset.v === "1"));
+    } else if (a === "quitarPdf") {
+      const k = b.dataset.k, lista = [...(st.materiales[k] || [])], [d] = lista.splice(+b.dataset.i, 1);
+      if (d && confirm(`¿Quitar «${d.doc}» del tema? La vuelta se recalcula.`))
+        guardar({materiales: {[k]: lista}, cambios: [...st.cambios, {id: "u" + Date.now().toString(36), fecha: hoy, texto: `Quitado «${d.doc}» del tema ${k.slice(3)}.`}]});
+    } else if (a === "leidoCambios") {
+      const leidos = {};
+      for (const c of [...CAMBIOS, ...st.cambios]) leidos[c.id] = 1;
+      guardar({leidos, etaVista: b.dataset.eta || null});
     } else if (a === "renombrar") {
       const k = b.dataset.k, n = prompt("Título del tema (según la convocatoria del SPEIS de Sevilla):", st.titulos[k] || "");
       if (n !== null) guardar({titulos: {[k]: n.trim() || null}});
@@ -391,6 +476,8 @@ function enlazar() {
   document.querySelectorAll("input[name=ritmo]").forEach(r => r.onchange = () => guardar({ritmo: r.value}));
   const ex = $("#examen"); if (ex) ex.onchange = () => guardar({examen: ex.value || null});
   const cu = $("#calleUrl"); if (cu) cu.onchange = () => guardar({callejeroUrl: cu.value.trim()});
+  const td = $("#tiempoDia"); if (td) td.onchange = () => { const f = ui.fecha || hoy; guardar({dias: {[f]: {...(st.dias[f] || {}), h: td.value ? +td.value : null}}}); };
+  document.querySelectorAll("[data-subir]").forEach(inp => inp.onchange = () => { if (inp.files[0]) subirPdf(inp.dataset.subir, inp.files[0]); });
 }
 function ir(v) { ui.vista = v; if (v !== "semana") ui.semana = null; pintar(); window.scrollTo(0, 0); }
 document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => { if (b.dataset.v === "hoy") ui.fecha = null; ir(b.dataset.v); });

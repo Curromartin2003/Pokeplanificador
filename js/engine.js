@@ -1,6 +1,7 @@
 // Lógica del planificador, sin nada de interfaz (se prueba con `node --test tests/`).
 // Todo se calcula a partir del estado guardado; nada del plan se guarda salvo lo ya hecho.
-import {LEGISLACION, ESPECIFICO} from "./temario.js";
+import {LEGISLACION, ESPECIFICO, SEMILLA} from "./temario.js";
+import {DOCS_ESP} from "./docs_esp.js";
 
 export const OBJETIVOS = [
   "Despertarme a las 7:00 y hacer la cama",
@@ -51,13 +52,19 @@ export function fechaLarga(s, conDia = true) {
 }
 
 /* ---------- estado ---------- */
+// manual: ajustes a mano de lo hecho en cada trozo ({id: fracción}); materiales: PDF subidos desde la app
+// ({"esp16": [{id, doc, wpm, pal, t}]}); cambios: historial de novedades; leidos / etaVista: avisos ya vistos.
 export function estadoNuevo(hoy) {
-  return {v: 1, inicio: hoy, ritmo: "competitivo", examen: null, semanas: {}, dias: {},
-    ajuste: {leg: 0, esp: 0}, titulos: {}, callejeroUrl: "", base: null};
+  return {v: 2, inicio: hoy, ritmo: "competitivo", examen: null, semanas: {}, dias: {}, manual: {}, materiales: {},
+    titulos: {}, callejeroUrl: "", base: null, cambios: [], leidos: {}, etaVista: null, semilla: 0};
 }
-export const completar = s => ({...estadoNuevo(s && s.inicio || hoyLocal()), ...(s || {}),
-  ajuste: {leg: 0, esp: 0, ...(s && s.ajuste || {})}, semanas: {...(s && s.semanas || {})}, dias: {...(s && s.dias || {})},
-  titulos: {...(s && s.titulos || {})}});
+export const completar = s => {
+  const b = estadoNuevo(s && s.inicio || hoyLocal());
+  const o = {...b, ...(s || {})};
+  for (const k of ["semanas", "dias", "manual", "materiales", "titulos", "leidos"]) o[k] = {...((s && s[k]) || {})};
+  o.cambios = Array.isArray(s && s.cambios) ? s.cambios : [];
+  return o;
+};
 
 // Configuración de una semana: la suya si se ha puesto y, si no, la de la última semana configurada (o la primera).
 export function semana(st, mon) {
@@ -71,94 +78,179 @@ export function semana(st, mon) {
 export function infoDia(st, fecha) {
   const dow = diaSemana(fecha), cfg = semana(st, lunes(fecha));
   const tipo = dow === cfg.libre ? "libre" : (cfg.luis || []).includes(dow) ? "luis" : "estudio";
-  const total = tipo === "libre" ? 0 : MINUTOS[dow];
+  const rec = st.dias[fecha];
+  const cambiado = tipo !== "libre" && rec && typeof rec.h === "number";
+  const total = tipo === "libre" ? 0 : cambiado ? rec.h : MINUTOS[dow];
   const minCal = Math.round(total * PCT_CALLEJERO);
-  return {fecha, dow, tipo, total, minCal, minEst: tipo === "estudio" ? total - minCal : 0, semanaPuesta: cfg.puesta};
+  return {fecha, dow, tipo, total, minCal, minEst: tipo === "estudio" ? total - minCal : 0, semanaPuesta: cfg.puesta,
+    horasCambiadas: cambiado, horasNormales: MINUTOS[dow]};
 }
 
-/* ---------- colas de estudio ---------- */
-const temas = t => (t === "leg" ? LEGISLACION : ESPECIFICO);
+/* ---------- temas y trozos ---------- */
 const r5 = x => Math.max(5, Math.round(x / 5) * 5);
+function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+const PAL_ESCANEADA = 150; // página sin texto (escaneada o casi todo imagen): se cuenta como 150 palabras
+
+// Parte un PDF en trozos de unos 50 min por páginas (con el ritmo de referencia, para que no cambien con el ritmo).
+export function partesDePdf(d) {
+  const desde = d.desde || 1, wpm = d.wpm || 70;
+  const minPag = d.pal.map(w => Math.max(w < 40 ? PAL_ESCANEADA : w, 1) / wpm);
+  const grupos = [];
+  let ini = 0, acc = 0;
+  minPag.forEach((m, i) => {
+    if (acc > 0 && acc + m > 62) { grupos.push([ini, i - 1, acc]); ini = i; acc = 0; }
+    acc += m;
+  });
+  if (acc > 0) grupos.push([ini, minPag.length - 1, acc]);
+  if (grupos.length > 1 && grupos[grupos.length - 1][2] < 15) { const u = grupos.pop(); const g = grupos[grupos.length - 1]; g[1] = u[1]; g[2] += u[2]; }
+  return grupos.map(([a, b, m], i) => ({
+    key: `${d.doc}|${a + desde}-${b + desde}`,
+    nombre: grupos.length > 1 ? `${d.doc} (${i + 1}/${grupos.length})` : d.doc,
+    ref: `${d.doc} · págs. ${a + desde}-${b + desde}`, min: Math.max(5, Math.round(m)),
+  }));
+}
+
+// Temas que entran en la vuelta: toda la legislación; del específico, solo los que tienen material (PDF).
+export function temas(st, t) {
+  const base = t === "leg" ? LEGISLACION : ESPECIFICO;
+  const out = [];
+  for (const tm of base) {
+    const k = t + tm.n;
+    const subidos = (st.materiales[k] || []).filter(Boolean);
+    let partes, material = [...(tm.material || [])];
+    if (t === "esp") {
+      const docs = [...(DOCS_ESP[tm.n] || []), ...subidos];
+      if (!docs.length) continue;
+      partes = docs.flatMap(partesDePdf);
+      material = docs.map(d => d.doc);
+    } else {
+      partes = tm.partes.map(([nombre, min, ref]) => ({key: nombre, nombre, min, ref: ref || ""}));
+      for (const d of subidos) { partes.push(...partesDePdf(d)); material.push(d.doc); }
+    }
+    out.push({n: tm.n, titulo: st.titulos[k] || tm.titulo, contenido: tm.contenido, material, partes, sinMaterial: !material.length});
+  }
+  return out;
+}
+export function temasSinMaterial(st) {
+  const con = new Set(temas(st, "esp").map(x => x.n));
+  return ESPECIFICO.filter(x => !con.has(x.n)).map(x => ({n: x.n, titulo: st.titulos["esp" + x.n] || x.titulo, contenido: x.contenido}));
+}
+
 const cacheCola = new Map();
 export function cola(st, t) {
   const f = (RITMOS[st.ritmo] || RITMOS.competitivo).f;
-  const key = t + f + JSON.stringify(st.titulos);
+  const key = t + f + JSON.stringify(st.titulos) + JSON.stringify(st.materiales);
   if (cacheCola.has(key)) return cacheCola.get(key);
-  const out = [], fin = [];
-  let pos = 0;
+  const items = [], tot = [];
+  const ts = temas(st, t);
   for (let v = 1; v <= VUELTAS; v++) {
     const vf = VUELTA_F[Math.min(v, VUELTA_F.length) - 1];
-    for (const tm of temas(t)) {
-      const titulo = st.titulos[t + tm.n] || tm.titulo;
-      if (v === 1) {
-        tm.partes.forEach(([nombre, m, ref], i) => {
-          const min = r5(m * f);
-          out.push({t, v, n: tm.n, titulo, parte: i + 1, partes: tm.partes.length, nombre, ref: ref || "", min, ini: pos});
-          pos += min;
-        });
-      } else {
-        const min = r5(tm.partes.reduce((a, p) => a + p[1], 0) * f * vf);
-        out.push({t, v, n: tm.n, titulo, parte: 1, partes: 1, min, ini: pos, ref: (tm.material || []).join(" + "),
-          nombre: v === 2 ? "2.ª vuelta: repaso con tus esquemas y test del tema" : `${v}.ª vuelta: repaso rápido y test`});
-        pos += min;
-      }
+    let suma = 0;
+    for (const tm of ts) {
+      const mk = (key, nombre, ref, min, parte, partes) => {
+        const c = {id: t + hash(`${tm.n}|${v}|${key}`), t, v, n: tm.n, titulo: tm.titulo, parte, partes, nombre, ref, min};
+        items.push(c); suma += min;
+      };
+      if (v === 1) tm.partes.forEach((p, i) => mk(p.key, p.nombre, p.ref, r5(p.min * f), i + 1, tm.partes.length));
+      else mk("repaso", v === 2 ? "2.ª vuelta: repaso con tus esquemas y test del tema" : `${v}.ª vuelta: repaso rápido y test`,
+        tm.material.join(" + "), r5(tm.partes.reduce((a, p) => a + p.min, 0) * f * vf), 1, 1);
     }
-    fin.push(pos);
+    tot.push(suma);
   }
-  const r = {items: out, fin};
+  const porId = new Map(items.map(c => [c.id, c]));
+  const r = {t, items, tot, porId};
+  if (cacheCola.size > 50) cacheCola.clear();
   cacheCola.set(key, r);
   return r;
 }
-// Trozos de la cola entre pos y pos+len minutos.
-export function tramo(q, pos, len) {
-  const res = [];
-  const end = pos + len;
-  for (const c of q.items) {
-    const a = Math.max(pos, c.ini), b = Math.min(end, c.ini + c.min);
-    if (b > a) res.push({...c, desde: a - c.ini, hasta: b - c.ini, mins: b - a});
-    if (c.ini >= end) break;
+
+/* ---------- lo hecho ---------- */
+const EPS = 1e-6;
+const hechoDe = (h, id) => Math.min(1, Math.max(0, h[id] || 0));
+// Lo hecho en cada trozo: los días marcados hasta `hasta` más los ajustes a mano.
+export function hecho(st, hasta, conManual = true) {
+  const h = conManual ? {...st.manual} : {};
+  for (const [f, r] of Object.entries(st.dias)) {
+    if (f < st.inicio || f > hasta || !r || !r.s || !r.s.items) continue;
+    for (const [id, fr] of r.s.items) h[id] = (h[id] || 0) + fr;
   }
-  return res;
+  return h;
 }
-export const vueltaDe = (q, pos) => { const i = q.fin.findIndex(x => pos < x); return i < 0 ? q.fin.length : i + 1; };
+const pendiente = (h, c) => (1 - hechoDe(h, c.id)) * c.min;
+export const vueltaActual = (q, h) => { for (const c of q.items) if (pendiente(h, c) > EPS) return c.v; return Infinity; };
+// Trozos pendientes de una vuelta, en orden; primero los temas ya empezados.
+function pendientes(q, h, v) {
+  const lst = q.items.filter(c => c.v === v && pendiente(h, c) > EPS);
+  const emp = new Set(q.items.filter(c => c.v === v && hechoDe(h, c.id) > EPS).map(c => c.n));
+  return [...lst.filter(c => emp.has(c.n)), ...lst.filter(c => !emp.has(c.n))];
+}
+// Toma `min` minutos de la vuelta en curso de la materia t. Devuelve los trozos y los minutos que han sobrado.
+function tomar(q, h, min, aplicar) {
+  const v = vueltaActual(q, h);
+  if (v === Infinity) return {plan: [], resto: min};
+  const plan = [];
+  let resto = min;
+  for (const c of pendientes(q, h, v)) {
+    if (resto <= EPS) break;
+    const hecho0 = hechoDe(h, c.id) * c.min, quedan = c.min - hecho0, m = Math.min(quedan, resto);
+    plan.push({...c, desde: Math.round(hecho0), hasta: Math.round(hecho0 + m), mins: Math.round(m), fr: m / c.min});
+    resto -= m;
+    if (aplicar) h[c.id] = (h[c.id] || 0) + m / c.min;
+  }
+  return {plan, resto};
+}
 
 /* ---------- recorrido día a día ---------- */
-// Recorre desde el inicio hasta `hasta` y llama a cb(dia) en cada día. Los días ya pasados solo avanzan el temario si
-// se marcó el estudio; desde hoy en adelante se supone que se cumple el plan (para calcular fechas).
+// Recorre desde el inicio hasta `hasta` y llama a cb(dia) en cada día. Los días pasados solo cuentan si se marcó el
+// estudio; desde hoy se supone que se cumple el plan (para las previsiones).
+// Reparto: un día cada materia mientras van por la misma vuelta; la que la acaba espera y todos los días son de la otra
+// hasta que la acaba también; el día en que una acaba su vuelta, lo que sobra va a la otra.
 export function recorrer(st, hoy, hasta, cb) {
-  const pos = {leg: st.ajuste.leg || 0, esp: st.ajuste.esp || 0};
   const q = {leg: cola(st, "leg"), esp: cola(st, "esp")};
+  const h = {...st.manual};
   let sig = "leg", nCal = 0;
   for (let f = st.inicio; f <= hasta; f = sumaDias(f, 1)) {
     const d = infoDia(st, f), rec = st.dias[f] || null;
     d.rec = rec;
     if (d.tipo !== "libre") d.foco = FOCOS_CALLEJERO[nCal++ % FOCOS_CALLEJERO.length];
     if (d.tipo === "estudio") {
-      let partes;
-      if (rec && rec.s) { partes = [{t: rec.s.t, m: rec.s.m}, ...(rec.s.x ? [rec.s.x] : [])]; d.hecho = true; }
-      else {
-        // Vueltas a la par: se alterna mientras las dos materias van por la misma vuelta; la que la termina espera
-        // y todos los días son de la otra hasta que acaba también. Entonces empieza la vuelta siguiente de las dos.
-        const vl = vueltaDe(q.leg, pos.leg), ve = vueltaDe(q.esp, pos.esp);
+      let plan = [];
+      if (rec && rec.s && rec.s.items) {
+        for (const [id, fr] of rec.s.items) {
+          const c = q.leg.porId.get(id) || q.esp.porId.get(id);
+          const antes = hechoDe(h, id);
+          h[id] = (h[id] || 0) + fr;
+          if (c) plan.push({...c, desde: Math.round(antes * c.min), hasta: Math.round(Math.min(1, antes + fr) * c.min), mins: Math.round(fr * c.min), fr});
+        }
+        d.hecho = true;
+      } else {
+        const aplicar = f >= hoy;
+        const hh = aplicar ? h : {...h};
+        const vl = vueltaActual(q.leg, hh), ve = vueltaActual(q.esp, hh);
         const t = vl > ve ? "esp" : ve > vl ? "leg" : sig, otra = t === "leg" ? "esp" : "leg";
-        const queda = q[t].fin[vueltaDe(q[t], pos[t]) - 1] - pos[t];
-        // Si hoy se termina la vuelta de esta materia, el tiempo que sobra es para la otra.
-        partes = queda > 0 && queda < d.minEst ? [{t, m: queda}, {t: otra, m: d.minEst - queda}] : [{t, m: d.minEst}];
+        const a = tomar(q[t], hh, d.minEst, true);
+        plan = a.plan;
+        if (a.resto > 0.5) {
+          const b = tomar(q[otra], hh, a.resto, true);
+          plan.push(...b.plan);
+          if (b.resto > 0.5) plan.push(...tomar(q[t], hh, b.resto, true).plan);
+        }
         d.hecho = false;
       }
-      d.partes = partes;
-      d.materia = partes[0].t; d.min = partes.reduce((a, x) => a + x.m, 0); d.pos = pos[partes[0].t];
-      d.plan = [];
-      for (const x of partes) {
-        d.plan.push(...tramo(q[x.t], pos[x.t], x.m));
-        if (d.hecho || f >= hoy) pos[x.t] += x.m;
-      }
-      sig = partes[partes.length - 1].t === "leg" ? "esp" : "leg";
+      d.plan = plan;
+      const por = {};
+      for (const it of plan) por[it.t] = (por[it.t] || 0) + it.fr * it.min;
+      d.partes = Object.entries(por).map(([t, m]) => ({t, m: Math.round(m)}));
+      if (!d.partes.length) d.partes = [{t: sig, m: 0}];
+      d.materia = d.partes[0].t;
+      d.min = d.hecho ? d.partes.reduce((x, p) => x + p.m, 0) : d.minEst;
+      const ult = plan.length ? plan[plan.length - 1].t : sig;
+      sig = ult === "leg" ? "esp" : "leg";
     }
-    d.posDespues = {...pos};
+    d.h = h;
     if (cb(d, q) === false) break;
   }
-  return pos;
+  return h;
 }
 
 export function dia(st, hoy, fecha) {
@@ -168,32 +260,34 @@ export function dia(st, hoy, fecha) {
 }
 export function dias(st, hoy, desde, hasta) {
   const out = [];
-  recorrer(st, hoy, hasta, d => { if (d.fecha >= desde) out.push(d); });
+  recorrer(st, hoy, hasta, d => { if (d.fecha >= desde) out.push({...d, h: undefined}); });
   return out;
 }
 
-// Posición en el temario al empezar hoy (lo hecho hasta ayer más lo marcado hoy).
+// Dónde vas en cada materia (con lo marcado hasta hoy, incluido).
 export function progreso(st, hoy) {
-  const q = {leg: cola(st, "leg"), esp: cola(st, "esp")};
-  const pos = {leg: st.ajuste.leg || 0, esp: st.ajuste.esp || 0};
-  for (const [f, r] of Object.entries(st.dias)) if (f >= st.inicio && f <= hoy && r && r.s) {
-    pos[r.s.t] += r.s.m;
-    if (r.s.x) pos[r.s.x.t] += r.s.x.m;
-  }
+  const h = hecho(st, hoy);
   const m = t => {
-    const v = vueltaDe(q[t], pos[t]), ini = v === 1 ? 0 : q[t].fin[v - 2], fin = q[t].fin[v - 1];
-    const actual = q[t].items.find(c => pos[t] < c.ini + c.min);
-    return {pos: pos[t], vuelta: v, pctVuelta: (pos[t] - ini) / (fin - ini), total1: q[t].fin[0], actual};
+    const q = cola(st, t), v = vueltaActual(q, h);
+    const vv = v === Infinity ? VUELTAS : v;
+    const tot = q.tot[vv - 1] || 1;
+    const hechoMin = q.items.filter(c => c.v === vv).reduce((a, c) => a + hechoDe(h, c.id) * c.min, 0);
+    const actual = v === Infinity ? null : pendientes(q, h, v)[0];
+    return {vuelta: vv, pctVuelta: hechoMin / tot, total1: q.tot[0], actual, h};
   };
   return {leg: m("leg"), esp: m("esp")};
 }
+export const fraccion = (h, id) => hechoDe(h, id);
 
 // Fechas en que terminarías cada vuelta completa (las dos materias) si cumples el plan desde hoy.
 export function previsiones(st, hoy, max = 1460) {
   const fin = [];
   let k = 0;
-  recorrer(st, hoy, sumaDias(hoy, max), (d, q) => {
-    while (k < 4 && d.posDespues.leg >= q.leg.fin[k] && d.posDespues.esp >= q.esp.fin[k]) fin[k++] = d.fecha;
+  const q = {leg: cola(st, "leg"), esp: cola(st, "esp")};
+  const acabada = (h, v) => [q.leg, q.esp].every(x => x.items.every(c => c.v !== v || pendiente(h, c) <= EPS));
+  recorrer(st, hoy, sumaDias(hoy, max), d => {
+    if (d.tipo !== "estudio") return;
+    while (k < 4 && acabada(d.h, k + 1)) fin[k++] = d.fecha;
     if (k >= 4) return false;
   });
   return fin; // fin[0] = fecha de la 1.ª vuelta, etc.
@@ -244,16 +338,52 @@ export function marcar(st, hoy, fecha, i, valor) {
   const c = OBJETIVOS.map((_, k) => !!(rec.c && rec.c[k]));
   c[i] = valor;
   let s = rec.s || null;
-  if (i === I_ESTUDIO && d.tipo === "estudio") s = valor ? {t: d.partes[0].t, m: d.partes[0].m, x: d.partes[1] || null} : null;
+  if (i === I_ESTUDIO && d.tipo === "estudio") {
+    s = valor && d.plan && d.plan.length
+      ? {t: d.partes[0].t, m: d.partes[0].m, x: d.partes[1] || null, items: d.plan.map(it => [it.id, it.fr])} : null;
+  }
   return {dias: {[fecha]: {c, s}}};
 }
 
-// Pone el temario de una materia justo al principio de una parte (para ajustar lo que ya llevas estudiado).
-export function irA(st, hoy, t, ini) {
-  const p = progreso(st, hoy)[t].pos;
-  const dHoy = st.dias[hoy];
-  const hoyHecho = dHoy && dHoy.s ? (dHoy.s.t === t ? dHoy.s.m : 0) + (dHoy.s.x && dHoy.s.x.t === t ? dHoy.s.x.m : 0) : 0;
-  return {ajuste: {...st.ajuste, [t]: (st.ajuste[t] || 0) + (ini - (p - hoyHecho))}};
+// Ajusta a mano lo hecho para que cada trozo quede en `deseado` (fracción 0-1), sin tocar lo marcado por días.
+function ajustar(st, hoy, deseado) {
+  const base = hecho(st, hoy, false), manual = {};
+  for (const [id, x] of Object.entries(deseado)) manual[id] = x - (base[id] || 0);
+  return {manual};
+}
+// Empezar por un trozo: lo anterior de esa vuelta y materia queda hecho; ese trozo y lo siguiente, pendiente.
+export function irA(st, hoy, t, id) {
+  const q = cola(st, t), c = q.porId.get(id);
+  if (!c) return {};
+  const lst = q.items.filter(x => x.v === c.v), i = lst.indexOf(c), des = {};
+  lst.forEach((x, k) => { des[x.id] = k < i ? 1 : 0; });
+  return ajustar(st, hoy, des);
+}
+// Marcar (o desmarcar) un tema como visto en la 1.ª vuelta.
+export function visto(st, hoy, t, n, valor = true) {
+  const des = {};
+  for (const c of cola(st, t).items) if (c.v === 1 && c.n === n) des[c.id] = valor ? 1 : 0;
+  return ajustar(st, hoy, des);
+}
+export function temaVisto(st, hoy, t, n) {
+  const h = hecho(st, hoy);
+  const cs = cola(st, t).items.filter(c => c.v === 1 && c.n === n);
+  return cs.length > 0 && cs.every(c => hechoDe(h, c.id) >= 1 - EPS);
+}
+
+// Lo que me contaste por el chat (temario.js → SEMILLA): se aplica una vez.
+export function semilla(st, hoy) {
+  if ((st.semilla || 0) >= SEMILLA.id) return null;
+  const p = {semilla: SEMILLA.id, semanas: {...SEMILLA.semanas}, dias: {}, manual: {}};
+  for (const [f, m] of Object.entries(SEMILLA.horas)) if (f >= hoy) p.dias[f] = {...(st.dias[f] || {}), h: m};
+  let s2 = completar({...st, semanas: {...st.semanas, ...p.semanas}});
+  for (const [t, ns] of Object.entries(SEMILLA.vistos)) for (const n of ns) Object.assign(p.manual, visto(s2, hoy, t, n).manual);
+  s2 = completar({...s2, manual: {...s2.manual, ...p.manual}});
+  for (const [t, x] of Object.entries(SEMILLA.empiezaEn)) {
+    const c = cola(s2, t).items.find(z => z.v === 1 && z.n === x.n && z.nombre === x.nombre);
+    if (c) Object.assign(p.manual, irA(s2, hoy, t, c.id).manual);
+  }
+  return p;
 }
 
 export function fijarBase(st, hoy) {

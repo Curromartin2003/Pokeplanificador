@@ -13,7 +13,8 @@ export const LEGISLACION = [
     material: ["Constitución (Luis)"],
     partes: [["Estructura, Preámbulo y Título Preliminar (arts. 1-9)", 35, "Constitución (Luis) · págs. 3-7"],
       ["Título I: art. 10, Cap. I y Cap. II sección 1.ª (arts. 10-29)", 70, "Constitución (Luis) · págs. 7-12"],
-      ["Título I: sección 2.ª y Cap. III, IV y V (arts. 30-55)", 65, "Constitución (Luis) · págs. 12-17"],
+      ["Título I: Cap. II sección 2.ª (arts. 30-38)", 25, "Constitución (Luis) · págs. 12-14"],
+      ["Título I: Cap. III, IV y V (arts. 39-55)", 40, "Constitución (Luis) · págs. 14-17"],
       ["Título VIII: Cap. I y II y arts. 143-148", 30, "Constitución (Luis) · págs. 18-20"],
       ["Título VIII: arts. 149-158", 65, "Constitución (Luis) · págs. 21-26"]]},
   {n: 2, titulo: "Estatuto de Autonomía para Andalucía",
@@ -243,3 +244,19 @@ for (let i = 1; i <= 5; i++) {
 }
 
 export const FUENTE = "Decreto 36/2025, de 11 de febrero (BOJA n.º 32, de 17 de febrero de 2025), Anexo I, I.I.A.1: Bombero o Bombera, turno libre.";
+
+// Novedades del plan: se avisan una vez en la app (con cómo cambia la fecha de las vueltas) y quedan en el historial.
+export const CAMBIOS = [
+  {id: "c1", fecha: "2026-11-03", texto: "Legislación completa con tus PDF y ritmo de subrayado salvo Constitución, PRL y TREBEP."},
+  {id: "c2", fecha: "2026-11-03", texto: "Vueltas a la par: acabada la legislación, solo específico hasta acabarlo; luego se empieza todo."},
+  {id: "c3", fecha: "2026-11-03", texto: "Específico con tus PDF (temas 1, 3-10, 12-18). Los temas sin PDF quedan fuera de la vuelta hasta que los subas."},
+];
+
+// Lo que me contaste por el chat y se aplica una sola vez al abrir la app (no hace falta tocar nada).
+export const SEMILLA = {
+  id: 1,
+  semanas: {"2026-11-02": {libre: 5, luis: [3, 6]}},   // esta semana: libre el sábado, clases de Luis jueves y domingo
+  horas: {"2026-11-03": 60},                            // este martes solo 1 h
+  vistos: {esp: [1, 3]},                                // específico: temas 1 y 3 ya vistos
+  empiezaEn: {leg: {n: 1, nombre: "Título I: Cap. III, IV y V (arts. 39-55)"}},  // Constitución: empiezo el Cap. III del Título I
+};
