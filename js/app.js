@@ -117,7 +117,8 @@ function pintar() {
   if (!st || !listo) return;
   const hoy = HOY();
   const res = E.resumen(st, hoy);
-  $("#puntos").innerHTML = `<b>${res.total > 0 ? "+" : ""}${res.total}</b><span>puntos</span>`;
+  const rg = E.rango(res.total);
+  $("#puntos").innerHTML = `<b>${res.total > 0 ? "+" : ""}${res.total}</b><span>${rg.icono} ${esc(rg.nombre)}</span>`;
   $("#puntos").className = "puntos " + (res.total > 0 ? "pos" : res.total < 0 ? "neg" : "");
   document.querySelectorAll("nav.tabs button").forEach(b => b.classList.toggle("on", b.dataset.v === ui.vista));
   const f = {hoy: vHoy, semana: vSemana, temario: vTemario, progreso: vProgreso, ajustes: vAjustes, convocatorias: vConvocatorias}[ui.vista] || vHoy;
@@ -144,7 +145,7 @@ function vHoy(hoy) {
   let aviso = "";
   if (fecha === hoy && d.dow === 6 && !st.semanas[E.lunes(E.sumaDias(hoy, 1))])
     aviso = `<div class="aviso">Mañana empieza semana. <button class="btn peque" data-a="semanaSig">Elegir día libre y clases de Luis</button></div>`;
-  if (fecha === hoy) aviso = avisoCambios(hoy) + aviso;
+  if (fecha === hoy) aviso = avisoCambios(hoy) + aviso + camino(hoy);
   if (antes) return nav + `<div class="vacio"><p>El plan empieza el ${E.fechaLarga(st.inicio)}.</p></div>`;
   if (d.tipo === "libre") return nav + aviso + `<div class="libre"><div class="big">🌴</div><h2>Día libre</h2><p>Hoy no hay objetivos ni estudio: descansa de verdad. La puntuación no cambia.</p></div>` + manana(hoy, fecha);
 
@@ -154,9 +155,9 @@ function vHoy(hoy) {
   const chip = d.tipo === "luis" ? `<span class="chip luis">Clase de Luis</span>` : `<span class="chip ${d.materia}">${E.MATERIAS[d.materia]}</span>`;
   const marcador = `<div class="marcador ${p > 0 ? "pos" : p < 0 ? "neg" : "cero"}">
     <div class="anillo" style="--p:${hechos / 8}"><span>${hechos}/8</span></div>
-    <div><b>${futuro ? "Aún no ha llegado" : p > 0 ? "+1 punto" : p < 0 ? "−1 punto" : "Se mantiene"}</b>
-    <p>${futuro ? "Podrás marcar los objetivos ese día." : hechos === 8 ? "¡Todos hechos!" : hechos === 7 ? "Te falta 1: con todos sumas un punto." : `Te faltan ${8 - hechos}. Si fallas 2 o más, restas un punto.`}</p></div>
-    ${chip}</div>`;
+    <div><b>${futuro ? "Aún no ha llegado" : p > 0 ? "🚒 ¡Turno completado! +1" : p < 0 ? "−1 punto" : "Se mantiene"}</b>
+    <p>${futuro ? "Podrás marcar los objetivos ese día." : hechos === 8 ? "¡Todos hechos!" : hechos === 7 ? "Te falta 1: con todos sumas un punto." : `Te faltan ${8 - hechos}. Si fallas 2 o más, restas un punto.`}</p>
+    ${chip}</div></div>`;
 
   const items = E.OBJETIVOS.map((txt, i) => {
     let titulo = txt, det = "";
@@ -176,13 +177,34 @@ function vHoy(hoy) {
     return `<li class="obj ${c[i] ? "ok" : ""}">
       <button class="tick" data-tick="${i}" ${futuro ? "disabled" : ""} aria-pressed="${c[i]}" aria-label="${esc(titulo)}">
         <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
-      <div class="txt"><span class="t">${esc(titulo)}</span>${det}</div></li>`;
+      <div class="txt"><span class="t"><span class="ic">${E.ICONOS[i]}</span>${esc(titulo)}</span>${det}</div></li>`;
   }).join("");
   const tiempo = `<div class="tiempo"><label>Tiempo ${fecha === hoy ? "de hoy" : "de este día"}:
     <select id="tiempoDia">${[["", `Normal (${E.textoMin(d.horasNormales)})`], ["60", "1 h"], ["120", "2 h"], ["180", "3 h"]]
       .map(([v, t]) => `<option value="${v}" ${(d.horasCambiadas ? String(d.total) : "") === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
     ${d.horasCambiadas ? `<span class="nota">Cambiado solo este día.</span>` : ""}</div>`;
   return nav + aviso + marcador + `<ul class="objs">${items}</ul>` + tiempo + manana(hoy, fecha);
+}
+
+// «De aquí a tu plaza»: cuenta atrás a tu próxima cita, avance del temario, racha y frase del día.
+function camino(hoy) {
+  let cita = null;
+  if (st.examen && st.examen >= hoy) cita = {fecha: st.examen, texto: "tu examen"};
+  if (conv) for (const c of conv.mias) for (const f of c.fases) {
+    if (!f.hecho && f.fecha && f.fecha >= hoy && (!cita || f.fecha < cita.fecha))
+      cita = {fecha: f.fecha, texto: `${c.nombre.split(" · ")[0]}: ${f.texto.split(":")[0].toLowerCase()}`, aprox: /aprox|prevista|sin confirmar/i.test(f.texto)};
+  }
+  const q = {leg: E.cola(st, "leg"), esp: E.cola(st, "esp")}, pr = E.progreso(st, hoy);
+  const tot = q.leg.tot[0] + q.esp.tot[0];
+  const hecho1 = ["leg", "esp"].reduce((a, t) => a + q[t].items.filter(c => c.v === 1).reduce((b, c) => b + E.fraccion(pr.leg.h, c.id) * c.min, 0), 0);
+  const pct = tot ? hecho1 / tot : 0;
+  const res = E.resumen(st, hoy), dias = cita ? E.difDias(hoy, cita.fecha) : null;
+  return `<div class="camino">
+    <div class="cam-top"><span class="cam-tit">De aquí a tu plaza</span>${res.racha ? `<span class="racha">🔥 ${res.racha} ${res.racha === 1 ? "día" : "días"} seguidos</span>` : ""}</div>
+    ${cita ? `<div class="cuenta"><b>${dias === 0 ? "¡Hoy!" : dias}</b><span>${dias === 0 ? "" : dias === 1 ? "día" : "días"}${cita.aprox ? " aprox." : ""}<br>para ${esc(cita.texto)}</span></div>`
+      : `<p class="nota">Pon la fecha de tu examen en <button class="enlace" data-a="ajustes">Ajustes</button> para ver la cuenta atrás.</p>`}
+    <div class="cam-barra"><div class="cam-et"><span>1.ª vuelta al temario</span><b>${Math.round(pct * 100)} %</b></div><span class="barra manguera"><i style="width:${Math.max(2, Math.round(pct * 100))}%"></i></span></div>
+    <p class="frase">«${esc(E.fraseDelDia(hoy))}»</p></div>`;
 }
 
 // Aviso de cambios en el plan: novedades sin leer y cómo cambia la fecha de las vueltas.
@@ -367,7 +389,10 @@ function vProgreso(hoy, res) {
     cal += `<i class="${cls}" title="${f}"></i>`;
   }
   const obj = E.OBJETIVOS.map((t, i) => `<li><span>${esc(i === E.I_ESTUDIO ? "Estudio del día / clase" : t)}</span><span class="barra"><i style="width:${Math.round(res.cumple[i] * 100)}%"></i></span><b>${Math.round(res.cumple[i] * 100)} %</b></li>`).join("");
-  return `<h1>Progreso</h1>
+  const rg = E.rango(res.total);
+  const rangoHTML = `<div class="tarjeta rango"><div class="rg-ic">${rg.icono}</div><div><span class="nota">Tu rango</span><h3>${esc(rg.nombre)}</h3>
+    ${rg.sig ? `<span class="barra"><i style="width:${Math.round(rg.pct * 100)}%"></i></span><p class="nota">Te ${rg.faltan === 1 ? "falta 1 punto" : `faltan ${rg.faltan} puntos`} para <b>${esc(rg.sig.nombre)}</b> ${rg.sig.icono}</p>` : `<p class="nota">Rango máximo. ¡Ya eres jefe/a de parque!</p>`}</div></div>`;
+  return `<h1>Progreso</h1>${rangoHTML}
     <div class="kpis"><div><b class="${res.total > 0 ? "pos" : res.total < 0 ? "neg" : ""}">${res.total > 0 ? "+" : ""}${res.total}</b><span>Puntos</span></div>
       <div><b>${res.racha}</b><span>Racha de +1</span></div><div><b>${res.mejor}</b><span>Mejor racha</span></div></div>
     <div class="tarjeta"><h3>Vuelta al temario</h3>
@@ -602,4 +627,4 @@ $("#btnAjustes").onclick = () => ir("ajustes");
 
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 main();
-setTimeout(cargarConv, 1500); // para el aviso de novedades en la pestaña
+setTimeout(cargarConv, 300); // para el aviso de novedades en la pestaña

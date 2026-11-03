@@ -51,7 +51,8 @@ try {
   }
   ok((await p.textContent(".marcador")).includes("Se mantiene"), "7 de 8: se mantiene");
   await p.click("[data-tick='7']");
-  ok((await p.textContent(".marcador")).includes("+1 punto"), "8 de 8: +1 punto");
+  ok((await p.textContent(".marcador")).includes("¡Turno completado! +1"), "8 de 8: turno completado, +1");
+  ok(await p.isVisible(".camino"), "«De aquí a tu plaza» con cuenta atrás y frase del día");
   if (shots) await p.screenshot({path: shots + "/2-hoy.png", fullPage: true});
   await p.click("[data-a=diaMas]");
   ok((await p.textContent("#vista")).includes("Clase de Luis"), "miércoles: clase de Luis");

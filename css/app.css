@@ -1,30 +1,32 @@
 :root {
-  --bg: #F6F1EA; --card: #FFFDF9; --ink: #2A211C; --muted: #7A6B61; --line: #E6DDD2;
-  --acc: #8C3B20; --acc2: #B4532F; --accbg: #F3E3DA;
-  --ok: #2F7D4F; --okbg: #E2F1E7; --bad: #B3362B; --badbg: #F8E1DE; --mid: #B07C12; --midbg: #F7ECD3;
-  --leg: #2E5C8A; --legbg: #E1EAF4; --esp: #8C3B20; --espbg: #F3E3DA; --luis: #6B4C9A; --luisbg: #ECE4F6;
-  --sombra: 0 1px 2px rgba(60, 35, 20, .06), 0 4px 14px rgba(60, 35, 20, .05);
+  --bg: #F4F2EF; --card: #FFFFFF; --ink: #1D1A19; --muted: #6E6763; --line: #E7E2DD;
+  --acc: #C1121F; --acc2: #E5383B; --accbg: #FCE8E8; --oro: #F2B705; --orobg: #FFF4CC;
+  --ok: #1F8A4C; --okbg: #E1F4E8; --bad: #C1121F; --badbg: #FCE4E4; --mid: #B07C12; --midbg: #FBF0D6;
+  --leg: #1F5FA8; --legbg: #E3EDF9; --esp: #C1121F; --espbg: #FCE8E8; --luis: #6B4C9A; --luisbg: #EEE7F8;
+  --sombra: 0 1px 2px rgba(29, 26, 25, .05), 0 6px 18px rgba(29, 26, 25, .06);
+  --radio: 18px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #17120F; --card: #221B17; --ink: #F1E9E2; --muted: #A8998E; --line: #3A2F28;
-    --acc: #E07A52; --acc2: #F0936B; --accbg: #3A241B;
-    --ok: #5CC488; --okbg: #1C3326; --bad: #F07A6E; --badbg: #3E1F1C; --mid: #E2B04A; --midbg: #3A2F17;
-    --leg: #7FB1E3; --legbg: #1C2A38; --esp: #F0936B; --espbg: #3A241B; --luis: #B79BE6; --luisbg: #2C2340;
+    --bg: #121012; --card: #1E1B1D; --ink: #F3EFEC; --muted: #A79F9A; --line: #322D30;
+    --acc: #FF4D57; --acc2: #FF6B72; --accbg: #3A1A1D; --oro: #FFC933; --orobg: #3A3016;
+    --ok: #4CC97F; --okbg: #183325; --bad: #FF6B72; --badbg: #3E1C1F; --mid: #E8B44A; --midbg: #3A2F17;
+    --leg: #7FB1F0; --legbg: #1A2A3D; --esp: #FF6B72; --espbg: #3A1A1D; --luis: #B79BE6; --luisbg: #2C2340;
     --sombra: none; color-scheme: dark;
   }
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
-  background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--ink); font: 16px/1.5 "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   padding-bottom: calc(76px + env(safe-area-inset-bottom)); -webkit-tap-highlight-color: transparent;
 }
 [hidden] { display: none !important; }
 svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 a { color: var(--acc); }
-h1 { font-size: 26px; margin: 4px 0 2px; letter-spacing: -.01em; }
+h1, h2, .cam-tit, .cuenta b, .puntos b, .marca span { font-family: "Barlow Condensed", "Barlow", system-ui, sans-serif; }
+h1 { font-size: 30px; margin: 4px 0 2px; letter-spacing: .01em; text-transform: uppercase; }
 h2 { font-size: 19px; margin: 0; }
 h3 { font-size: 15px; margin: 0 0 10px; }
 .sub { color: var(--muted); margin: 0 0 14px; font-size: 14px; }
@@ -222,3 +224,54 @@ h3.fuera { margin: 18px 0 2px; font-size: 15px; }
 .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
 .filtros button { border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 99px; cursor: pointer; }
 .filtros button.on { background: var(--acc); color: #fff; border-color: var(--acc); }
+
+/* ---------- estética de bombero ---------- */
+.top { background: var(--card); border-bottom: 0; box-shadow: var(--sombra); }
+.top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 6px;
+  background: repeating-linear-gradient(90deg, var(--oro) 0 22px, #D9DCDF 22px 34px); opacity: .95; }
+.marca span { font-size: 20px; letter-spacing: .02em; text-transform: uppercase; }
+.marca img { width: 32px; height: 32px; border-radius: 9px; }
+.puntos { background: var(--accbg); box-shadow: none; padding: 5px 12px; min-width: 64px; }
+.puntos b { font-size: 22px; color: var(--acc); } .puntos span { text-transform: none; letter-spacing: 0; font-size: 11px; color: var(--ink); white-space: nowrap; }
+main { padding-top: 22px; }
+.tarjeta, .obj, .marcador, .conv, .tema, .dia, .camino, .libre { border-radius: var(--radio); }
+.objs { gap: 10px; }
+.obj { padding: 14px; border: 1px solid transparent; transition: border-color .2s, background .2s; }
+.obj.ok { background: color-mix(in srgb, var(--okbg) 55%, var(--card)); border-color: color-mix(in srgb, var(--ok) 25%, transparent); }
+.obj .ic { display: inline-block; width: 26px; font-size: 17px; }
+.tick { border-radius: 50%; width: 40px; height: 40px; }
+.obj.ok .tick { transform: scale(1.06); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 18%, transparent); }
+.marcador.pos { background: linear-gradient(135deg, var(--okbg), var(--card)); }
+.btn { border-radius: 999px; }
+.btn.peque { border-radius: 999px; }
+
+/* De aquí a tu plaza */
+.camino { position: relative; overflow: hidden; color: #fff; padding: 18px 18px 16px; margin: 14px 0;
+  background: radial-gradient(120% 140% at 100% 0%, #E5383B 0%, #B5121B 45%, #5C0A10 100%); box-shadow: 0 10px 26px rgba(150, 15, 25, .28); }
+.camino::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px;
+  background: repeating-linear-gradient(90deg, var(--oro) 0 18px, #E9ECEF 18px 28px); opacity: .9; }
+.cam-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.cam-tit { font-size: 15px; letter-spacing: .12em; text-transform: uppercase; opacity: .9; }
+.racha { font-size: 13px; font-weight: 600; background: rgba(255,255,255,.16); padding: 3px 10px; border-radius: 999px; }
+.cuenta { display: flex; align-items: center; gap: 12px; margin: 10px 0 6px; }
+.cuenta b { font-size: 58px; line-height: .9; color: var(--oro); }
+.cuenta span { font-size: 15px; line-height: 1.25; opacity: .95; }
+.camino .nota, .camino .enlace { color: #fff; opacity: .9; }
+.cam-barra { margin: 12px 0 4px; }
+.cam-et { display: flex; justify-content: space-between; font-size: 13px; opacity: .95; margin-bottom: 6px; }
+.barra.manguera { height: 10px; background: rgba(255,255,255,.18); }
+.barra.manguera i { background: linear-gradient(90deg, var(--oro), #FFE38A); }
+.frase { margin: 12px 0 6px; font-size: 14px; font-style: italic; opacity: .95; }
+
+/* rango */
+.tarjeta.rango { display: flex; gap: 14px; align-items: center; }
+.tarjeta.rango .rg-ic { font-size: 40px; width: 64px; height: 64px; border-radius: 50%; background: var(--orobg); display: grid; place-items: center; flex: none; }
+.tarjeta.rango h3 { margin: 0 0 6px; font-size: 20px; font-family: "Barlow Condensed", "Barlow", sans-serif; text-transform: uppercase; }
+.tarjeta.rango > div:last-child { flex: 1; }
+.tabs { box-shadow: 0 -4px 18px rgba(0,0,0,.05); border-top: 0; }
+.tabs button.on { color: var(--acc); }
+.tabs button.on svg { stroke-width: 2.4; }
+.marcador .chip { position: static; display: inline-block; margin-top: 6px; }
+.marcador { align-items: center; }
+.obj.ok .t { text-decoration: none; color: var(--muted); }
+.leyenda i { width: 12px !important; height: 12px !important; aspect-ratio: auto !important; border-radius: 4px; }

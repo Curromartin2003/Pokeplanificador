@@ -455,4 +455,54 @@ export function fijarBase(st, hoy) {
   return {base: {v1: p[0] || null, desde: hoy, ritmo: st.ritmo}};
 }
 
+// Rangos de bombero según los puntos.
+export const RANGOS = [
+  {min: -Infinity, nombre: "Aspirante", icono: "🔰"},
+  {min: 10, nombre: "Opositor/a en forma", icono: "💪"},
+  {min: 25, nombre: "Bombero/a en prácticas", icono: "🧯"},
+  {min: 50, nombre: "Bombero/a", icono: "🧑‍🚒"},
+  {min: 100, nombre: "Cabo", icono: "🎖️"},
+  {min: 150, nombre: "Sargento", icono: "🎖️"},
+  {min: 200, nombre: "Suboficial", icono: "⭐"},
+  {min: 300, nombre: "Oficial", icono: "⭐⭐"},
+  {min: 400, nombre: "Jefe/a de parque", icono: "🚒"},
+];
+export function rango(puntos) {
+  let i = 0;
+  while (i + 1 < RANGOS.length && puntos >= RANGOS[i + 1].min) i++;
+  const sig = RANGOS[i + 1] || null;
+  const desde = Math.max(0, RANGOS[i].min === -Infinity ? 0 : RANGOS[i].min);
+  return {...RANGOS[i], sig, faltan: sig ? sig.min - puntos : 0, pct: sig ? Math.min(1, Math.max(0, (puntos - desde) / (sig.min - desde))) : 1};
+}
+
+// Frase del día (cambia cada día, la misma en todos tus dispositivos).
+export const FRASES = [
+  "Cada tema bien estudiado es una manguera bien enrollada: cuando la necesites, saldrá sola.",
+  "Hoy entrenas la cabeza; mañana, la plaza.",
+  "La constancia es el mejor equipo de protección.",
+  "No hace falta un día perfecto, hace falta un día más.",
+  "El fuego no espera a nadie. Tu plaza tampoco: a por ella.",
+  "Un tick más, un paso más cerca del parque.",
+  "Los que aprueban no son los que más saben, son los que no se paran.",
+  "Respira, céntrate y a por la siguiente parte.",
+  "Disciplina hoy, uniforme mañana.",
+  "Cada hora de estudio es una guardia que ya llevas hecha.",
+  "Sin prisa pero sin pausa: así se gana una oposición.",
+  "El examen se aprueba en los días normales, como hoy.",
+  "Tu yo de dentro de un año te lo va a agradecer.",
+  "Cansado también se puede. Y se puede bien.",
+  "Llegar al parque empieza en la mesa de estudio.",
+  "Hoy no se negocia: cama, estudio, callejero y a dormir.",
+  "Un buen bombero se hace con rutina. Un buen opositor, también.",
+  "La plaza no se regala: se gana tema a tema.",
+  "Lo difícil no es empezar, es volver cada día. Y aquí estás.",
+  "Céntrate en lo que toca hoy. El resto ya está planificado.",
+];
+export function fraseDelDia(fecha) {
+  let h = 0;
+  for (const c of fecha) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return FRASES[h % FRASES.length];
+}
+export const ICONOS = ["⏰", "💊", "🏃", "📚", "🗺️", "🥗", "🚫", "📵"];
+
 export const textoMin = m => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? " " + (m % 60) + " min" : ""}` : `${m} min`);
