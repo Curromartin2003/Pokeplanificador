@@ -13,5 +13,8 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
 - Reglas del usuario: 1 h L/X/V, 3 h M/J y sábado o domingo (el otro libre del todo); 2 días de clase de Luis por semana
   (solo clase + callejero); callejero 30 % del tiempo; un día legislación y otro específico; puntos: 8/8 → +1,
   7/8 → 0, ≤6/8 → −1.
+- Material del usuario: los temas con `material` tienen partes `[nombre, minutos, "PDF · págs. a-b"]` sacadas de sus PDF
+  (minutos ≈ palabras / 40 en texto legal). Un tema puede tener varios PDF: se añaden a `material` y sus partes en orden.
+  Los PDF no se suben al repositorio.
 - Probar: `python3 -m http.server` y abrir `/?local&hoy=AAAA-MM-DD`. `node tests/e2e.mjs` (Playwright).
 - Si cambias archivos que se precargan, sube la versión de `CACHE` en `sw.js`.

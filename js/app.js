@@ -172,7 +172,7 @@ function planHTML(d) {
     const sigue = it.desde > 0, corta = it.hasta < it.min;
     const estado = sigue && corta ? `del min ${it.desde} al ${it.hasta} de ${it.min}` : sigue ? `termina (te quedan ${it.mins} min)` : corta ? `empieza: ${it.mins} de ${it.min} min` : `${it.mins} min`;
     return `<li><span class="tt">${it.v > 1 ? it.v + ".ª vuelta · " : ""}Tema ${it.n} · ${esc(it.titulo)}</span>
-      <span class="parte">${it.partes > 1 ? `Parte ${it.parte}/${it.partes}: ` : ""}${esc(it.nombre)}</span><span class="min">${estado}</span></li>`;
+      <span class="parte">${it.partes > 1 ? `Parte ${it.parte}/${it.partes}: ` : ""}${esc(it.nombre)}</span>${it.ref ? `<span class="ref">📄 ${esc(it.ref)}</span>` : ""}<span class="min">${estado}</span></li>`;
   }).join("")}</ol>`;
 }
 
@@ -232,12 +232,12 @@ function vTemario(hoy) {
       const speis = t === "esp" && n > 33;
       const partes = abierto ? `<ul class="partes">${cs.map(c => {
         const e = p.pos >= c.ini + c.min ? "hecho" : p.pos >= c.ini ? "curso" : "pend";
-        return `<li class="${e}"><span>${c.partes > 1 ? c.parte + ". " : ""}${esc(c.nombre)}</span><span class="m">${c.min} min</span>
+        return `<li class="${e}"><span>${c.partes > 1 ? c.parte + ". " : ""}${esc(c.nombre)}${c.ref ? `<small class="ref">📄 ${esc(c.ref)}</small>` : ""}</span><span class="m">${c.min} min</span>
           <button class="enlace peque" data-a="irA" data-t="${t}" data-i="${c.ini}">Empezar aquí</button></li>`;
       }).join("")}</ul>${speis ? `<button class="enlace peque" data-a="renombrar" data-k="${t}${n}">Cambiar el título de este tema</button>` : ""}
-      <p class="contenido">${esc(temaContenido(t, n))}</p>` : "";
+      <p class="contenido">${temaMaterial(t, n) ? `<b>Tu material:</b> ${esc(temaMaterial(t, n).join(" · "))}<br>` : "<b>Sin material todavía:</b> partes según el decreto.<br>"}${esc(temaContenido(t, n))}</p>` : "";
       return `<li class="tema ${est}"><button class="cab" data-a="abrirTema" data-k="${t}${n}">
-        <span class="num">${n > 33 && t === "esp" ? "S" + (n - 33) : n}</span><span class="nom">${esc(cs[0].titulo)}</span>
+        <span class="num">${n > 33 && t === "esp" ? "S" + (n - 33) : n}</span><span class="nom">${esc(cs[0].titulo)}${temaMaterial(t, n) ? ` <span class="pdf" title="Con tu material">📄</span>` : ""}</span>
         <span class="barra"><i style="width:${Math.round(pct * 100)}%"></i></span></button>${partes}</li>`;
     }).join("");
     return `<section class="bloque"><div class="bcab"><h2>${E.MATERIAS[t]}</h2><span>${v}.ª vuelta · ${Math.round(p.pctVuelta * 100)} %</span></div>
@@ -249,6 +249,7 @@ function vTemario(hoy) {
     <p class="nota">Toca un tema para ver sus partes. Si ya llevas algo estudiado, pulsa «Empezar aquí» en la parte por la que vas y el plan se recoloca.</p>
     ${bloque("leg")}${bloque("esp")}`;
 }
+function temaMaterial(t, n) { const x = (t === "leg" ? LEGISLACION : ESPECIFICO).find(z => z.n === n); return x && x.material; }
 function temaContenido(t, n) { const x = (t === "leg" ? LEGISLACION : ESPECIFICO).find(z => z.n === n); return x ? x.contenido : ""; }
 
 /* ---------- Progreso ---------- */

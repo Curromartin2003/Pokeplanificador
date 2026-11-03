@@ -91,14 +91,14 @@ export function cola(st, t) {
     for (const tm of temas(t)) {
       const titulo = st.titulos[t + tm.n] || tm.titulo;
       if (v === 1) {
-        tm.partes.forEach(([nombre, m], i) => {
+        tm.partes.forEach(([nombre, m, ref], i) => {
           const min = r5(m * f);
-          out.push({t, v, n: tm.n, titulo, parte: i + 1, partes: tm.partes.length, nombre, min, ini: pos});
+          out.push({t, v, n: tm.n, titulo, parte: i + 1, partes: tm.partes.length, nombre, ref: ref || "", min, ini: pos});
           pos += min;
         });
       } else {
         const min = r5(tm.partes.reduce((a, p) => a + p[1], 0) * f * vf);
-        out.push({t, v, n: tm.n, titulo, parte: 1, partes: 1, min, ini: pos,
+        out.push({t, v, n: tm.n, titulo, parte: 1, partes: 1, min, ini: pos, ref: (tm.material || []).join(" + "),
           nombre: v === 2 ? "2.ª vuelta: repaso con tus esquemas y test del tema" : `${v}.ª vuelta: repaso rápido y test`});
         pos += min;
       }
