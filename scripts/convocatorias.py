@@ -141,8 +141,74 @@ def analizar(ident, titulo, dep):
         "organismo": re.sub(r"\s*\([^()]*\)\s*$", "", organismo), "provincia": prov[-1] if prov else None,
         "plazas": plazas or None, "sistema": " / ".join(sorted(sistemas)) or "Oposición",
         "detalle": validas[0][:400], "bases": bases, "plazo": plazo_txt, "fin": fin,
-        "url": f"https://www.boe.es/diario_boe/txt.php?id={ident}",
+        "url": f"https://www.boe.es/diario_boe/txt.php?id={ident}", "fuente": "BOE", "fase": "plazo",
     }
+
+
+def boja_item(anio, num, n):
+    """Título, fecha, PDF y texto de un anuncio del BOJA (None si no existe)."""
+    try:
+        pag = get(f"https://www.juntadeandalucia.es/boja/{anio}/{num}/{n}.html", timeout=30)
+    except Exception:
+        return None
+    tit = re.search(r"<title>(.*?)</title>", pag, re.S)
+    tit = html.unescape(re.sub(r"\s+", " ", tit.group(1))).strip() if tit else ""
+    t = re.sub(r"\s+", " ", html.unescape(re.sub(r"<script.*?</script>|<style.*?</style>|<[^>]+>", " ", pag, flags=re.S)))
+    fecha = re.search(r"Bolet[ií]n n[uú]mero \d+ de (\d{2})/(\d{2})/(\d{4})", t)
+    pdf = re.search(r'href="(BOJA\d\d-[^"]+\.pdf)"', pag)
+    return {"titulo": tit, "texto": t, "fecha": f"{fecha.group(3)}-{fecha.group(2)}-{fecha.group(1)}" if fecha else None,
+            "url": f"https://www.juntadeandalucia.es/boja/{anio}/{num}/{n}.html",
+            "pdf": f"https://www.juntadeandalucia.es/boja/{anio}/{num}/{pdf.group(1)}" if pdf else None}
+
+
+def boja_bases(desde, hasta=None):
+    """Revisa los boletines del BOJA a partir del número `desde` y devuelve (convocatorias de bases de bombero, último número)."""
+    anio = date.today().year
+    out, num, ultimo = [], desde, desde - 1
+    while True:
+        primero = boja_item(anio, num, 1)
+        if not primero:
+            break
+        items = [primero]
+        n = 2
+        with ThreadPoolExecutor(6) as ex:
+            while True:
+                lote = list(ex.map(lambda k: boja_item(anio, num, k), range(n, n + 12)))
+                items += [x for x in lote if x]
+                if any(x is None for x in lote):
+                    break
+                n += 12
+        for i, it in enumerate(items):
+            t = it["titulo"]
+            if not re.search(r"bases|convocatoria|proceso selectivo", t, re.I):
+                continue
+            # Solo bases de entidades locales (ayuntamientos, consorcios, diputaciones...), no nombramientos ni listados.
+            if not re.search(r"ayuntamiento|consorcio|diputaci[oó]n|mancomunidad|agencia|bomberos|SPEIS", t, re.I):
+                continue
+            if re.search(r"\bnombra|ofertan vacantes|listado|relaci[oó]n definitiva|adjudica|admitid|tribunal", t, re.I):
+                continue
+            # O el título habla de bomberos, o es de un servicio de bomberos y el texto convoca plazas de bombero.
+            cuerpo = it.get("texto", "")
+            if not BOMBERO.search(t) and not (re.search(r"extinci[oó]n de incendios|bomberos|SPEIS|SPEIS", t, re.I) and BOMBERO.search(cuerpo)):
+                continue
+            if re.search(r"promoci[oó]n interna", t, re.I) and not re.search(r"turno libre|oposici[oó]n libre", t, re.I):
+                continue
+            mb = BOMBERO.search(t)
+            if mb and re.search(r"\b(cabo|sargento|suboficial|oficial|inspector|jef[ea])\b", t[:mb.start()], re.I):
+                continue
+            org = re.search(r",\s*(?:del|de la|de los)\s+(.+?),\s*(?:de|por|relativo|sobre|referente)", t)
+            organismo = org.group(1) if org else "Andalucía"
+            sistema = "Concurso-oposición" if re.search(r"concurso[- ]oposici", t, re.I) else "Oposición libre"
+            out.append({"id": f"BOJA-{anio}-{num}-{it['url'].rsplit('/', 1)[-1].split('.')[0]}", "fecha": it["fecha"], "titulo": t,
+                        "organismo": re.sub(r"\s*\([^()]*\)\s*$", "", organismo), "provincia": "Andalucía",
+                        "plazas": plazas_de(t) or plazas_de(next((x for x in re.split(r"(?<=\.) ", cuerpo) if BOMBERO.search(x) and re.search(r"plaza", x, re.I)), "")),
+                        "sistema": sistema, "detalle": t[:400], "bases": f"BOJA n.º {num}",
+                        "plazo": None, "fin": None, "fase": "bases", "fuente": "BOJA", "url": it["url"], "pdf": it.get("pdf")})
+        ultimo = num
+        num += 1
+        if num - desde > 80 or (hasta and num > hasta):
+            break
+    return out, ultimo
 
 
 def menciona(ident, claves, titulo=""):
@@ -167,6 +233,19 @@ def main():
     espana = {c["id"]: c for c in datos.get("espana", [])}
     revisados = json.loads(REVISADOS.read_text()) if REVISADOS.exists() else datos.get("revisados", {})
     mias = json.loads(MIAS.read_text())
+    # BOJA (Andalucía): bases de convocatorias de bombero en cuanto se publican, antes de que se abra el plazo en el BOE.
+    boja_desde = datos.get("boja_ultimo", 0) + 1 or 1
+    if "--boja-desde" in sys.argv:
+        boja_desde = int(sys.argv[sys.argv.index("--boja-desde") + 1])
+    try:
+        nuevas_boja, boja_ultimo = boja_bases(boja_desde)
+    except Exception as e:
+        print("BOJA: error", e)
+        nuevas_boja, boja_ultimo = [], boja_desde - 1
+    for c in nuevas_boja:
+        espana.setdefault(c["id"], c)
+        print("  + BOJA", c["organismo"], c["plazas"], c["fecha"])
+    print(f"BOJA revisado hasta el n.º {boja_ultimo}")
 
     fechas = [hoy - timedelta(days=i) for i in range(dias)]
     with ThreadPoolExecutor(6) as ex:
@@ -272,7 +351,7 @@ def main():
     SALIDA.write_text(json.dumps({
         "actualizado": datetime.now(timezone.utc).isoformat(timespec="minutes"),
         "fuente": "BOE, sección II.B (datos abiertos)",
-        "mias": mias, "espana": lista,
+        "mias": mias, "espana": lista, "boja_ultimo": boja_ultimo,
     }, ensure_ascii=False, indent=1) + "\n")
     REVISADOS.write_text(json.dumps(revisados, separators=(",", ":")) + "\n")
 

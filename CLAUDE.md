@@ -27,12 +27,15 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
 - Puntos: `puntosIniciales` (7, por SEMILLAS) + los de cada día. `tiemposTema` reparte el tiempo real de cada día entre
   los temas estudiados (se muestra en Temario).
 - Convocatorias: `data/convocatorias.json` lo genera `scripts/convocatorias.py` (solo stdlib) cada mañana con
-  `.github/workflows/convocatorias.yml`: España = BOE sección II.B, bombero/a turno libre (oposición o concurso-oposición),
+  `.github/workflows/convocatorias.yml`: España = BOJA (bases de entidades locales andaluzas, anuncio a anuncio desde
+  `boja_ultimo`) + BOE sección II.B (cuando se abre el plazo), bombero/a turno libre (oposición o concurso-oposición),
   sin promoción interna ni movilidad, con fin de plazo calculado; Mis convocatorias = `data/mis_convocatorias.json`
   (fichas escritas a mano + novedades automáticas con enlace directo: anuncios del BOE que las nombran, PDF nuevos en las
   páginas vigiladas (`vigilar[].pdfs`), anuncios del BOP de Sevilla (`bop_sevilla`) y cambios de texto en las páginas).
   Las novedades sin ver salen también en Hoy.
   `data/revisados.json` guarda los anuncios ya mirados.
+- Callejero: `calle.sel` = distritos que se están estudiando (varios a la vez, se quedan); al marcar el callejero se
+  guarda en `dias[f].cal`.
 - Los PDF no se suben al repositorio.
 - Probar: `python3 -m http.server` y abrir `/?local&hoy=AAAA-MM-DD`. `node tests/e2e.mjs` (Playwright).
 - Si cambias archivos que se precargan, sube la versión de `CACHE` en `sw.js`.

@@ -32,7 +32,7 @@ const VUELTAS = 8;
 export const FOCOS_CALLEJERO = [
   "Casco Antiguo", "Triana", "Macarena", "Nervión", "Los Remedios", "Sur", "Cerro-Amate", "Bellavista-La Palmera",
   "Este-Alcosa-Torreblanca", "San Pablo-Santa Justa", "Norte", "BIC y urgencias", "Carreteras y puntos kilométricos",
-  "Examen oficial del tribunal",
+  "Hospitales, colegios y parques", "Examen oficial del tribunal",
 ];
 
 /* ---------- fechas (cadenas AAAA-MM-DD, sin horas para no depender del horario de verano) ---------- */
@@ -61,7 +61,7 @@ export function estadoNuevo(hoy) {
 export const completar = s => {
   const b = estadoNuevo(s && s.inicio || hoyLocal());
   const o = {...b, ...(s || {})};
-  for (const k of ["semanas", "dias", "manual", "materiales", "titulos", "leidos", "fuera"]) o[k] = {...((s && s[k]) || {})};
+  for (const k of ["semanas", "dias", "manual", "materiales", "titulos", "leidos", "fuera", "calle"]) o[k] = {...((s && s[k]) || {})};
   o.cambios = Array.isArray(s && s.cambios) ? s.cambios : [];
   return o;
 };

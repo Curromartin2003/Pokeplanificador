@@ -281,3 +281,7 @@ main { padding-top: 22px; }
 .avisoconv ul { list-style: none; padding: 0; margin: 8px 0 10px; display: grid; gap: 8px; }
 .avisoconv small { display: block; color: var(--muted); }
 .avisoconv a { color: var(--ink); font-weight: 600; }
+
+.chips.distritos button { display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+.chips.distritos button.on { background: var(--acc); border-color: var(--acc); color: #fff; }
+.chips.distritos small { font-size: 11px; opacity: .8; }

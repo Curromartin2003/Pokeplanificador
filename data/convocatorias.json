@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-11-03T23:24+00:00",
+ "actualizado": "2026-11-03T23:58+00:00",
  "fuente": "BOE, sección II.B (datos abiertos)",
  "mias": [
   {
@@ -325,7 +325,9 @@
    "bases": null,
    "plazo": "20 días naturales desde el día siguiente a la publicación en el BOE",
    "fin": "2026-10-21",
-   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-20433"
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-20433",
+   "fuente": "BOE",
+   "fase": "plazo"
   },
   {
    "id": "BOE-A-2026-19802",
@@ -339,7 +341,9 @@
    "bases": null,
    "plazo": "10 días hábiles desde el día siguiente a la publicación en el BOE",
    "fin": "2026-10-08",
-   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-19802"
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-19802",
+   "fuente": "BOE",
+   "fase": "plazo"
   },
   {
    "id": "BOE-A-2026-19150",
@@ -353,7 +357,9 @@
    "bases": null,
    "plazo": "20 días naturales desde el día siguiente a la publicación en el BOE",
    "fin": "2026-10-04",
-   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-19150"
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-19150",
+   "fuente": "BOE",
+   "fase": "plazo"
   },
   {
    "id": "BOE-A-2026-19080",
@@ -367,7 +373,9 @@
    "bases": null,
    "plazo": "20 días hábiles desde el día siguiente a la publicación en el BOE",
    "fin": "2026-10-09",
-   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-19080"
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-19080",
+   "fuente": "BOE",
+   "fase": "plazo"
   },
   {
    "id": "BOE-A-2026-18938",
@@ -381,7 +389,9 @@
    "bases": null,
    "plazo": "20 días hábiles desde el día siguiente a la publicación en el BOE",
    "fin": "2026-10-08",
-   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-18938"
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-18938",
+   "fuente": "BOE",
+   "fase": "plazo"
   },
   {
    "id": "BOE-A-2026-17314",
@@ -395,7 +405,9 @@
    "bases": "«Boletín Oficial de la Provincia de Sevilla» núm. 123, de 29 de junio de 2026",
    "plazo": "10 días hábiles desde el día siguiente a la publicación en el BOE",
    "fin": "2026-08-21",
-   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-17314"
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-17314",
+   "fuente": "BOE",
+   "fase": "plazo"
   },
   {
    "id": "BOE-A-2026-17233",
@@ -409,7 +421,60 @@
    "bases": null,
    "plazo": "20 días hábiles desde el día siguiente a la publicación en el BOE",
    "fin": "2026-09-04",
-   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-17233"
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-17233",
+   "fuente": "BOE",
+   "fase": "plazo"
+  },
+  {
+   "id": "BOJA-2026-148-48",
+   "fecha": "2026-08-03",
+   "titulo": "Anuncio de 1 de julio de 2026, del Ayuntamiento de Alcalá de Guadaíra, de aprobación de las bases de convocatoria para cubrir en propiedad varias plazas de personal funcionario de carrera: Cinco plazas por turno libre y una de movilidad de Bombero/a, en ejecución de la OPE 2026.",
+   "organismo": "Ayuntamiento de Alcalá de Guadaíra",
+   "provincia": "Andalucía",
+   "plazas": 5,
+   "sistema": "Oposición libre",
+   "detalle": "Anuncio de 1 de julio de 2026, del Ayuntamiento de Alcalá de Guadaíra, de aprobación de las bases de convocatoria para cubrir en propiedad varias plazas de personal funcionario de carrera: Cinco plazas por turno libre y una de movilidad de Bombero/a, en ejecución de la OPE 2026.",
+   "bases": "BOJA n.º 148",
+   "plazo": null,
+   "fin": null,
+   "fase": "bases",
+   "fuente": "BOJA",
+   "url": "https://www.juntadeandalucia.es/boja/2026/148/48.html",
+   "pdf": "https://www.juntadeandalucia.es/boja/2026/148/BOJA26-148-00001-9348-01_00340580.pdf"
+  },
+  {
+   "id": "BOJA-2026-146-41",
+   "fecha": "2026-07-30",
+   "titulo": "Anuncio de 16 de junio de 2026, del Consorcio Comarcal del Servicio de Prevención y Extinción de Incendios y Salvamento Sierra de Cazorla, de publicación de bases de convocatoria de proceso selectivo por oposición libre. (PP. 1388/2026).",
+   "organismo": "Consorcio Comarcal del Servicio de Prevención y Extinción de Incendios y Salvamento Sierra de Cazorla",
+   "provincia": "Andalucía",
+   "plazas": 2,
+   "sistema": "Oposición libre",
+   "detalle": "Anuncio de 16 de junio de 2026, del Consorcio Comarcal del Servicio de Prevención y Extinción de Incendios y Salvamento Sierra de Cazorla, de publicación de bases de convocatoria de proceso selectivo por oposición libre. (PP. 1388/2026).",
+   "bases": "BOJA n.º 146",
+   "plazo": null,
+   "fin": null,
+   "fase": "bases",
+   "fuente": "BOJA",
+   "url": "https://www.juntadeandalucia.es/boja/2026/146/41.html",
+   "pdf": "https://www.juntadeandalucia.es/boja/2026/146/BOJA26-146-00001-8930-01_00340163.pdf"
+  },
+  {
+   "id": "BOJA-2026-146-42",
+   "fecha": "2026-07-30",
+   "titulo": "Anuncio de 16 de junio de 2026, del Consorcio Comarcal del Servicio de Prevención y Extinción de Incendios y Salvamento Sierra de Segura, de publicación de bases de convocatoria de proceso selectivo por oposición libre. (PP. 1288/2026).",
+   "organismo": "Consorcio Comarcal del Servicio de Prevención y Extinción de Incendios y Salvamento Sierra de Segura",
+   "provincia": "Andalucía",
+   "plazas": 2,
+   "sistema": "Oposición libre",
+   "detalle": "Anuncio de 16 de junio de 2026, del Consorcio Comarcal del Servicio de Prevención y Extinción de Incendios y Salvamento Sierra de Segura, de publicación de bases de convocatoria de proceso selectivo por oposición libre. (PP. 1288/2026).",
+   "bases": "BOJA n.º 146",
+   "plazo": null,
+   "fin": null,
+   "fase": "bases",
+   "fuente": "BOJA",
+   "url": "https://www.juntadeandalucia.es/boja/2026/146/42.html",
+   "pdf": "https://www.juntadeandalucia.es/boja/2026/146/BOJA26-146-00001-8288-01_00339522.pdf"
   },
   {
    "id": "BOE-A-2026-16406",
@@ -423,7 +488,9 @@
    "bases": null,
    "plazo": "20 días naturales desde el día siguiente a la publicación en el BOE",
    "fin": "2026-08-17",
-   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-16406"
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-16406",
+   "fuente": "BOE",
+   "fase": "plazo"
   },
   {
    "id": "BOE-A-2026-15160",
@@ -437,7 +504,9 @@
    "bases": null,
    "plazo": "20 días hábiles desde el día siguiente a la publicación en el BOE",
    "fin": "2026-08-07",
-   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-15160"
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-15160",
+   "fuente": "BOE",
+   "fase": "plazo"
   },
   {
    "id": "BOE-A-2026-14821",
@@ -451,7 +520,9 @@
    "bases": null,
    "plazo": "20 días hábiles desde el día siguiente a la publicación en el BOE",
    "fin": "2026-08-05",
-   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-14821"
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-14821",
+   "fuente": "BOE",
+   "fase": "plazo"
   },
   {
    "id": "BOE-A-2026-14182",
@@ -465,7 +536,10 @@
    "bases": null,
    "plazo": "20 días hábiles desde el día siguiente a la publicación en el BOE",
    "fin": "2026-07-28",
-   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-14182"
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-14182",
+   "fuente": "BOE",
+   "fase": "plazo"
   }
- ]
+ ],
+ "boja_ultimo": 213
 }

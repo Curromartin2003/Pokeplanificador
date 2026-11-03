@@ -173,7 +173,12 @@ function vHoy(hoy) {
     if (i === 4) {
       titulo = `Callejero · ${E.textoMin(d.minCal)}`;
       const url = st.callejeroUrl;
-      det = `<p class="det">Enfoque: <b>${esc(d.foco)}</b>${url ? ` · <a href="${esc(url)}" target="_blank" rel="noopener">Abrir Pokecallejero</a>` : ""}</p>`;
+      // Distritos que estás estudiando (puedes marcar varios: se quedan hasta que los cambies). El día que marcas el
+      // callejero se apunta lo que estudiaste.
+      const sel = (rec.cal && rec.cal.length ? rec.cal : (st.calle && st.calle.sel) || []);
+      det = `<p class="det">${sel.length ? `Estudiando: <b>${sel.map(esc).join(" · ")}</b>` : `Sugerencia: <b>${esc(d.foco)}</b>`}
+        <button class="enlace peque" data-a="distritos" data-f="${fecha}">${sel.length ? "Cambiar distritos" : "Elegir distritos"}</button>
+        ${url ? ` · <a href="${esc(url)}" target="_blank" rel="noopener">Abrir Pokecallejero</a>` : ""}</p>`;
     }
     if (!cuentan.includes(i)) return `<li class="obj nocuenta"><span class="tick fuera">–</span>
       <div class="txt"><span class="t"><span class="ic">${E.ICONOS[i]}</span>${esc(i === E.I_ESTUDIO ? (d.tipo === "luis" ? "Clase de Luis" : "Estudio") : "Callejero")}</span><p class="det">Hoy sin estudio (0 h): no cuenta para los puntos.</p></div></li>`;
@@ -463,7 +468,7 @@ function novedadesSinVer() {
   if (!conv) return 0;
   const v = st.convVisto || E.sumaDias(HOY(), -7);
   return conv.mias.reduce((a, c) => a + (c.novedades || []).filter(n => n.fecha > v).length, 0)
-    + conv.espana.filter(c => c.fin && c.fin >= HOY() && (c.fecha || "") > v).length;
+    + conv.espana.filter(c => ((c.fin && c.fin >= HOY()) || c.fase === "bases") && (c.fecha || "") > v).length;
 }
 function badgeConv() {
   const b = $("#badgeConv"); if (!b) return;
@@ -485,24 +490,33 @@ function vConvocatorias(hoy) {
       <div class="enlaces">${c.enlaces.map(e => `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.texto)}</a>`).join("")}</div></div>`;
   }).join("");
   const f = ui.filtroConv || "todas";
-  let lista = conv.espana.map(c => ({...c, abierta: !!(c.fin && c.fin >= hoy)}));
+  // Si unas bases del BOJA ya tienen anuncio en el BOE del mismo organismo, se queda solo el del BOE (que trae el plazo).
+  const boe = conv.espana.filter(c => c.fuente !== "BOJA");
+  const lugar = c => ((c.organismo || "").split(/\s+/).pop() || "").toLowerCase();
+  const yaEnBoe = c => boe.some(b => lugar(c).length > 3 && (b.organismo || "").toLowerCase().includes(lugar(c)) && (b.fecha || "") >= (c.fecha || ""));
+  let lista = conv.espana.filter(c => c.fuente !== "BOJA" || !yaEnBoe(c))
+    .map(c => ({...c, abierta: !!(c.fin && c.fin >= hoy), bases: c.fase === "bases"}));
   if (f === "abiertas") lista = lista.filter(c => c.abierta);
+  if (f === "bases") lista = lista.filter(c => c.bases);
   if (f === "andalucia") lista = lista.filter(c => ANDALUCIA.test(c.provincia || "") || ANDALUCIA.test(c.organismo));
-  lista.sort((a, b) => (b.abierta - a.abierta) || (b.fecha || "").localeCompare(a.fecha || ""));
+  const prio = c => c.abierta ? 2 : c.bases ? 1 : 0;
+  lista.sort((a, b) => (prio(b) - prio(a)) || (b.fecha || "").localeCompare(a.fecha || ""));
   const espana = lista.map(c => {
     const quedan = c.abierta ? E.difDias(hoy, c.fin) : null;
-    return `<div class="conv"><span class="estado ${c.abierta ? "abierta" : "cerrada"}">${c.abierta ? `Plazo abierto: quedan ${quedan} ${quedan === 1 ? "día" : "días"} (hasta el ${E.fechaLarga(c.fin, false)})` : `Plazo cerrado${c.fin ? " el " + E.fechaLarga(c.fin, false) : ""}`}</span>
+    const estado = c.abierta ? `Plazo abierto: quedan ${quedan} ${quedan === 1 ? "día" : "días"} (hasta el ${E.fechaLarga(c.fin, false)})`
+      : c.bases ? "Bases publicadas: el plazo se abre cuando salga en el BOE" : `Plazo cerrado${c.fin ? " el " + E.fechaLarga(c.fin, false) : ""}`;
+    return `<div class="conv"><span class="estado ${c.abierta ? "abierta" : c.bases ? "" : "cerrada"}">${estado}</span>
       <h3>${esc(c.organismo)}${c.provincia && !c.organismo.includes(c.provincia) ? ` (${esc(c.provincia)})` : ""}</h3>
-      <p class="meta">${c.plazas ? `${c.plazas} ${c.plazas === 1 ? "plaza" : "plazas"} · ` : ""}${esc(c.sistema)} · BOE del ${E.fechaLarga(c.fecha, false)}${c.fecha > visto ? " · <b>nueva</b>" : ""}</p>
+      <p class="meta">${c.plazas ? `${c.plazas} ${c.plazas === 1 ? "plaza" : "plazas"} · ` : ""}${esc(c.sistema)} · ${c.fuente === "BOJA" ? "BOJA" : "BOE"} del ${E.fechaLarga(c.fecha, false)}${c.fecha > visto ? " · <b>nueva</b>" : ""}</p>
       <details><summary>Detalles</summary><p class="nota">${esc(c.detalle)}</p>${c.bases ? `<p class="nota"><b>Bases:</b> ${esc(c.bases)}</p>` : ""}${c.plazo ? `<p class="nota"><b>Plazo:</b> ${esc(c.plazo)} (fecha de fin aproximada: no cuenta festivos autonómicos ni locales).</p>` : ""}</details>
-      <div class="enlaces"><a href="${esc(c.url)}" target="_blank" rel="noopener">Anuncio en el BOE</a></div></div>`;
+      <div class="enlaces"><a href="${esc(c.url)}" target="_blank" rel="noopener">Anuncio en el ${c.fuente === "BOJA" ? "BOJA" : "BOE"}</a>${c.pdf ? `<a href="${esc(c.pdf)}" target="_blank" rel="noopener">PDF</a>` : ""}</div></div>`;
   }).join("") || `<div class="vacio"><p>No hay convocatorias con este filtro.</p></div>`;
   const abiertas = conv.espana.filter(c => c.fin && c.fin >= hoy).length;
   return `<h1>Convocatorias</h1><p class="sub">Se revisan cada mañana (BOE y páginas oficiales). Última revisión con cambios: ${E.fechaLarga(conv.actualizado.slice(0, 10), false)}.</p>
     <section class="bloque"><div class="bcab"><h2>Mis convocatorias</h2></div>${mias}</section>
     <section class="bloque"><div class="bcab"><h2>Convocatorias España</h2><span>${abiertas} con plazo abierto</span></div>
-      <p class="nota">Bombero/a por turno libre (oposición o concurso-oposición), sin promoción interna ni movilidad, del último año. Primero las que tienen el plazo de instancias abierto. Salen cuando el BOE abre el plazo; el anuncio dice dónde están las bases.</p>
-      <div class="filtros">${[["todas", "Todas"], ["abiertas", "Plazo abierto"], ["andalucia", "Andalucía"]].map(([k, t]) => `<button class="${f === k ? "on" : ""}" data-a="filtroConv" data-f="${k}">${t}</button>`).join("")}</div>
+      <p class="nota">Bombero/a por turno libre (oposición o concurso-oposición), sin promoción interna ni movilidad, del último año. Primero las de plazo de instancias abierto, después las que ya tienen bases y aún no plazo. Fuentes: BOE (toda España, cuando se abre el plazo) y BOJA (bases de Andalucía en cuanto se publican).</p>
+      <div class="filtros">${[["todas", "Todas"], ["abiertas", "Plazo abierto"], ["bases", "Bases publicadas"], ["andalucia", "Andalucía"]].map(([k, t]) => `<button class="${f === k ? "on" : ""}" data-a="filtroConv" data-f="${k}">${t}</button>`).join("")}</div>
       ${espana}</section>`;
 }
 
@@ -556,6 +570,33 @@ function pintarModal() {
   };
 }
 
+/* ---------- distritos del callejero ---------- */
+function abrirDistritos(fecha) {
+  const box = $("#modal");
+  const elegidos = new Set((st.calle && st.calle.sel) || []);
+  const veces = {};
+  for (const r of Object.values(st.dias)) for (const x of (r && r.cal) || []) veces[x] = (veces[x] || 0) + 1;
+  const pintarD = () => {
+    box.hidden = false;
+    box.querySelector(".hoja").innerHTML = `<h2>¿Qué distritos estás estudiando?</h2>
+      <p class="nota">Marca todos los que quieras: si los estudias de arrastre, déjalos marcados y se quedan para los próximos días. Al marcar el callejero se apunta lo que estudiaste.</p>
+      <div class="chips distritos">${E.FOCOS_CALLEJERO.map(n => `<button class="${elegidos.has(n) ? "on" : ""}" data-d="${esc(n)}">${esc(n)}${veces[n] ? `<small>${veces[n]} ${veces[n] === 1 ? "día" : "días"}</small>` : ""}</button>`).join("")}</div>
+      <div class="acciones"><button class="btn sec" data-m="limpiar">Quitar todos</button><button class="btn" data-m="ok">Guardar</button></div>`;
+    box.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { const n = b.dataset.d; elegidos.has(n) ? elegidos.delete(n) : elegidos.add(n); pintarD(); });
+    box.querySelector("[data-m=limpiar]").onclick = () => { elegidos.clear(); pintarD(); };
+    box.querySelector("[data-m=ok]").onclick = () => {
+      box.hidden = true;
+      const sel = E.FOCOS_CALLEJERO.filter(n => elegidos.has(n));
+      const parche = {calle: {sel}};
+      // Si ese día ya habías marcado el callejero, se actualiza lo apuntado.
+      const r = st.dias[fecha];
+      if (r && r.c && r.c[4]) parche.dias = {[fecha]: {cal: sel}};
+      guardar(parche);
+    };
+  };
+  pintarD();
+}
+
 /* ---------- cuánto has tardado ---------- */
 function abrirTiempo(fecha, previsto, actual) {
   const box = $("#modal");
@@ -580,7 +621,9 @@ function enlazar() {
     const valor = !(rec.c && rec.c[i]);
     if (navigator.vibrate && valor) navigator.vibrate(12);
     const d = i === E.I_ESTUDIO && valor ? E.dia(st, hoy, fecha) : null;
-    guardar(E.marcar(st, hoy, fecha, i, valor));
+    const parche = E.marcar(st, hoy, fecha, i, valor);
+    if (i === 4) parche.dias[fecha].cal = valor ? ((st.calle && st.calle.sel) || []) : null;
+    guardar(parche);
     if (d && d.tipo === "estudio" && d.plan && d.plan.length) abrirTiempo(fecha, d.min);
   });
   document.querySelectorAll("[data-a]").forEach(b => b.onclick = e => {
@@ -603,6 +646,8 @@ function enlazar() {
       const t = b.dataset.t, n = +b.dataset.n;
       if (b.dataset.v === "1" && !confirm("¿Quitar esta parte de todas las vueltas? (No entra por decreto o no la estudias)")) return;
       guardar(E.noEntra(t, n, {key: b.dataset.key}, b.dataset.v === "1"));
+    } else if (a === "distritos") {
+      abrirDistritos(b.dataset.f);
     } else if (a === "verConv") {
       ir("convocatorias");
     } else if (a === "filtroConv") {
