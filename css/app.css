@@ -227,8 +227,7 @@ h3.fuera { margin: 18px 0 2px; font-size: 15px; }
 
 /* ---------- estética de bombero ---------- */
 .top { background: var(--card); border-bottom: 0; box-shadow: var(--sombra); }
-.top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 6px;
-  background: repeating-linear-gradient(90deg, var(--oro) 0 22px, #D9DCDF 22px 34px); opacity: .95; }
+
 .marca span { font-size: 20px; letter-spacing: .02em; text-transform: uppercase; }
 .marca img { width: 32px; height: 32px; border-radius: 9px; }
 .puntos { background: var(--accbg); box-shadow: none; padding: 5px 12px; min-width: 64px; }
@@ -248,8 +247,7 @@ main { padding-top: 22px; }
 /* De aquí a tu plaza */
 .camino { position: relative; overflow: hidden; color: #fff; padding: 18px 18px 16px; margin: 14px 0;
   background: radial-gradient(120% 140% at 100% 0%, #E5383B 0%, #B5121B 45%, #5C0A10 100%); box-shadow: 0 10px 26px rgba(150, 15, 25, .28); }
-.camino::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px;
-  background: repeating-linear-gradient(90deg, var(--oro) 0 18px, #E9ECEF 18px 28px); opacity: .9; }
+
 .cam-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .cam-tit { font-size: 15px; letter-spacing: .12em; text-transform: uppercase; opacity: .9; }
 .racha { font-size: 13px; font-weight: 600; background: rgba(255,255,255,.16); padding: 3px 10px; border-radius: 999px; }
