@@ -275,3 +275,6 @@ main { padding-top: 22px; }
 .marcador { align-items: center; }
 .obj.ok .t { text-decoration: none; color: var(--muted); }
 .leyenda i { width: 12px !important; height: 12px !important; aspect-ratio: auto !important; border-radius: 4px; }
+
+.obj.nocuenta { opacity: .55; background: transparent; box-shadow: none; border: 1px dashed var(--line); }
+.tick.fuera { display: grid; place-items: center; color: var(--muted); font-weight: 700; cursor: default; }

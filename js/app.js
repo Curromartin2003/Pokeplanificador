@@ -150,13 +150,14 @@ function vHoy(hoy) {
   if (d.tipo === "libre") return nav + aviso + `<div class="libre"><div class="big">🌴</div><h2>Día libre</h2><p>Hoy no hay objetivos ni estudio: descansa de verdad. La puntuación no cambia.</p></div>` + manana(hoy, fecha);
 
   const c = E.OBJETIVOS.map((_, i) => !!(rec.c && rec.c[i]));
-  const hechos = c.filter(Boolean).length;
+  const cuentan = E.objetivosDelDia(d), N = cuentan.length;
+  const hechos = cuentan.filter(i => c[i]).length;
   const p = E.puntosDia(d, rec);
   const chip = d.tipo === "luis" ? `<span class="chip luis">Clase de Luis</span>` : `<span class="chip ${d.materia}">${E.MATERIAS[d.materia]}</span>`;
   const marcador = `<div class="marcador ${p > 0 ? "pos" : p < 0 ? "neg" : "cero"}">
-    <div class="anillo" style="--p:${hechos / 8}"><span>${hechos}/8</span></div>
+    <div class="anillo" style="--p:${hechos / N}"><span>${hechos}/${N}</span></div>
     <div><b>${futuro ? "Aún no ha llegado" : p > 0 ? "🚒 ¡Turno completado! +1" : p < 0 ? "−1 punto" : "Se mantiene"}</b>
-    <p>${futuro ? "Podrás marcar los objetivos ese día." : hechos === 8 ? "¡Todos hechos!" : hechos === 7 ? "Te falta 1: con todos sumas un punto." : `Te faltan ${8 - hechos}. Si fallas 2 o más, restas un punto.`}</p>
+    <p>${futuro ? "Podrás marcar los objetivos ese día." : hechos === N ? "¡Todos hechos!" : hechos === N - 1 ? "Te falta 1: con todos sumas un punto." : `Te faltan ${N - hechos}. Si fallas 2 o más, restas un punto.`}${d.sinEstudio ? " Hoy sin estudio: cuentan los otros 6." : ""}</p>
     ${chip}</div></div>`;
 
   const items = E.OBJETIVOS.map((txt, i) => {
@@ -174,13 +175,15 @@ function vHoy(hoy) {
       const url = st.callejeroUrl;
       det = `<p class="det">Enfoque: <b>${esc(d.foco)}</b>${url ? ` · <a href="${esc(url)}" target="_blank" rel="noopener">Abrir Pokecallejero</a>` : ""}</p>`;
     }
+    if (!cuentan.includes(i)) return `<li class="obj nocuenta"><span class="tick fuera">–</span>
+      <div class="txt"><span class="t"><span class="ic">${E.ICONOS[i]}</span>${esc(i === E.I_ESTUDIO ? (d.tipo === "luis" ? "Clase de Luis" : "Estudio") : "Callejero")}</span><p class="det">Hoy sin estudio (0 h): no cuenta para los puntos.</p></div></li>`;
     return `<li class="obj ${c[i] ? "ok" : ""}">
       <button class="tick" data-tick="${i}" ${futuro ? "disabled" : ""} aria-pressed="${c[i]}" aria-label="${esc(titulo)}">
         <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
       <div class="txt"><span class="t"><span class="ic">${E.ICONOS[i]}</span>${esc(titulo)}</span>${det}</div></li>`;
   }).join("");
   const tiempo = `<div class="tiempo"><label>Tiempo ${fecha === hoy ? "de hoy" : "de este día"}:
-    <select id="tiempoDia">${[["", `Normal (${E.textoMin(d.horasNormales)})`], ["60", "1 h"], ["120", "2 h"], ["180", "3 h"]]
+    <select id="tiempoDia">${[["", `Normal (${E.textoMin(d.horasNormales)})`], ["0", "0 h (sin estudio)"], ["60", "1 h"], ["120", "2 h"], ["180", "3 h"]]
       .map(([v, t]) => `<option value="${v}" ${(d.horasCambiadas ? String(d.total) : "") === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
     ${d.horasCambiadas ? `<span class="nota">Cambiado solo este día.</span>` : ""}</div>`;
   return nav + aviso + marcador + `<ul class="objs">${items}</ul>` + tiempo + manana(hoy, fecha);

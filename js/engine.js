@@ -83,7 +83,7 @@ export function infoDia(st, fecha) {
   const total = tipo === "libre" ? 0 : cambiado ? rec.h : MINUTOS[dow];
   const minCal = Math.round(total * PCT_CALLEJERO);
   return {fecha, dow, tipo, total, minCal, minEst: tipo === "estudio" ? total - minCal : 0, semanaPuesta: cfg.puesta,
-    horasCambiadas: cambiado, horasNormales: MINUTOS[dow]};
+    horasCambiadas: cambiado, horasNormales: MINUTOS[dow], sinEstudio: cambiado && total === 0};
 }
 
 /* ---------- temas y trozos ---------- */
@@ -272,7 +272,8 @@ export function recorrer(st, hoy, hasta, cb) {
       if (!d.partes.length) d.partes = [{t: sig, m: 0}];
       d.materia = d.partes[0].t;
       d.min = d.hecho ? d.partes.reduce((x, p) => x + p.m, 0) : d.minEst;
-      const ult = plan.length ? plan[plan.length - 1].t : sig;
+      // Un día sin estudio no gasta el turno de la materia que tocaba.
+      const ult = plan.length ? plan[plan.length - 1].t : (sig === "leg" ? "esp" : "leg");
       sig = ult === "leg" ? "esp" : "leg";
     }
     d.h = h;
@@ -330,10 +331,13 @@ export function comparaRitmos(st, hoy) {
 }
 
 /* ---------- puntos ---------- */
+// Objetivos que cuentan ese día: con 0 h de estudio no cuentan ni el estudio (o la clase) ni el callejero.
+export const objetivosDelDia = d => OBJETIVOS.map((_, i) => i).filter(i => !(d.sinEstudio && (i === I_ESTUDIO || i === 4)));
 export function puntosDia(d, rec) {
   if (d.tipo === "libre") return null;
-  const hechos = ((rec && rec.c) || []).slice(0, OBJETIVOS.length).filter(Boolean).length;
-  const fallos = OBJETIVOS.length - hechos;
+  const cuentan = objetivosDelDia(d);
+  const hechos = cuentan.filter(i => rec && rec.c && rec.c[i]).length;
+  const fallos = cuentan.length - hechos;
   return fallos === 0 ? 1 : fallos === 1 ? 0 : -1;
 }
 
@@ -348,7 +352,7 @@ export function resumen(st, hoy) {
     hist.push({fecha: f, p, tipo: d.tipo, acum: total + (p || 0)});
     if (p === null) continue;
     total += p; nDias++;
-    OBJETIVOS.forEach((_, i) => { if (rec && rec.c && rec.c[i]) cumple[i]++; });
+    OBJETIVOS.forEach((_, i) => { if ((rec && rec.c && rec.c[i]) || !objetivosDelDia(d).includes(i)) cumple[i]++; });
   }
   let racha = 0;
   for (let i = hist.length - 1; i >= 0; i--) { if (hist[i].p === null) continue; if (hist[i].p === 1) racha++; else break; }

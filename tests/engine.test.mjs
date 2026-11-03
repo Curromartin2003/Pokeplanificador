@@ -196,3 +196,16 @@ test("puntos iniciales (7) y tiempo por tema con lo apuntado", () => {
   assert.ok(Math.abs(total - 50) < 0.5);
   assert.ok(t["leg1|1"] > 0);
 });
+
+test("día con 0 h de estudio: no cuentan estudio ni callejero, con los otros 6 se suma", () => {
+  const seis = todos(); seis[E.I_ESTUDIO] = false; seis[4] = false;
+  const st = base(undefined, {dias: {[HOY]: {h: 0, c: seis}}});
+  const d = E.dia(st, HOY, HOY);
+  assert.ok(d.sinEstudio); assert.equal(d.minEst, 0); assert.equal(d.minCal, 0);
+  assert.equal(E.puntosDia(d, st.dias[HOY]), 1);
+  const cinco = [...seis]; cinco[0] = false;
+  assert.equal(E.puntosDia(d, {c: cinco}), 0);
+  // No gasta el turno: el siguiente día de estudio sigue tocando legislación.
+  const sig = E.dias(st, HOY, "2026-11-04", "2026-11-10").find(x => x.tipo === "estudio");
+  assert.equal(sig.materia, "leg");
+});
