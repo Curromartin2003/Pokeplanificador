@@ -151,7 +151,7 @@ function vHoy(hoy) {
     let titulo = txt, det = "";
     if (i === E.I_ESTUDIO) {
       if (d.tipo === "luis") { titulo = "Clase de Luis"; det = `<p class="det">Hoy solo clase y callejero.</p>`; }
-      else { titulo = `Estudio: ${E.MATERIAS[d.materia]} · ${E.textoMin(d.min)}`; det = planHTML(d); }
+      else { titulo = `Estudio: ${d.partes.map(x => E.MATERIAS[x.t]).join(" y ")} · ${E.textoMin(d.min)}`; det = planHTML(d); }
     }
     if (i === 4) {
       titulo = `Callejero · ${E.textoMin(d.minCal)}`;
@@ -171,7 +171,9 @@ function planHTML(d) {
   return `<ol class="plan">${d.plan.map(it => {
     const sigue = it.desde > 0, corta = it.hasta < it.min;
     const estado = sigue && corta ? `del min ${it.desde} al ${it.hasta} de ${it.min}` : sigue ? `termina (te quedan ${it.mins} min)` : corta ? `empieza: ${it.mins} de ${it.min} min` : `${it.mins} min`;
-    return `<li><span class="tt">${it.v > 1 ? it.v + ".ª vuelta · " : ""}Tema ${it.n} · ${esc(it.titulo)}</span>
+    const cambio = d.partes.length > 1 && it.t !== d.plan[0].t && it === d.plan.find(z => z.t === it.t)
+      ? `<li class="aviso-vuelta">Terminas la vuelta de ${E.MATERIAS[d.plan[0].t].toLowerCase()}: el resto del tiempo, ${E.MATERIAS[it.t].toLowerCase()}.</li>` : "";
+    return cambio + `<li><span class="tt">${it.v > 1 ? it.v + ".ª vuelta · " : ""}Tema ${it.n} · ${esc(it.titulo)}</span>
       <span class="parte">${it.partes > 1 ? `Parte ${it.parte}/${it.partes}: ` : ""}${esc(it.nombre)}</span>${it.ref ? `<span class="ref">📄 ${esc(it.ref)}</span>` : ""}<span class="min">${estado}</span></li>`;
   }).join("")}</ol>`;
 }
@@ -180,7 +182,7 @@ function manana(hoy, fecha) {
   const sig = E.sumaDias(fecha, 1);
   const d = E.dia(st, hoy, sig);
   let t = d.tipo === "libre" ? "Día libre" : d.tipo === "luis" ? `Clase de Luis y callejero (${d.minCal} min)` :
-    `${E.MATERIAS[d.materia]} ${E.textoMin(d.min)}: ${d.plan && d.plan[0] ? `Tema ${d.plan[0].n} · ${esc(d.plan[0].titulo)}` : ""} · callejero ${d.minCal} min`;
+    `${d.partes.map(x => E.MATERIAS[x.t]).join(" y ")} ${E.textoMin(d.min)}: ${d.plan && d.plan[0] ? `Tema ${d.plan[0].n} · ${esc(d.plan[0].titulo)}` : ""} · callejero ${d.minCal} min`;
   return `<div class="manana"><span>${fecha === hoy ? "Mañana" : cap(E.fechaLarga(sig))}</span><p>${t}</p></div>`;
 }
 
@@ -190,7 +192,7 @@ function vSemana(hoy) {
   const cfg = E.semana(st, mon);
   const ds = E.dias(st, hoy, mon < st.inicio ? st.inicio : mon, E.sumaDias(mon, 6));
   const est = ds.filter(d => d.tipo === "estudio");
-  const min = t => est.filter(d => d.materia === t).reduce((a, d) => a + d.min, 0);
+  const min = t => est.reduce((a, d) => a + d.partes.filter(x => x.t === t).reduce((b, x) => b + x.m, 0), 0);
   const cal = ds.reduce((a, d) => a + (d.minCal || 0), 0);
   const fin = E.sumaDias(mon, 6);
   const cab = `<div class="navdia"><button class="ico" data-a="semMenos" aria-label="Semana anterior">‹</button>
@@ -206,7 +208,7 @@ function vSemana(hoy) {
     const hechos = rec && rec.c ? rec.c.filter(Boolean).length : 0;
     const pts = d.tipo === "libre" ? "" : d.fecha < hoy ? `<span class="pt ${p > 0 ? "pos" : p < 0 ? "neg" : "cero"}">${p > 0 ? "+1" : p < 0 ? "−1" : "0"}</span>` : d.fecha === hoy ? `<span class="pt hoy">${hechos}/8</span>` : "";
     const que = d.tipo === "libre" ? "Libre" : d.tipo === "luis" ? `Clase de Luis + callejero ${d.minCal} min` :
-      `${E.MATERIAS[d.materia]} ${E.textoMin(d.min)} + callejero ${d.minCal} min`;
+      `${d.partes.map(x => E.MATERIAS[x.t]).join(" y ")} ${E.textoMin(d.min)} + callejero ${d.minCal} min`;
     const temas = d.plan ? [...new Map(d.plan.map(x => [x.v + "-" + x.n, x])).values()].map(x => `${x.v > 1 ? x.v + ".ª v. · " : ""}T${x.n} ${esc(x.titulo)}`).join(" · ") : "";
     return `<li class="dia ${d.tipo} ${d.fecha === hoy ? "hoy" : ""}" data-a="verDia" data-f="${d.fecha}">
       <div class="dn"><b>${E.DIAS_CORTO[d.dow]}</b><span>${+d.fecha.slice(8)}</span></div>
@@ -267,7 +269,7 @@ function vProgreso(hoy, res) {
     const n = prev.filter(f => f && f <= st.examen).length;
     const dias = E.difDias(hoy, st.examen);
     return `<div class="tarjeta"><h3>Examen: ${E.fechaLarga(st.examen)} <span class="nota">(${dias} días)</span></h3>
-      <p>Al ritmo actual llegas con <b>${n} ${n === 1 ? "vuelta" : "vueltas"}</b> completas. ${n >= 3 ? "Es un ritmo de aprobado con plaza." : n === 2 ? "Bien, pero lo competitivo son 3 vueltas: prueba el ritmo intenso o el reparto proporcional en Ajustes." : "Necesitas subir el ritmo: mira Ajustes."}</p></div>`;
+      <p>Al ritmo actual llegas con <b>${n} ${n === 1 ? "vuelta" : "vueltas"}</b> completas. ${n >= 3 ? "Es un ritmo de aprobado con plaza." : n === 2 ? "Bien, pero lo competitivo son 3 vueltas: prueba el ritmo intenso en Ajustes." : "Necesitas subir el ritmo: mira Ajustes."}</p></div>`;
   })() : `<div class="tarjeta"><p>Pon la fecha del examen en <button class="enlace" data-a="ajustes">Ajustes</button> para saber con cuántas vueltas llegas.</p></div>`;
   const vueltas = prev.map((f, i) => `<li><b>${i + 1}.ª vuelta</b><span>${f ? E.fechaLarga(f) : "—"}</span></li>`).join("");
   // Gráfica de puntos acumulados.
@@ -290,7 +292,7 @@ function vProgreso(hoy, res) {
       <div class="dos"><div><span>Legislación</span><b>${pr.leg.vuelta}.ª vuelta · ${Math.round(pr.leg.pctVuelta * 100)} %</b><span class="barra"><i style="width:${Math.round(pr.leg.pctVuelta * 100)}%"></i></span></div>
       <div><span>Específico</span><b>${pr.esp.vuelta}.ª vuelta · ${Math.round(pr.esp.pctVuelta * 100)} %</b><span class="barra"><i style="width:${Math.round(pr.esp.pctVuelta * 100)}%"></i></span></div></div>
       <ul class="vueltas">${vueltas}</ul>
-      <p class="nota">Ritmo ${E.RITMOS[st.ritmo].nombre.toLowerCase()} · reparto ${st.reparto === "proporcional" ? "proporcional" : "alterno (un día cada materia)"}. Se calcula con la semana tipo actual y suponiendo que cumples el plan desde hoy.</p></div>
+      <p class="nota">Ritmo ${E.RITMOS[st.ritmo].nombre.toLowerCase()}. Un día legislación y otro específico; cuando una materia acaba la vuelta, todos los días son de la otra hasta que la acaba también, y empieza la siguiente vuelta de las dos. Se calcula con la semana tipo actual y suponiendo que cumples el plan desde hoy.</p></div>
     ${examen}
     <div class="tarjeta"><h3>Puntos acumulados</h3>${graf}</div>
     <div class="tarjeta"><h3>${E.difDias(desde, E.lunes(hoy)) >= 49 ? "Últimas 8 semanas" : "Calendario"}</h3><div class="cal">${E.DIAS_CORTO.map(x => `<b>${x}</b>`).join("")}${cal}</div>
@@ -308,16 +310,10 @@ function grafica(v) {
 /* ---------- Ajustes ---------- */
 function vAjustes(hoy) {
   const comp = E.comparaRitmos(st, hoy);
-  const alt = E.previsiones({...st, reparto: st.reparto === "proporcional" ? "alterno" : "proporcional"}, hoy);
   const ritmos = comp.map(r => `<label class="opcion ${st.ritmo === r.ritmo ? "on" : ""}"><input type="radio" name="ritmo" value="${r.ritmo}" ${st.ritmo === r.ritmo ? "checked" : ""}>
     <span><b>${r.nombre}</b> · ${r.txt}<br><small>1.ª vuelta: ${r.fechas[0] ? E.fechaLarga(r.fechas[0]) : "—"}${r.vueltasAntesExamen !== null ? ` · ${r.vueltasAntesExamen} vueltas antes del examen` : ""}</small></span></label>`).join("");
-  const actual = E.previsiones(st, hoy)[0];
-  const reparto = [["alterno", "Alterno", "Un día legislación y otro específico."], ["proporcional", "Proporcional", "Cada día toca la materia que va más atrasada en proporción a su tamaño (específico es casi 4 veces más grande). Las dos vueltas acaban a la vez."]]
-    .map(([k, n, t]) => `<label class="opcion ${st.reparto === k ? "on" : ""}"><input type="radio" name="reparto" value="${k}" ${st.reparto === k ? "checked" : ""}>
-    <span><b>${n}</b> · ${t}<br><small>1.ª vuelta: ${E.fechaLarga(st.reparto === k ? actual : alt[0])}</small></span></label>`).join("");
   return `<h1>Ajustes</h1>
     <div class="tarjeta"><h3>Ritmo</h3>${ritmos}</div>
-    <div class="tarjeta"><h3>Reparto entre legislación y específico</h3>${reparto}</div>
     <div class="tarjeta"><h3>Fecha del examen</h3><input type="date" id="examen" value="${st.examen || ""}"><p class="nota">Con ella se calcula con cuántas vueltas llegas.</p></div>
     <div class="tarjeta"><h3>Enlace a Pokecallejero</h3><input type="url" id="calleUrl" placeholder="https://….netlify.app" value="${esc(st.callejeroUrl)}"><p class="nota">Aparece en el objetivo «Callejero» para abrirlo con un toque.</p></div>
     <div class="tarjeta"><h3>Semana actual</h3><button class="btn" data-a="editSemana" data-m="${E.lunes(hoy)}">Día libre y clases de Luis</button></div>
@@ -393,7 +389,6 @@ function enlazar() {
     else if (a === "salir") store.salir();
   });
   document.querySelectorAll("input[name=ritmo]").forEach(r => r.onchange = () => guardar({ritmo: r.value}));
-  document.querySelectorAll("input[name=reparto]").forEach(r => r.onchange = () => guardar({reparto: r.value}));
   const ex = $("#examen"); if (ex) ex.onchange = () => guardar({examen: ex.value || null});
   const cu = $("#calleUrl"); if (cu) cu.onchange = () => guardar({callejeroUrl: cu.value.trim()});
 }

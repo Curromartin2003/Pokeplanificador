@@ -52,7 +52,7 @@ export function fechaLarga(s, conDia = true) {
 
 /* ---------- estado ---------- */
 export function estadoNuevo(hoy) {
-  return {v: 1, inicio: hoy, ritmo: "competitivo", reparto: "alterno", examen: null, semanas: {}, dias: {},
+  return {v: 1, inicio: hoy, ritmo: "competitivo", examen: null, semanas: {}, dias: {},
     ajuste: {leg: 0, esp: 0}, titulos: {}, callejeroUrl: "", base: null};
 }
 export const completar = s => ({...estadoNuevo(s && s.inicio || hoyLocal()), ...(s || {}),
@@ -134,17 +134,26 @@ export function recorrer(st, hoy, hasta, cb) {
     d.rec = rec;
     if (d.tipo !== "libre") d.foco = FOCOS_CALLEJERO[nCal++ % FOCOS_CALLEJERO.length];
     if (d.tipo === "estudio") {
-      let t, m;
-      if (rec && rec.s) { t = rec.s.t; m = rec.s.m; d.hecho = true; }
+      let partes;
+      if (rec && rec.s) { partes = [{t: rec.s.t, m: rec.s.m}, ...(rec.s.x ? [rec.s.x] : [])]; d.hecho = true; }
       else {
-        t = st.reparto === "proporcional"
-          ? (pos.leg / q.leg.fin[0] <= pos.esp / q.esp.fin[0] ? "leg" : "esp") : sig;
-        m = d.minEst; d.hecho = false;
+        // Vueltas a la par: se alterna mientras las dos materias van por la misma vuelta; la que la termina espera
+        // y todos los días son de la otra hasta que acaba también. Entonces empieza la vuelta siguiente de las dos.
+        const vl = vueltaDe(q.leg, pos.leg), ve = vueltaDe(q.esp, pos.esp);
+        const t = vl > ve ? "esp" : ve > vl ? "leg" : sig, otra = t === "leg" ? "esp" : "leg";
+        const queda = q[t].fin[vueltaDe(q[t], pos[t]) - 1] - pos[t];
+        // Si hoy se termina la vuelta de esta materia, el tiempo que sobra es para la otra.
+        partes = queda > 0 && queda < d.minEst ? [{t, m: queda}, {t: otra, m: d.minEst - queda}] : [{t, m: d.minEst}];
+        d.hecho = false;
       }
-      d.materia = t; d.min = m; d.pos = pos[t];
-      d.plan = tramo(q[t], pos[t], m);
-      if (d.hecho || f >= hoy) pos[t] += m;
-      sig = t === "leg" ? "esp" : "leg";
+      d.partes = partes;
+      d.materia = partes[0].t; d.min = partes.reduce((a, x) => a + x.m, 0); d.pos = pos[partes[0].t];
+      d.plan = [];
+      for (const x of partes) {
+        d.plan.push(...tramo(q[x.t], pos[x.t], x.m));
+        if (d.hecho || f >= hoy) pos[x.t] += x.m;
+      }
+      sig = partes[partes.length - 1].t === "leg" ? "esp" : "leg";
     }
     d.posDespues = {...pos};
     if (cb(d, q) === false) break;
@@ -167,7 +176,10 @@ export function dias(st, hoy, desde, hasta) {
 export function progreso(st, hoy) {
   const q = {leg: cola(st, "leg"), esp: cola(st, "esp")};
   const pos = {leg: st.ajuste.leg || 0, esp: st.ajuste.esp || 0};
-  for (const [f, r] of Object.entries(st.dias)) if (f >= st.inicio && f <= hoy && r && r.s) pos[r.s.t] += r.s.m;
+  for (const [f, r] of Object.entries(st.dias)) if (f >= st.inicio && f <= hoy && r && r.s) {
+    pos[r.s.t] += r.s.m;
+    if (r.s.x) pos[r.s.x.t] += r.s.x.m;
+  }
   const m = t => {
     const v = vueltaDe(q[t], pos[t]), ini = v === 1 ? 0 : q[t].fin[v - 2], fin = q[t].fin[v - 1];
     const actual = q[t].items.find(c => pos[t] < c.ini + c.min);
@@ -232,7 +244,7 @@ export function marcar(st, hoy, fecha, i, valor) {
   const c = OBJETIVOS.map((_, k) => !!(rec.c && rec.c[k]));
   c[i] = valor;
   let s = rec.s || null;
-  if (i === I_ESTUDIO && d.tipo === "estudio") s = valor ? {t: d.materia, m: d.min} : null;
+  if (i === I_ESTUDIO && d.tipo === "estudio") s = valor ? {t: d.partes[0].t, m: d.partes[0].m, x: d.partes[1] || null} : null;
   return {dias: {[fecha]: {c, s}}};
 }
 
@@ -240,7 +252,7 @@ export function marcar(st, hoy, fecha, i, valor) {
 export function irA(st, hoy, t, ini) {
   const p = progreso(st, hoy)[t].pos;
   const dHoy = st.dias[hoy];
-  const hoyHecho = dHoy && dHoy.s && dHoy.s.t === t ? dHoy.s.m : 0;
+  const hoyHecho = dHoy && dHoy.s ? (dHoy.s.t === t ? dHoy.s.m : 0) + (dHoy.s.x && dHoy.s.x.t === t ? dHoy.s.x.m : 0) : 0;
   return {ajuste: {...st.ajuste, [t]: (st.ajuste[t] || 0) + (ini - (p - hoyHecho))}};
 }
 

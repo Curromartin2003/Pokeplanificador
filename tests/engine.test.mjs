@@ -38,7 +38,7 @@ test("el plan del día empieza donde se quedó y lo no hecho se recoloca", () =>
 test("marcar el estudio guarda materia y minutos; desmarcar lo quita", () => {
   const st = base();
   const p = E.marcar(st, HOY, HOY, E.I_ESTUDIO, true);
-  assert.deepEqual(p.dias[HOY].s, {t: "leg", m: 126});
+  assert.deepEqual(p.dias[HOY].s, {t: "leg", m: 126, x: null});
   const st2 = E.completar({...st, dias: p.dias});
   assert.equal(E.marcar(st2, HOY, HOY, E.I_ESTUDIO, false).dias[HOY].s, null);
   assert.equal(E.progreso(st2, HOY).leg.pos, 126);
@@ -80,8 +80,33 @@ test("previsiones: fechas crecientes y el ritmo intenso acaba antes", () => {
   const c = E.comparaRitmos(st, HOY);
   const f = r => c.find(x => x.ritmo === r).fechas[0];
   assert.ok(f("intenso") < f("competitivo") && f("competitivo") < f("base"));
-  // El reparto proporcional nunca debe acabar la 1.ª vuelta claramente después del alterno.
-  assert.ok(E.difDias(p[0], E.previsiones({...st, reparto: "proporcional"}, HOY)[0]) <= 14);
+});
+
+test("vueltas a la par: acabada la legislación, solo específico hasta acabarlo; luego se empieza todo", () => {
+  const st = base();
+  const qL = E.cola(st, "leg"), qE = E.cola(st, "esp");
+  // Hoy (día de legislación) quedan 10 min de la vuelta: el resto del día va a específico.
+  let s2 = E.completar({...st, ajuste: {leg: qL.fin[0] - 10, esp: 0}});
+  const hoy = E.dia(s2, HOY, HOY);
+  assert.deepEqual(hoy.partes, [{t: "leg", m: 10}, {t: "esp", m: 116}]);
+  // Con la legislación terminada y el específico a medias, todos los días son de específico.
+  s2 = E.completar({...st, ajuste: {leg: qL.fin[0], esp: 0}});
+  const ds = E.dias(s2, HOY, HOY, "2026-11-30").filter(d => d.tipo === "estudio");
+  assert.ok(ds.every(d => d.partes.every(x => x.t === "esp")));
+  // En toda la previsión, la 2.ª vuelta de legislación no empieza hasta acabar la 1.ª de específico.
+  let espAcabado = false;
+  E.recorrer(st, HOY, "2028-12-31", d => {
+    if (d.tipo !== "estudio") return;
+    // (el mismo día en que se acaba el específico, lo que sobra ya empieza la 2.ª vuelta de legislación)
+    if (d.posDespues.esp >= qE.fin[0]) espAcabado = true;
+    for (const it of d.plan) if (it.t === "leg" && it.v === 2) assert.ok(espAcabado, "legislación v2 antes de acabar específico v1 (" + d.fecha + ")");
+  });
+  // Marcar un día partido guarda las dos materias y el progreso avanza en ambas.
+  s2 = E.completar({...st, ajuste: {leg: qL.fin[0] - 10, esp: 0}});
+  const p = E.marcar(s2, HOY, HOY, E.I_ESTUDIO, true);
+  assert.deepEqual(p.dias[HOY].s, {t: "leg", m: 10, x: {t: "esp", m: 116}});
+  const pr = E.progreso(E.completar({...s2, dias: p.dias}), HOY);
+  assert.equal(pr.leg.vuelta, 2); assert.equal(pr.esp.pos, 116);
 });
 
 test("irA coloca el temario al principio de la parte elegida", () => {
