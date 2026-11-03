@@ -38,7 +38,17 @@ try {
   await p.selectOption("#tiempoDia", "60");
   ok((await p.textContent(".objs")).includes("Estudio: Legislación · 42 min"), "cambiar el tiempo de hoy a 1 h");
   await p.selectOption("#tiempoDia", "");
-  for (let i = 0; i < 7; i++) await p.click(`[data-tick='${i}']`);
+  for (let i = 0; i < 7; i++) {
+    await p.click(`[data-tick='${i}']`);
+    if (i === 3) {
+      await p.waitForSelector("#minReal");
+      ok(true, "al marcar el estudio pregunta cuánto has tardado");
+      await p.fill("#minReal", "150");
+      await p.click("#modal [data-m=ok]");
+      await p.waitForSelector("#modal", {state: "hidden"});
+      ok((await p.textContent(".objs")).includes("Has tardado 2 h 30 min"), "apunta el tiempo real");
+    }
+  }
   ok((await p.textContent(".marcador")).includes("Se mantiene"), "7 de 8: se mantiene");
   await p.click("[data-tick='7']");
   ok((await p.textContent(".marcador")).includes("+1 punto"), "8 de 8: +1 punto");

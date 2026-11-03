@@ -193,3 +193,10 @@ h3.fuera { margin: 18px 0 2px; font-size: 15px; }
 .chip.visto { background: var(--okbg); color: var(--ok); font-size: 11px; padding: 1px 7px; }
 .historial { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; font-size: 13px; }
 .historial small { color: var(--muted); display: block; }
+
+.tiempo-real { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 16px 0; }
+.tiempo-real input { width: 90px; font: inherit; font-size: 22px; text-align: center; padding: 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.det.tardado { color: var(--ink); }
+.partes li .botones { grid-column: 1 / -1; display: flex; gap: 14px; }
+.fuera-lista { color: var(--muted); }
+.vueltas.sinlinea li { display: block; border: 0; }

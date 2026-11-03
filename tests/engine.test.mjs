@@ -156,3 +156,30 @@ test("semilla: semana, martes de 1 h, temas vistos y Constitución desde el Cap.
   assert.equal(pr.esp.actual.n, 4);
   assert.equal(E.semilla(st2, HOY), null);
 });
+
+test("tiempo real: si tardas más de lo previsto, lo que queda se alarga y la vuelta se retrasa", () => {
+  let st = base();
+  const antes = E.previsiones(st, HOY)[0];
+  const c0 = E.cola(st, "leg").items[5].min;
+  st = aplicar(st, E.marcar(st, HOY, HOY, E.I_ESTUDIO, true));
+  const p = E.tiempoReal(st, HOY, 252); // el doble de los 126 previstos
+  st = E.completar({...st, dias: {...st.dias, [HOY]: {...st.dias[HOY], s: {...st.dias[HOY].s, ...p.dias[HOY].s}}}});
+  const cal = E.calibracion(st);
+  assert.ok(cal.leg > 1.4 && cal.leg < 2); assert.equal(cal.esp, 1);
+  assert.ok(E.cola(st, "leg").items[5].min > c0);
+  assert.ok(E.previsiones(st, HOY)[0] > antes);
+  // Lo ya hecho se conserva.
+  assert.ok(E.progreso(st, HOY).leg.pctVuelta > 0);
+});
+
+test("«No entra» quita una parte de todas las vueltas y se puede volver a meter", () => {
+  const st = base();
+  const c = E.cola(st, "esp").items.find(x => x.v === 1 && x.n === 8 && /1846-2/.test(x.nombre));
+  const tot0 = E.cola(st, "esp").tot;
+  const st2 = aplicar(st, E.noEntra("esp", 8, c));
+  st2.fuera = {esp8: E.noEntra("esp", 8, c).fuera.esp8};
+  assert.ok(!E.cola(st2, "esp").items.some(x => x.id === c.id));
+  assert.ok(E.cola(st2, "esp").tot[0] < tot0[0] && E.cola(st2, "esp").tot[1] < tot0[1]);
+  const st3 = E.completar({...st2, fuera: {esp8: {...st2.fuera.esp8, ...E.noEntra("esp", 8, c, false).fuera.esp8}}});
+  assert.ok(E.cola(st3, "esp").items.some(x => x.id === c.id));
+});

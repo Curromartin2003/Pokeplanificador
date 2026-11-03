@@ -161,7 +161,11 @@ function vHoy(hoy) {
     let titulo = txt, det = "";
     if (i === E.I_ESTUDIO) {
       if (d.tipo === "luis") { titulo = "Clase de Luis"; det = `<p class="det">Hoy solo clase y callejero.</p>`; }
-      else { titulo = `Estudio: ${d.partes.map(x => E.MATERIAS[x.t]).join(" y ")} · ${E.textoMin(d.min)}`; det = planHTML(d); }
+      else {
+        titulo = `Estudio: ${d.partes.map(x => E.MATERIAS[x.t]).join(" y ")} · ${E.textoMin(d.min)}`;
+        const real = rec.s && typeof rec.s.real === "number" ? rec.s.real : null;
+        det = (rec.s ? `<p class="det tardado">${real !== null ? `Has tardado <b>${E.textoMin(real)}</b> (previsto ${E.textoMin(d.min)})` : "¿Cuánto has tardado?"} <button class="enlace peque" data-a="tiempoReal" data-f="${fecha}" data-m="${real ?? d.min}">${real !== null ? "Cambiar" : "Apuntarlo"}</button></p>` : "") + planHTML(d);
+      }
     }
     if (i === 4) {
       titulo = `Callejero · ${E.textoMin(d.minCal)}`;
@@ -259,8 +263,11 @@ function vTemario(hoy) {
       const partes = abierto ? `<ul class="partes">${cs.map(c => {
         const f = E.fraccion(h, c.id), e = f >= 0.999 ? "hecho" : f > 0.001 ? "curso" : "pend";
         return `<li class="${e}"><span>${c.partes > 1 ? c.parte + ". " : ""}${esc(c.nombre)}${c.ref ? `<small class="ref">📄 ${esc(c.ref)}</small>` : ""}</span><span class="m">${c.min} min</span>
-          <button class="enlace peque" data-a="irA" data-t="${t}" data-id="${c.id}">Empezar aquí</button></li>`;
+          <span class="botones"><button class="enlace peque" data-a="irA" data-t="${t}" data-id="${c.id}">Empezar aquí</button>
+          ${v === 1 ? `<button class="enlace peque" data-a="noEntra" data-t="${t}" data-n="${tm.n}" data-key="${esc(c.key)}" data-v="1">No entra</button>` : ""}</span></li>`;
       }).join("")}</ul>
+      ${(() => { const fuera = tm.todas.filter(x => !tm.partes.includes(x));
+        return fuera.length ? `<ul class="subidos fuera-lista"><li><b>No entran:</b></li>${fuera.map(x => `<li>${esc(x.nombre)} <button class="enlace peque" data-a="noEntra" data-t="${t}" data-n="${tm.n}" data-key="${esc(x.key)}" data-v="0">Volver a meter</button></li>`).join("")}</ul>` : ""; })()}
       <div class="acc-tema"><button class="btn peque sec" data-a="visto" data-t="${t}" data-n="${tm.n}" data-v="${visto ? 0 : 1}">${visto ? "Quitar «visto»" : "Marcar como visto"}</button>
         ${botonSubir(t, tm.n)}</div>
       ${subidos.length ? `<ul class="subidos">${subidos.map((d, i) => `<li>📎 ${esc(d.doc)} <small>(${d.pal.length} págs., subido el ${E.fechaLarga(d.t, false)})</small> <button class="enlace peque" data-a="quitarPdf" data-k="${k}" data-i="${i}">Quitar</button></li>`).join("")}</ul>` : ""}
@@ -366,6 +373,7 @@ function vProgreso(hoy, res) {
       <div><span>Específico</span><b>${pr.esp.vuelta}.ª vuelta · ${Math.round(pr.esp.pctVuelta * 100)} %</b><span class="barra"><i style="width:${Math.round(pr.esp.pctVuelta * 100)}%"></i></span></div></div>
       <ul class="vueltas">${vueltas}</ul>
       <p class="nota">Ritmo ${E.RITMOS[st.ritmo].nombre.toLowerCase()}. Un día legislación y otro específico; cuando una materia acaba la vuelta, todos los días son de la otra hasta que la acaba también, y empieza la siguiente vuelta de las dos. Se calcula con la semana tipo actual y suponiendo que cumples el plan desde hoy.</p></div>
+    ${ritmoReal()}
     ${examen}
     <div class="tarjeta"><h3>Puntos acumulados</h3>${graf}</div>
     <div class="tarjeta"><h3>${E.difDias(desde, E.lunes(hoy)) >= 49 ? "Últimas 8 semanas" : "Calendario"}</h3><div class="cal">${E.DIAS_CORTO.map(x => `<b>${x}</b>`).join("")}${cal}</div>
@@ -373,6 +381,17 @@ function vProgreso(hoy, res) {
     <div class="tarjeta"><h3>Cumplimiento de cada objetivo</h3><ul class="cumple">${obj}</ul></div>
     <div class="tarjeta"><h3>Historial de cambios del plan</h3><ul class="historial">${[...CAMBIOS, ...st.cambios].slice().reverse().map(c =>
       `<li><small>${E.fechaLarga(c.fecha, false)}</small> ${esc(c.texto)}${c.antes && c.despues && c.antes !== c.despues ? ` <span class="nota">1.ª vuelta: ${E.fechaLarga(c.antes, false)} → ${E.fechaLarga(c.despues, false)}</span>` : ""}</li>`).join("")}</ul></div>`;
+}
+function ritmoReal() {
+  const c = E.calibracion(st);
+  const txt = t => {
+    const r = c[t], n = c.registros[t];
+    if (!n) return `<li><b>${E.MATERIAS[t]}:</b> aún sin datos. Apunta lo que tardas al marcar el estudio.</li>`;
+    const pct = Math.round((r - 1) * 100);
+    return `<li><b>${E.MATERIAS[t]}:</b> ${Math.abs(pct) < 3 ? "vas justo a lo previsto" : pct > 0 ? `tardas un ${pct} % más de lo previsto` : `vas un ${-pct} % más rápido de lo previsto`} <span class="nota">(${E.textoMin(n)} registrados)</span></li>`;
+  };
+  return `<div class="tarjeta"><h3>Tu ritmo real</h3><ul class="vueltas sinlinea">${txt("leg")}${txt("esp")}</ul>
+    <p class="nota">Las vueltas se recalculan con estos ritmos: cuanto más apuntes, más se ajustan.</p></div>`;
 }
 function grafica(v) {
   if (v.length < 2) return `<p class="nota">La gráfica aparece cuando lleves un par de días.</p>`;
@@ -432,6 +451,21 @@ function pintarModal() {
   };
 }
 
+/* ---------- cuánto has tardado ---------- */
+function abrirTiempo(fecha, previsto, actual) {
+  const box = $("#modal");
+  box.hidden = false;
+  const v0 = actual ?? previsto;
+  box.querySelector(".hoja").innerHTML = `<h2>¿Cuánto has tardado?</h2>
+    <p class="nota">Previsto: ${E.textoMin(previsto)}. Con lo que de verdad tardas, la app ajusta el tiempo de lo que te queda y la fecha de tus vueltas.</p>
+    <div class="tiempo-real"><button class="btn sec" data-d="-15">−15</button><label><input id="minReal" type="number" inputmode="numeric" min="1" max="600" value="${v0}"> min</label><button class="btn sec" data-d="15">+15</button></div>
+    <div class="acciones"><button class="btn sec" data-m="omitir">Ahora no</button><button class="btn" data-m="ok">Guardar</button></div>`;
+  const inp = box.querySelector("#minReal");
+  box.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { inp.value = Math.max(1, (+inp.value || 0) + +b.dataset.d); });
+  box.querySelector("[data-m=omitir]").onclick = () => { box.hidden = true; };
+  box.querySelector("[data-m=ok]").onclick = () => { const m = +inp.value; box.hidden = true; if (m > 0) guardar(E.tiempoReal(st, fecha, m)); };
+}
+
 /* ---------- eventos ---------- */
 function enlazar() {
   const hoy = HOY();
@@ -440,7 +474,9 @@ function enlazar() {
     const rec = st.dias[fecha] || {};
     const valor = !(rec.c && rec.c[i]);
     if (navigator.vibrate && valor) navigator.vibrate(12);
+    const d = i === E.I_ESTUDIO && valor ? E.dia(st, hoy, fecha) : null;
     guardar(E.marcar(st, hoy, fecha, i, valor));
+    if (d && d.tipo === "estudio" && d.plan && d.plan.length) abrirTiempo(fecha, d.min);
   });
   document.querySelectorAll("[data-a]").forEach(b => b.onclick = e => {
     e.stopPropagation();
@@ -456,6 +492,12 @@ function enlazar() {
     else if (a === "abrirTema") { ui.abierto[b.dataset.k] = !ui.abierto[b.dataset.k]; pintar(); }
     else if (a === "irA") {
       if (confirm("¿Empezar el plan por esta parte? Todo lo anterior de esta vuelta cuenta como estudiado.")) guardar(E.irA(st, hoy, b.dataset.t, b.dataset.id));
+    } else if (a === "tiempoReal") {
+      abrirTiempo(b.dataset.f, E.dia(st, hoy, b.dataset.f).min, +b.dataset.m);
+    } else if (a === "noEntra") {
+      const t = b.dataset.t, n = +b.dataset.n;
+      if (b.dataset.v === "1" && !confirm("¿Quitar esta parte de todas las vueltas? (No entra por decreto o no la estudias)")) return;
+      guardar(E.noEntra(t, n, {key: b.dataset.key}, b.dataset.v === "1"));
     } else if (a === "visto") {
       guardar(E.visto(st, hoy, b.dataset.t, +b.dataset.n, b.dataset.v === "1"));
     } else if (a === "quitarPdf") {

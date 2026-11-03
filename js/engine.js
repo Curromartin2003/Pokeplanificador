@@ -56,12 +56,12 @@ export function fechaLarga(s, conDia = true) {
 // ({"esp16": [{id, doc, wpm, pal, t}]}); cambios: historial de novedades; leidos / etaVista: avisos ya vistos.
 export function estadoNuevo(hoy) {
   return {v: 2, inicio: hoy, ritmo: "competitivo", examen: null, semanas: {}, dias: {}, manual: {}, materiales: {},
-    titulos: {}, callejeroUrl: "", base: null, cambios: [], leidos: {}, etaVista: null, semilla: 0};
+    titulos: {}, fuera: {}, callejeroUrl: "", base: null, cambios: [], leidos: {}, etaVista: null, semilla: 0};
 }
 export const completar = s => {
   const b = estadoNuevo(s && s.inicio || hoyLocal());
   const o = {...b, ...(s || {})};
-  for (const k of ["semanas", "dias", "manual", "materiales", "titulos", "leidos"]) o[k] = {...((s && s[k]) || {})};
+  for (const k of ["semanas", "dias", "manual", "materiales", "titulos", "leidos", "fuera"]) o[k] = {...((s && s[k]) || {})};
   o.cambios = Array.isArray(s && s.cambios) ? s.cambios : [];
   return o;
 };
@@ -91,8 +91,11 @@ const r5 = x => Math.max(5, Math.round(x / 5) * 5);
 function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
 const PAL_ESCANEADA = 150; // página sin texto (escaneada o casi todo imagen): se cuenta como 150 palabras
 
-// Parte un PDF en trozos de unos 50 min por páginas (con el ritmo de referencia, para que no cambien con el ritmo).
-export function partesDePdf(d) {
+// Solo se estudia lo subrayado y anotado: los PDF del específico y los subidos en la app llevan este factor.
+export const F_SUBRAYADO = 0.6;
+// Parte un PDF en trozos de unos 50 min de lectura completa por páginas (los cortes no cambian con el ritmo ni con el
+// factor `f`, que solo cambia los minutos: así lo ya hecho de cada trozo se conserva).
+export function partesDePdf(d, f = 1) {
   const desde = d.desde || 1, wpm = d.wpm || 70;
   const minPag = d.pal.map(w => Math.max(w < 40 ? PAL_ESCANEADA : w, 1) / wpm);
   const grupos = [];
@@ -106,7 +109,7 @@ export function partesDePdf(d) {
   return grupos.map(([a, b, m], i) => ({
     key: `${d.doc}|${a + desde}-${b + desde}`,
     nombre: grupos.length > 1 ? `${d.doc} (${i + 1}/${grupos.length})` : d.doc,
-    ref: `${d.doc} · págs. ${a + desde}-${b + desde}`, min: Math.max(5, Math.round(m)),
+    ref: `${d.doc} · págs. ${a + desde}-${b + desde}`, min: Math.max(5, Math.round(m * f)),
   }));
 }
 
@@ -121,25 +124,50 @@ export function temas(st, t) {
     if (t === "esp") {
       const docs = [...(DOCS_ESP[tm.n] || []), ...subidos];
       if (!docs.length) continue;
-      partes = docs.flatMap(partesDePdf);
+      partes = docs.flatMap(d => partesDePdf(d, F_SUBRAYADO));
       material = docs.map(d => d.doc);
     } else {
       partes = tm.partes.map(([nombre, min, ref]) => ({key: nombre, nombre, min, ref: ref || ""}));
-      for (const d of subidos) { partes.push(...partesDePdf(d)); material.push(d.doc); }
+      for (const d of subidos) { partes.push(...partesDePdf(d, F_SUBRAYADO)); material.push(d.doc); }
     }
-    out.push({n: tm.n, titulo: st.titulos[k] || tm.titulo, contenido: tm.contenido, material, partes, sinMaterial: !material.length});
+    // Partes que no entran (marcadas «No entra» en la app): fuera de todas las vueltas.
+    const fuera = st.fuera[k] || {};
+    const todas = partes;
+    partes = partes.filter(p => !fuera[hash(p.key)]);
+    if (!partes.length) continue;
+    out.push({n: tm.n, titulo: st.titulos[k] || tm.titulo, contenido: tm.contenido, material, partes, todas, sinMaterial: !material.length});
   }
   return out;
 }
+export const claveParte = p => hash(p.key);
 export function temasSinMaterial(st) {
   const con = new Set(temas(st, "esp").map(x => x.n));
   return ESPECIFICO.filter(x => !con.has(x.n)).map(x => ({n: x.n, titulo: st.titulos["esp" + x.n] || x.titulo, contenido: x.contenido}));
 }
 
 const cacheCola = new Map();
+// Lo que de verdad tardas: cada vez que marcas el estudio se apunta el tiempo real (s.real) y se compara con el
+// previsto. La proporción de cada materia (con un poco de prudencia al principio) ajusta los minutos de lo que queda.
+export function calibracion(st) {
+  const sum = {leg: [0, 0], esp: [0, 0]};
+  for (const [f, r] of Object.entries(st.dias)) {
+    if (f < st.inicio || !r || !r.s || typeof r.s.real !== "number" || !r.s.items) continue;
+    const prev = (r.s.m || 0) + (r.s.x ? r.s.x.m : 0);
+    if (prev <= 0) continue;
+    // El tiempo real se reparte entre las dos materias del día en proporción a lo previsto.
+    for (const x of [{t: r.s.t, m: r.s.m}, r.s.x].filter(Boolean)) {
+      sum[x.t][0] += r.s.real * x.m / prev; sum[x.t][1] += x.m;
+    }
+  }
+  const PRIOR = 90; // minutos «de confianza» en la estimación inicial
+  const r = t => Math.min(2.5, Math.max(0.4, (sum[t][0] + PRIOR) / (sum[t][1] + PRIOR)));
+  return {leg: r("leg"), esp: r("esp"), registros: {leg: Math.round(sum.leg[1]), esp: Math.round(sum.esp[1])}};
+}
+
 export function cola(st, t) {
-  const f = (RITMOS[st.ritmo] || RITMOS.competitivo).f;
-  const key = t + f + JSON.stringify(st.titulos) + JSON.stringify(st.materiales);
+  const cal = calibracion(st)[t];
+  const f = (RITMOS[st.ritmo] || RITMOS.competitivo).f * cal;
+  const key = t + f + JSON.stringify(st.titulos) + JSON.stringify(st.materiales) + JSON.stringify(st.fuera);
   if (cacheCola.has(key)) return cacheCola.get(key);
   const items = [], tot = [];
   const ts = temas(st, t);
@@ -148,10 +176,10 @@ export function cola(st, t) {
     let suma = 0;
     for (const tm of ts) {
       const mk = (key, nombre, ref, min, parte, partes) => {
-        const c = {id: t + hash(`${tm.n}|${v}|${key}`), t, v, n: tm.n, titulo: tm.titulo, parte, partes, nombre, ref, min};
+        const c = {id: t + hash(`${tm.n}|${v}|${key}`), key, t, v, n: tm.n, titulo: tm.titulo, parte, partes, nombre, ref, min};
         items.push(c); suma += min;
       };
-      if (v === 1) tm.partes.forEach((p, i) => mk(p.key, p.nombre, p.ref, r5(p.min * f), i + 1, tm.partes.length));
+      if (v === 1) tm.partes.forEach((p, i) => mk(p.key, p.nombre, p.ref, Math.max(5, Math.round(p.min * f)), i + 1, tm.partes.length));
       else mk("repaso", v === 2 ? "2.ª vuelta: repaso con tus esquemas y test del tema" : `${v}.ª vuelta: repaso rápido y test`,
         tm.material.join(" + "), r5(tm.partes.reduce((a, p) => a + p.min, 0) * f * vf), 1, 1);
     }
@@ -343,6 +371,17 @@ export function marcar(st, hoy, fecha, i, valor) {
       ? {t: d.partes[0].t, m: d.partes[0].m, x: d.partes[1] || null, items: d.plan.map(it => [it.id, it.fr])} : null;
   }
   return {dias: {[fecha]: {c, s}}};
+}
+
+// Apunta cuánto has tardado de verdad en el estudio de un día (minutos).
+export function tiempoReal(st, fecha, min) {
+  const rec = st.dias[fecha];
+  if (!rec || !rec.s) return {};
+  return {dias: {[fecha]: {s: {real: Math.max(1, Math.round(min))}}}};
+}
+// Marca una parte como «no entra» (o la vuelve a meter).
+export function noEntra(t, n, parte, valor = true) {
+  return {fuera: {[t + n]: {[hash(parte.key)]: valor ? 1 : null}}};
 }
 
 // Ajusta a mano lo hecho para que cada trozo quede en `deseado` (fracción 0-1), sin tocar lo marcado por días.
