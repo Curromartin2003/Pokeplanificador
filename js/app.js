@@ -631,11 +631,11 @@ function elegirYEmpezar(tipo) {
   if (leerFoco()) { foco = leerFoco(); pintarFoco(); return; }
   const box = $("#modal");
   const disp = E.TIENDA.filter(x => E.tengo(st, x.id));
-  let sel = (st.parque && st.parque.sel && E.tengo(st, st.parque.sel)) ? st.parque.sel : "arbol";
+  let sel = (st.parque && st.parque.sel && E.tengo(st, st.parque.sel)) ? st.parque.sel : "extintor";
   const pintarE = () => {
     box.hidden = false;
-    box.querySelector(".hoja").innerHTML = `<h2>⏱ ${tipo === "callejero" ? "Callejero" : "Estudio"}: ¿qué plantas o construyes en tu parque?</h2>
-      <p class="nota">Mientras estudias se va plantando o construyendo. Con al menos ${E.MIN_SESION} min sale adelante y va a tu parque. Si sales de la app más de 20 segundos con el temporizador en marcha, se pierde (el tiempo sí cuenta). Para descansar, usa «Parar».</p>
+    box.querySelector(".hoja").innerHTML = `<h2>⏱ ${tipo === "callejero" ? "Callejero" : "Estudio"}: ¿qué consigues para tu parque de bomberos?</h2>
+      <p class="nota">Mientras estudias se va fabricando o construyendo. Con al menos ${E.MIN_SESION} min sale adelante y va a tu parque. Si sales de la app más de 20 segundos con el temporizador en marcha, se pierde (el tiempo sí cuenta). Para descansar, usa «Parar».</p>
       <div class="chips objetos">${disp.map(x => `<button class="${x.id === sel ? "on" : ""}" data-o="${x.id}"><span>${x.icono}</span>${esc(x.nombre)}</button>`).join("")}</div>
       <p class="nota">Desbloquea más en la tienda de «Mi parque».</p>
       <div class="acciones"><button class="btn sec" data-m="cancelar">Cancelar</button><button class="btn" data-m="ok">Empezar</button></div>`;
@@ -657,15 +657,15 @@ function pintarFoco() {
   if (!foco) { box.hidden = true; document.body.classList.remove("enfoco"); clearInterval(focoTick); focoTick = null; return; }
   box.hidden = false;
   document.body.classList.add("enfoco");
-  const obj = E.TIENDA.find(x => x.id === foco.obj) || E.TIENDA[1];
+  const obj = E.TIENDA.find(x => x.id === foco.obj) || E.TIENDA[0];
   const est = msEst(foco), desc = msDesc(foco), min = est / 60000;
   const crece = Math.min(1, min / 25);  // a los 25 min está crecido del todo
   const listo = min >= E.MIN_SESION;
   box.innerHTML = `<div class="foco-in ${foco.estado}">
     <p class="foco-tipo">${foco.tipo === "callejero" ? "🗺️ Callejero" : "📚 Estudio"} · ${foco.estado === "run" ? "concentrado" : "en descanso"}</p>
     <div class="foco-arbol" style="--c:${crece}"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" class="pista"/><circle cx="60" cy="60" r="54" class="avance" style="stroke-dashoffset:${339.3 * (1 - Math.min(1, min / 25))}"/></svg>
-      <span class="obj ${foco.seco ? "seco" : ""}" style="transform:scale(${0.35 + 0.65 * crece})">${foco.seco ? (obj.tipo === "naturaleza" ? "🥀" : "💥") : listo ? obj.icono : obj.tipo === "naturaleza" ? "🌱" : "🏗️"}</span></div>
-    <p class="foco-obj">${foco.seco ? (obj.tipo === "naturaleza" ? "Se ha secado" : "Se ha estropeado") + " por salir de la app. El tiempo sigue contando." : listo ? `${esc(obj.nombre)} ya está a salvo: sigue para terminarlo del todo` : `${obj.tipo === "naturaleza" ? "Plantando" : "Construyendo"}: ${esc(obj.nombre)} (a salvo a los ${E.MIN_SESION} min)`}</p>
+      <span class="obj ${foco.seco ? "seco" : ""}" style="transform:scale(${0.35 + 0.65 * crece})">${foco.seco ? (obj.tipo === "exterior" ? "🥀" : "💥") : listo ? obj.icono : obj.tipo === "exterior" ? "🌱" : "🏗️"}</span></div>
+    <p class="foco-obj">${foco.seco ? (obj.tipo === "exterior" ? "Se ha secado" : "Se ha estropeado") + " por salir de la app. El tiempo sigue contando." : listo ? `${esc(obj.nombre)} ya está a salvo: sigue para terminarlo del todo` : `${obj.tipo === "exterior" ? "Plantando" : obj.tipo === "material" ? "Fabricando" : "Construyendo"}: ${esc(obj.nombre)} (a salvo a los ${E.MIN_SESION} min)`}</p>
     <div class="foco-tiempos"><div><b>${mmss(est)}</b><span>estudio</span></div><div><b>${mmss(desc)}</b><span>descanso</span></div></div>
     <div class="foco-btns">${foco.estado === "run"
       ? `<button class="btn sec grande2" data-f="parar">⏸ Parar</button>`
@@ -696,13 +696,13 @@ async function accionFoco(a) {
 }
 
 function finFoco(f, est, desc, ok) {
-  const box = $("#modal"), obj = E.TIENDA.find(x => x.id === f.obj) || E.TIENDA[1];
+  const box = $("#modal"), obj = E.TIENDA.find(x => x.id === f.obj) || E.TIENDA[0];
   const hoy = HOY(), d = E.dia(st, hoy, f.fecha), rec = st.dias[f.fecha] || {};
   const i = f.tipo === "callejero" ? 4 : E.I_ESTUDIO;
   const yaHecho = rec.c && rec.c[i];
   const totalHoy = f.tipo === "callejero" ? E.minutosDia(rec).cal : E.minutosDia(rec).est;
   box.hidden = false;
-  box.querySelector(".hoja").innerHTML = `<div class="fin-foco"><div class="big">${ok ? obj.icono : obj.tipo === "naturaleza" ? "🥀" : "💥"}</div>
+  box.querySelector(".hoja").innerHTML = `<div class="fin-foco"><div class="big">${ok ? obj.icono : obj.tipo === "exterior" ? "🥀" : "💥"}</div>
     <h2>${ok ? `¡${esc(obj.nombre)} ya está en tu parque!` : f.seco ? "Se perdió por salir de la app" : `Menos de ${E.MIN_SESION} min: no ha salido adelante`}</h2>
     <p>Estudio: <b>${E.textoMin(est)}</b> · Descanso: <b>${E.textoMin(desc)}</b> · +${est} monedas</p>
     <p class="nota">Hoy llevas ${E.textoMin(totalHoy)} de ${f.tipo === "callejero" ? "callejero" : "estudio"}.</p></div>
@@ -741,23 +741,23 @@ function vParque(hoy) {
       ${tiene ? (sel === x.id ? `<span class="chip visto">elegido</span>` : `<button class="enlace peque" data-a="selObj" data-id="${x.id}">Usar</button>`)
         : `<button class="btn peque" data-a="comprar" data-id="${x.id}" ${puede ? "" : "disabled"}>Comprar</button>`}</li>`;
   };
-  return `<h1>Mi parque</h1>
+  return `<h1>Mi parque de bomberos</h1>
     <div class="parque-stats"><div class="grande"><b>${h(e.hoy)}</b><span>hoy</span></div><div><b>${h(e.semana)}</b><span>esta semana</span></div>
       <div><b>${h(e.mes)}</b><span>este mes</span></div><div><b>${h(e.anio)}</b><span>este año</span></div><div><b>${h(e.total)}</b><span>en total</span></div>
       <div class="monedas"><b>🪙 ${e.monedas}</b><span>monedas</span></div></div>
     <p class="nota">Estudio ${h(e.est)} · Callejero ${h(e.cal)} · Descanso ${h(e.desc)} · ${e.sesiones} sesiones con temporizador. 1 minuto estudiado = 1 moneda.</p>
-    <div class="tarjeta"><h3>Mi parque (${plantados.length} ${plantados.length === 1 ? "pieza" : "piezas"})</h3>
+    <div class="tarjeta"><h3>Tu parque (${plantados.length} ${plantados.length === 1 ? "pieza" : "piezas"})</h3>
       <p class="nota">Cada sesión de estudio de al menos ${E.MIN_SESION} min añade una pieza: así lo vas construyendo poco a poco.</p>
       ${plantados.length ? (() => {
-        const ico = x => E.TIENDA.find(t => t.id === x.obj) || E.TIENDA[1];
+        const ico = x => E.TIENDA.find(t => t.id === x.obj) || E.TIENDA[0];
         const tit = (o, x) => `${esc(o.nombre)} · ${x.fecha} · ${x.est} min`;
         return `<div class="escena"><div class="cielo">☀️<span class="nube">☁️</span></div>
           ${E.ZONAS.map(z => { const xs = plantados.filter(x => ico(x).tipo === z.tipo);
             return `<div class="zona z-${z.tipo}"><span class="rotulo">${z.icono} ${z.nombre} (${xs.length})</span>${xs.length ? xs.map(x => `<span title="${tit(ico(x), x)}">${ico(x).icono}</span>`).join("") : `<em>Aún vacío</em>`}</div>`; }).join("")}
         </div>`;
-      })() : `<p class="nota">Aún está vacío. Usa el temporizador en el estudio o el callejero de «Hoy» y lo que plantes o fabriques aparecerá aquí.</p>`}
+      })() : `<p class="nota">Aún está vacío. Usa el temporizador en el estudio o el callejero de «Hoy» y lo que consigas aparecerá aquí.</p>`}
       ${secos ? `<p class="nota">🥀 ${secos} ${secos === 1 ? "se perdió" : "se perdieron"} por salir de la app o por no llegar a ${E.MIN_SESION} min.</p>` : ""}</div>
-    <div class="tarjeta"><h3>Tienda</h3><p class="nota">Desbloquea nuevas piezas para tu parque. Lo más chulo cuesta muchas horas de estudio.</p>
+    <div class="tarjeta"><h3>Tienda</h3><p class="nota">Desbloquea material, instalaciones y vehículos para tu parque de bomberos. Lo más chulo cuesta muchas horas de estudio.</p>
       ${E.ZONAS.map(z => `<h4 class="zona-t">${z.icono} ${z.nombre}</h4><ul class="tienda">${E.TIENDA.filter(x => x.tipo === z.tipo).map(x => tiendaItem(x)).join("")}</ul>`).join("")}</div>`;
 }
 

@@ -211,12 +211,12 @@ test("día con 0 h de estudio: no cuentan estudio ni callejero, con los otros 6 
 });
 
 test("Mi parque: minutos, monedas y tienda", () => {
-  const st = base(undefined, {dias: {[HOY]: {ses: [{tipo: "estudio", est: 50, desc: 10, obj: "arbol", ok: true}, {tipo: "callejero", est: 20, desc: 0, obj: "banco", ok: true}]},
-    "2026-11-02": {s: {t: "leg", m: 42, real: 30, items: []}}}, parque: {compras: {girasol: HOY}}});
+  const st = base(undefined, {dias: {[HOY]: {ses: [{tipo: "estudio", est: 50, desc: 10, obj: "arbol", ok: true}, {tipo: "callejero", est: 20, desc: 0, obj: "extintor", ok: true}]},
+    "2026-11-02": {s: {t: "leg", m: 42, real: 30, items: []}}}, parque: {compras: {hacha: HOY}}});
   const e = E.estadisticas(st, HOY);
   assert.equal(e.hoy, 70); assert.equal(e.total, 100); assert.equal(e.semana, 100); assert.equal(e.desc, 10);
-  assert.equal(e.monedas, 100 - 150);
-  assert.ok(E.tengo(st, "girasol") && E.tengo(st, "arbol") && !E.tengo(st, "noria"));
+  assert.equal(e.monedas, 100 - 100);
+  assert.ok(E.tengo(st, "hacha") && E.tengo(st, "extintor") && !E.tengo(st, "autoescala"));
   assert.equal(e.plantados.length, 2);
 });
 

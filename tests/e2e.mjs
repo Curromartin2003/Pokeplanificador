@@ -127,7 +127,7 @@ try {
   ok((await p.textContent(".objs")).includes("Ya marcaste hasta dónde llegaste"), "«Hasta aquí» recoloca el plan");
   await p.click("nav [data-v=parque]");
   const tp = await p.textContent("#vista");
-  ok(tp.includes("Mi parque (1 pieza)") && tp.includes("monedas") && tp.includes("Tienda"), "Mi parque: horas, parque y tienda");
+  ok(tp.includes("Tu parque (1 pieza)") && tp.includes("monedas") && tp.includes("Tienda"), "Mi parque: horas, parque y tienda");
   if (shots) await p.screenshot({path: shots + "/9-parque.png", fullPage: true});
   await p.goto(URL("2026-11-15"));
   await p.waitForSelector(".libre");

@@ -363,3 +363,11 @@ body.enfoco { overflow: hidden; }
 .escena .z-bomberos { background: repeating-linear-gradient(90deg, #9AA3AB 0 40px, #8C959E 40px 42px); border-top: 6px solid #B5121B; }
 .escena .z-bomberos .rotulo, .escena .z-bomberos em { color: #fff; }
 .zona-t { margin: 14px 0 4px; font-size: 14px; }
+
+.escena .z-vehiculos { background: repeating-linear-gradient(90deg, #9AA3AB 0 46px, #FFFFFF 46px 49px, #9AA3AB 49px 50px); border-top: 6px solid #B5121B; }
+.escena .z-vehiculos .rotulo, .escena .z-vehiculos em { color: #fff; }
+.escena .z-instalaciones { background: repeating-linear-gradient(0deg, #C8553D 0 14px, #B4472F 14px 16px); }
+.escena .z-instalaciones .rotulo, .escena .z-instalaciones em { color: #fff; }
+.escena .z-material { background: repeating-linear-gradient(0deg, #DADFE3 0 26px, #B9C0C6 26px 30px); }
+.escena .z-exterior { background: linear-gradient(180deg, #8ED081, #5FAE55); }
+.escena .z-trofeos { background: linear-gradient(180deg, #FFF4CC, #F2D57A); }
