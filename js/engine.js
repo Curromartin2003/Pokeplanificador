@@ -471,9 +471,16 @@ export function semilla(st, hoy) {
       if (c) Object.assign(p.manual, irA(s2, hoy, t, c.id).manual);
     }
     // Sesiones que se dieron por perdidas sin culpa (pantalla bloqueada): si duraron lo suficiente, cuentan.
-    for (const f of S.arreglarSesiones || []) {
-      const ses = (st.dias[f] && st.dias[f].ses) || [];
-      if (ses.some(x => !x.ok && (x.est || 0) >= MIN_SESION)) p.dias[f] = {...(p.dias[f] || {}), ses: ses.map(x => (!x.ok && (x.est || 0) >= MIN_SESION ? {...x, ok: true} : x))};
+    // (La semilla 3 reescribía la lista y podía borrar sesiones; ya no hace nada.)
+    // Devolver sesiones perdidas: se añaden por separado si no hay ya una igual ese día.
+    for (const [f, lst] of Object.entries(S.devolverSesiones || {})) {
+      if (!st.dias[f]) continue; // solo si ese día hubo actividad (es la cuenta del usuario, no una nueva)
+      const hay = sesionesDe(st.dias[f]);
+      for (const x of lst) {
+        if (hay.some(y => y.tipo === x.tipo && Math.abs((y.est || 0) - x.est) <= 2 && y.ok)) continue;
+        const d = p.dias[f] = p.dias[f] || {};
+        d.sesiones = {...(d.sesiones || {}), [x.id]: {tipo: x.tipo, est: x.est, desc: x.desc || 0, obj: x.obj, ok: true, ini: x.ini, devuelta: true}};
+      }
     }
   }
   return p;
@@ -632,7 +639,7 @@ export const zonaAbierta = (z, minutos) => minutos >= (CIUDAD.find(c => c.id ===
 export function piezasCiudad(st, hoy) {
   const out = [], cuenta = {};
   const dias = Object.keys(st.dias).filter(f => f <= hoy).sort();
-  for (const f of dias) for (const x of (st.dias[f] && st.dias[f].ses) || []) {
+  for (const f of dias) for (const x of sesionesDe(st.dias[f])) {
     if (!x.ok || !x.obj) continue;
     const it = TIENDA.find(t => t.id === x.obj);
     if (!it) continue;
@@ -650,9 +657,16 @@ export const ZONAS = [
   {tipo: "trofeos", nombre: "Vitrina de trofeos", icono: "🏆"},
 ];
 export const MIN_SESION = 10; // minutos mínimos para que lo que crece salga adelante
+// Sesiones del temporizador de un día. Las nuevas se guardan cada una por separado en `sesiones` ({id: sesión}) para que
+// ninguna escritura pueda borrar las demás; las antiguas siguen en la lista `ses`.
+export function sesionesDe(rec) {
+  if (!rec) return [];
+  const mapa = Object.entries(rec.sesiones || {}).filter(([, x]) => x).map(([id, x]) => ({...x, id}));
+  return [...(rec.ses || []), ...mapa].sort((a, b) => String(a.ini || "").localeCompare(String(b.ini || "")));
+}
 
 export function minutosDia(rec) {
-  const ses = (rec && rec.ses) || [];
+  const ses = sesionesDe(rec);
   let est = 0, cal = 0, desc = 0;
   for (const x of ses) { if (x.tipo === "callejero") cal += x.est || 0; else est += x.est || 0; desc += x.desc || 0; }
   if (!ses.some(x => x.tipo !== "callejero") && rec && rec.s && typeof rec.s.real === "number") est = rec.s.real;
@@ -669,7 +683,7 @@ export function estadisticas(st, hoy) {
     if (f >= mon) r.semana += m.total;
     if (f.slice(0, 7) === hoy.slice(0, 7)) r.mes += m.total;
     if (f.slice(0, 4) === hoy.slice(0, 4)) r.anio += m.total;
-    for (const x of (rec && rec.ses) || []) { r.sesiones++; if (x.obj) r.plantados.push({fecha: f, obj: x.obj, ok: x.ok !== false, est: x.est}); }
+    for (const x of sesionesDe(rec)) { r.sesiones++; if (x.obj) r.plantados.push({fecha: f, obj: x.obj, ok: x.ok !== false, est: x.est}); }
   }
   r.plantados.sort((a, b) => a.fecha.localeCompare(b.fecha));
   const gastado = Object.keys((st.parque && st.parque.compras) || {}).reduce((a, id) => a + ((TIENDA.find(x => x.id === id) || {}).precio || 0), 0);

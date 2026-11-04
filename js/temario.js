@@ -222,7 +222,8 @@ export const CAMBIOS = [
   {id: "c1", fecha: "2026-11-03", texto: "Legislación completa con tus PDF y ritmo de subrayado salvo Constitución, PRL y TREBEP."},
   {id: "c2", fecha: "2026-11-03", texto: "Vueltas a la par: acabada la legislación, solo específico hasta acabarlo; luego se empieza todo."},
   {id: "c3", fecha: "2026-11-03", texto: "Específico con tus PDF (temas 1, 3-10, 12-18). Los temas sin PDF quedan fuera de la vuelta hasta que los subas."},
-  {id: "c11", fecha: "2026-11-04", texto: "Temporizador: la pantalla ya no se bloquea mientras cuenta y, si se oculta, te pregunta si fue un bloqueo. Te he devuelto los extintores de las sesiones que se dieron por perdidas."},
+  {id: "c11", fecha: "2026-11-04", texto: "Temporizador: la pantalla ya no se bloquea mientras cuenta y, si se oculta, te pregunta si fue un bloqueo."},
+  {id: "c12", fecha: "2026-11-04", texto: "Te devuelvo la sesión de callejero de 33 min con su extintor. Si te falta alguna otra, apúntala en Mi parque con «➕ Apuntar tiempo olvidado». Cada sesión se guarda ya por separado para que no se pueda borrar."},
   {id: "c10", fecha: "2026-11-04", texto: "Tu parque crece hasta ser una ciudad de bomberos: zonas nuevas a las 40, 120, 250 y 400 h, cada pieza repetida es otra copia en el mapa y puedes mover todo con «✋ Mover»."},
   {id: "c9", fecha: "2026-11-04", texto: "Tu parque de bomberos ahora es en 3D: cada cosa que consigues con el temporizador aparece en su parcela. Gíralo y acércalo con el dedo."},
   {id: "c8", fecha: "2026-11-04", texto: "Nuevos niveles: Opositor tieso → Opositor → Bombero (C1) → Jefe de dotación (C1) → Subinspector (B) → Inspector (B) → Oficial (A2) → Intendente (A1)."},
@@ -243,6 +244,8 @@ export const SEMILLAS = [{
   id: 2,
   puntosIniciales: 7,                                   // ya llevaba avanzado: los puntos empiezan en 7
 }, {
-  id: 3,
-  arreglarSesiones: ["2026-11-03", "2026-11-04"],      // se bloqueó la pantalla con el temporizador: no se perdió nada
+  id: 3,                                                // (anulada: reescribía la lista de sesiones)
+}, {
+  id: 4,                                                // devolver la sesión de callejero de 33 min que se perdió
+  devolverSesiones: {"2026-11-04": [{id: "dev33", tipo: "callejero", est: 33, obj: "extintor", ini: "2026-11-04T12:00:00.000Z"}]},
 }];

@@ -245,10 +245,17 @@ test("ciudad: cada repetición es otra copia en el mapa y las zonas se abren con
   assert.ok(E.TIENDA.reduce((a, x) => a + x.precio, 0) > 120000, "completarlo todo lleva muchísimas horas");
 });
 
-test("semilla 3: las sesiones dadas por perdidas por bloqueo de pantalla cuentan si duraron lo suficiente", () => {
-  const ses = [{tipo: "callejero", est: 33, desc: 0, obj: "extintor", ok: false}, {tipo: "estudio", est: 4, obj: "extintor", ok: false}];
-  const st = E.completar({...E.estadoNuevo("2026-11-03"), semilla: 2, dias: {"2026-11-04": {ses}}});
+test("semilla 4: devuelve la sesión perdida sin tocar las demás y sin duplicarla", () => {
+  const ses = [{tipo: "estudio", est: 20, obj: "extintor", ok: true, ini: "2026-11-04T08:00:00Z"}];
+  const st = E.completar({...E.estadoNuevo("2026-11-03"), semilla: 3, dias: {"2026-11-04": {ses, c: [true]}}});
   const p = E.semilla(st, "2026-11-04");
-  assert.equal(p.semilla, 3);
-  assert.deepEqual(p.dias["2026-11-04"].ses.map(x => x.ok), [true, false]);
+  assert.equal(p.semilla, 4);
+  assert.equal(p.dias["2026-11-04"].ses, undefined, "no reescribe la lista");
+  assert.equal(p.dias["2026-11-04"].sesiones.dev33.est, 33);
+  const st2 = E.completar({...st, dias: {"2026-11-04": {...st.dias["2026-11-04"], sesiones: p.dias["2026-11-04"].sesiones}}});
+  assert.equal(E.minutosDia(st2.dias["2026-11-04"]).cal, 33);
+  assert.equal(E.sesionesDe(st2.dias["2026-11-04"]).length, 2);
+  // Si ya existe una sesión igual, no se duplica.
+  const st3 = E.completar({...st2, semilla: 3});
+  assert.equal(E.semilla(st3, "2026-11-04").dias["2026-11-04"], undefined);
 });

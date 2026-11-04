@@ -33,7 +33,7 @@ function abrirLocal(onEstado, onUsuario) {
     },
     async salir() {},
   };
-  setTimeout(() => { onUsuario({email: api.email}); onEstado(st, true); }, 0);
+  setTimeout(() => { onUsuario({email: api.email}); onEstado(st, true, false); }, 0);
   window.addEventListener("storage", e => { if (e.key === K) { try { st = JSON.parse(e.newValue || "null"); onEstado(st, true); } catch (x) {} } });
   return api;
 }
@@ -70,9 +70,9 @@ async function abrirFirebase(cfg, onEstado, onUsuario) {
     api.email = u.email;
     onUsuario({email: u.email});
     ref = FS.doc(db, `data/users/${u.uid}/planificador`);
-    unsub = FS.onSnapshot(ref, {includeMetadataChanges: false}, s => {
+    unsub = FS.onSnapshot(ref, {includeMetadataChanges: true}, s => {
       // Si aún no hay documento y la respuesta viene de la caché, se espera al servidor antes de crear uno nuevo.
-      onEstado(s.exists() ? s.data() : null, !s.metadata.fromCache || s.exists());
+      onEstado(s.exists() ? s.data() : null, !s.metadata.fromCache || s.exists(), s.metadata.fromCache || s.metadata.hasPendingWrites);
     }, e => onUsuario({email: u.email, error: e.code || String(e)}));
   });
   return api;

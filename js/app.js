@@ -35,7 +35,7 @@ function onUsuario(u) {
   $("#app").hidden = false;
 }
 
-function onEstado(raw, definitivo) {
+function onEstado(raw, definitivo, desdeCache) {
   const hoy = HOY();
   if (!raw) {
     if (!definitivo) return;
@@ -46,7 +46,8 @@ function onEstado(raw, definitivo) {
   }
   st = E.completar(raw);
   // Lo que se contó por el chat (temario.js → SEMILLA) se aplica una vez.
-  const sem = E.semilla(st, hoy);
+  // Nunca con la copia guardada en el dispositivo (podría estar atrasada): solo con los datos del servidor.
+  const sem = desdeCache ? null : E.semilla(st, hoy);
   if (sem && !ui.semillaEnviada) { ui.semillaEnviada = true; guardar(sem); }
   listo = true;
   pintar();
@@ -719,8 +720,8 @@ async function accionFoco(a) {
     const est = Math.round(f.est / 60000), desc = Math.round(f.desc / 60000);
     const ok = !f.seco && est >= E.MIN_SESION;
     const rec = st.dias[f.fecha] || {};
-    const ses = [...(rec.ses || []), {tipo: f.tipo, ini: f.ini, est, desc, obj: f.obj, ok, item: f.item || null}];
-    await guardar({dias: {[f.fecha]: {ses}}});
+    const id = "s" + Date.parse(f.ini).toString(36);
+    await guardar({dias: {[f.fecha]: {sesiones: {[id]: {tipo: f.tipo, ini: f.ini, est, desc, obj: f.obj, ok, item: f.item || null}}}}});
     finFoco(f, est, desc, ok);
     return;
   }
@@ -732,7 +733,7 @@ function finFoco(f, est, desc, ok) {
   const hoy = HOY(), d = E.dia(st, hoy, f.fecha), rec = st.dias[f.fecha] || {};
   const i = f.tipo === "callejero" ? 4 : E.I_ESTUDIO;
   const yaHecho = rec.c && rec.c[i];
-  const totalHoy = f.tipo === "callejero" ? E.minutosDia(rec).cal : E.minutosDia(rec).est;
+  const totalHoy = f.tipo === "callejero" ? E.minutosDia(st.dias[f.fecha]).cal : E.minutosDia(st.dias[f.fecha]).est;
   box.hidden = false;
   box.querySelector(".hoja").innerHTML = `<div class="fin-foco"><div class="big">${ok ? iconoPieza(obj, "mini3d grande") : obj.tipo === "exterior" ? "🥀" : "💥"}</div>
     <h2>${ok ? `¡${esc(obj.nombre)} ya está en tu parque!` : f.seco ? "Se perdió por salir de la app" : `Menos de ${E.MIN_SESION} min: no ha salido adelante`}</h2>
@@ -835,7 +836,31 @@ function vParque(hoy) {
       ${lista.length ? `<ul class="mis-piezas">${lista.map(x => `<li>${iconoPieza(x, "mini3d")}<span>${esc(x.nombre)}</span><b>×${cuenta[x.id]}</b></li>`).join("")}</ul>`
         : `<p class="nota">Aún no tienes piezas. Usa el temporizador junto a lo que estudias en «Hoy» y elige qué quieres crear: con al menos ${E.MIN_SESION} min aparece en tu parque. Cada repetición es otra copia en el mapa.</p>`}
       ${perdidos ? `<p class="nota">💥 ${perdidos} ${perdidos === 1 ? "se perdió" : "se perdieron"} por salir de la app o por no llegar a ${E.MIN_SESION} min.</p>` : ""}</div>
-    <p class="nota">Estudio ${h(e.est)} · Callejero ${h(e.cal)} · Descanso ${h(e.desc)} · ${e.sesiones} sesiones con temporizador. 1 minuto estudiado = 1 moneda.</p>`;
+    <p class="nota">Estudio ${h(e.est)} · Callejero ${h(e.cal)} · Descanso ${h(e.desc)} · ${e.sesiones} sesiones con temporizador. 1 minuto estudiado = 1 moneda.</p>
+    <button class="btn sec" data-a="olvidado">➕ Apuntar tiempo olvidado</button>`;
+}
+
+// Apuntar a mano una sesión que no se registró (o que se perdió): cuenta como tiempo, monedas y pieza.
+function abrirOlvidado() {
+  const box = $("#modal"), hoy = HOY();
+  box.hidden = false; box.dataset.cerrable = "1";
+  const disp = E.TIENDA.filter(x => E.tengo(st, x.id));
+  box.querySelector(".hoja").innerHTML = `<div class="hoja-cab"><h2>➕ Apuntar tiempo olvidado</h2><button class="ico cerrar" data-m="cerrar" aria-label="Cerrar">✕</button></div>
+    <p class="nota">Para una sesión que hiciste y no quedó registrada. Cuenta como tiempo de estudio, monedas y pieza para tu parque.</p>
+    <label class="campo"><span>Día</span><input type="date" id="olvF" value="${hoy}" max="${hoy}"></label>
+    <div class="segm"><button class="on" data-tipo="callejero">🗺️ Callejero</button><button data-tipo="estudio">📚 Estudio</button></div>
+    <label class="campo"><span>Minutos</span><input type="number" id="olvM" inputmode="numeric" min="1" max="600" value="30"></label>
+    <label class="campo"><span>Pieza conseguida</span><select id="olvO">${disp.map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join("")}</select></label>
+    <div class="acciones"><button class="btn sec" data-m="cerrar">Cancelar</button><button class="btn" data-m="ok">Guardar</button></div>`;
+  let tipo = "callejero";
+  box.querySelectorAll("[data-tipo]").forEach(b => b.onclick = () => { tipo = b.dataset.tipo; box.querySelectorAll("[data-tipo]").forEach(x => x.classList.toggle("on", x === b)); });
+  box.querySelectorAll("[data-m=cerrar]").forEach(b => b.onclick = () => { box.hidden = true; });
+  box.querySelector("[data-m=ok]").onclick = () => {
+    const f = box.querySelector("#olvF").value || hoy, m = Math.max(1, Math.round(+box.querySelector("#olvM").value || 0)), obj = box.querySelector("#olvO").value;
+    box.hidden = true;
+    const ini = new Date().toISOString(), id = "m" + Date.now().toString(36);
+    guardar({dias: {[f]: {sesiones: {[id]: {tipo, ini, est: m, desc: 0, obj, ok: m >= E.MIN_SESION, manual: true}}}}});
+  };
 }
 
 function abrirTienda() {
@@ -980,6 +1005,8 @@ function enlazar() {
       abrirHastaAqui(b.dataset.f || null, b.dataset.id, b.dataset.t);
     } else if (a === "reintentar3d") {
       location.reload();
+    } else if (a === "olvidado") {
+      abrirOlvidado();
     } else if (a === "editarParque") {
       ui.editarParque = !ui.editarParque; pintar();
     } else if (a === "tienda") {
