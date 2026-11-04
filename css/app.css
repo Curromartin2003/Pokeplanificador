@@ -431,3 +431,7 @@ img.ti, .ti.emo { width: 48px; height: 48px; object-fit: contain; flex: none; }
 .parque3d:fullscreen, .parque3d.completa { width: 100vw; height: 100vh; border-radius: 0; }
 .parque3d.completa { position: fixed; inset: 0; z-index: 60; height: 100dvh; }
 body.p3d-completa { overflow: hidden; }
+
+.escena .z-ciudad { background: linear-gradient(180deg, #CFE8C9, #B5DBAE); }
+.escena .z-ciudad.cerrada { background: repeating-linear-gradient(45deg, #DADFE3 0 10px, #CDD3D8 10px 20px); }
+.huecos .pieza .mini3d { width: 40px; height: 40px; }

@@ -782,7 +782,7 @@ function montarParque() {
       onMover: (key, v) => guardar({parque: {pos: {[key]: v.map(n => Math.round(n * 100) / 100)}}})}));
     P3.editar(!!ui.editarParque);
     host.classList.add("con3d");
-  } catch (e) { console.warn("parque 3D", e); }
+  } catch (e) { console.warn("parque 3D", e); host.classList.remove("con3d"); host.insertAdjacentHTML("beforeend", `<p class="nota">No se pudo dibujar el 3D (${esc(e.message || e)}).</p>`); }
 }
 
 function vParque(hoy) {
@@ -791,8 +791,13 @@ function vParque(hoy) {
   const perdidos = e.plantados.filter(x => !x.ok).length;
   const sig = E.CIUDAD.find(z => !abiertas.includes(z.id));
   const lista = E.TIENDA.filter(x => cuenta[x.id]).sort((a, b) => cuenta[b.id] - cuenta[a.id]);
-  const fallback = `<div class="escena plano">${E.CIUDAD.map(z => `<div class="zona"><span class="rotulo">${z.nombre}</span><div class="huecos">${
-    piezas.filter(p => (E.TIENDA.find(t => t.id === p.id) || {}).zona === z.id).map(p => iconoPieza(E.TIENDA.find(t => t.id === p.id), "mini3d")).join("") || "<em>Vacío</em>"}</div></div>`).join("")}</div>`;
+  // Plano sencillo (si el 3D no carga): el parque siempre visible, con un hueco por pieza que se va llenando.
+  const fallback = `<div class="escena plano">${[...E.ZONAS.map(z => ({t: `${z.icono} ${z.nombre}`, cls: z.tipo, xs: E.TIENDA.filter(x => x.zona === "parque" && x.tipo === z.tipo)})),
+    ...E.CIUDAD.filter(z => z.id !== "parque").map(z => ({t: `${z.icono} ${z.nombre}${abiertas.includes(z.id) ? "" : ` · 🔒 ${z.horas} h`}`, cls: "ciudad" + (abiertas.includes(z.id) ? "" : " cerrada"), xs: E.TIENDA.filter(x => x.zona === z.id)}))]
+    .map(g => `<div class="zona z-${g.cls}"><span class="rotulo">${g.t}</span><div class="huecos">${g.xs.map(x => cuenta[x.id]
+      ? `<span class="pieza" title="${esc(x.nombre)}">${iconoPieza(x, "mini3d")}${cuenta[x.id] > 1 ? `<i>×${cuenta[x.id]}</i>` : ""}</span>`
+      : `<span class="hueco" title="${esc(x.nombre)}"></span>`).join("")}</div></div>`).join("")}</div>
+    ${P3.error ? `<p class="nota">No se ha podido cargar el parque en 3D en este dispositivo (${esc(P3.error)}). <button class="enlace" data-a="reintentar3d">Reintentar</button></p>` : ""}`;
   return `<div class="parque-cab"><h1>Mi parque</h1><div class="parque-btns">
       ${P3.disponible() ? `<button class="btn sec ${ui.editarParque ? "on" : ""}" data-a="editarParque">${ui.editarParque ? "✓ Listo" : "✋ Mover"}</button>` : ""}
       <button class="btn tienda-btn" data-a="tienda">🛒 Tienda · 🪙 ${e.monedas}</button></div></div>
@@ -954,6 +959,8 @@ function enlazar() {
       elegirYEmpezar(b.dataset.t, b.dataset.item);
     } else if (a === "hastaAqui") {
       abrirHastaAqui(b.dataset.f || null, b.dataset.id, b.dataset.t);
+    } else if (a === "reintentar3d") {
+      location.reload();
     } else if (a === "editarParque") {
       ui.editarParque = !ui.editarParque; pintar();
     } else if (a === "tienda") {
@@ -1013,5 +1020,5 @@ $("#modal").addEventListener("click", e => { if (e.target === e.currentTarget &&
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#modal").hidden && $("#modal").dataset.cerrable) $("#modal").hidden = true; });
 new MutationObserver(() => { if ($("#modal").hidden) delete $("#modal").dataset.cerrable; }).observe($("#modal"), {attributes: true, attributeFilter: ["hidden"]});
 // Modelos 3D del parque: se cargan en segundo plano; mientras tanto (o sin WebGL) se ven iconos sencillos.
-P3.cargar().then(() => { if (st) pintar(); if (foco) pintarFoco(); }).catch(() => {});
+P3.cargar().then(() => { if (st) pintar(); if (foco) pintarFoco(); }).catch(() => { if (st) pintar(); });
 foco = leerFoco(); if (foco) pintarFoco(); // para el aviso de novedades en la pestaña

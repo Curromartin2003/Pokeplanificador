@@ -2,10 +2,26 @@
 // isométrico del parque con una parcela por pieza, miniaturas para la tienda y el visor del temporizador.
 // Todo se crea con formas simples (cajas, cilindros, conos...), sin imágenes externas.
 let THREE = null, Orbit = null;
+export let error = null;
 export async function cargar() {
   if (THREE) return THREE;
-  THREE = await import("three");
-  ({OrbitControls: Orbit} = await import("three/addons/controls/OrbitControls.js"));
+  try {
+    const t = await import("three");
+    ({OrbitControls: Orbit} = await import("three/addons/controls/OrbitControls.js"));
+    THREE = t;
+  } catch (e) {
+    // Navegadores sin «import maps»: la misma versión desde esm.sh (resuelve sus propias dependencias).
+    try {
+      const t = await import("https://esm.sh/three@0.160.0");
+      ({OrbitControls: Orbit} = await import("https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js"));
+      THREE = t;
+    } catch (e2) { error = String(e2 && e2.message || e2); throw e2; }
+  }
+  // Comprobación de WebGL: si el dispositivo no lo tiene, se usa el plano sencillo.
+  try {
+    const c = document.createElement("canvas");
+    if (!(c.getContext("webgl2") || c.getContext("webgl"))) throw new Error("Este dispositivo no tiene WebGL");
+  } catch (e) { error = e.message; THREE = null; throw e; }
   return THREE;
 }
 export const disponible = () => !!THREE;
@@ -213,7 +229,7 @@ const ETIQUETAS = new Set(); // se reescalan cada fotograma para verse siempre d
 function texto(t, color = "#1D1A19") {
   const c = document.createElement("canvas"); c.width = 512; c.height = 128;
   const x = c.getContext("2d"); x.font = "bold 56px system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
-  x.fillStyle = "rgba(255,255,255,.85)"; x.beginPath(); x.roundRect(8, 14, 496, 100, 40); x.fill();
+  x.fillStyle = "rgba(255,255,255,.85)"; x.beginPath(); if (x.roundRect) x.roundRect(8, 14, 496, 100, 40); else x.rect(8, 14, 496, 100); x.fill();
   x.fillStyle = color; x.fillText(t, 256, 66);
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(c), depthTest: false}));
   sp.scale.set(8, 2, 1); sp.renderOrder = 10; sp.userData.px = 190; ETIQUETAS.add(sp); return sp;
@@ -326,7 +342,15 @@ function crearParque() {
     else { el.classList.add("completa"); document.body.classList.add("p3d-completa"); setTimeout(tamano, 50); }
   };
   document.addEventListener("fullscreenchange", () => setTimeout(tamano, 50));
-  const piezas = {}, parcelas = {}, anims = [], zonasG = {};
+  const piezas = {}, parcelas = {}, anims = [], zonasG = {}, fantasmas = {};
+  // Silueta transparente de cada pieza que aún no tienes, en su sitio: así se ve todo lo que falta por conseguir.
+  const matFantasma = new THREE.MeshStandardMaterial({color: 0xffffff, transparent: true, opacity: 0.32, depthWrite: false, roughness: 1});
+  for (const [id, [x, z, r, sc]] of Object.entries(SITIO)) {
+    const g = modelo(id);
+    g.traverse(o => { if (o.isMesh) { o.material = matFantasma; o.castShadow = false; o.receiveShadow = false; } });
+    g.position.set(x, 0, z); g.rotation.y = r; g.scale.setScalar(sc);
+    scene.add(g); fantasmas[id] = g;
+  }
   let op = {piezas: [], pos: {}, abiertas: ["parque"], onMover: null}, modoEditar = false;
   for (const [id, [x, z, , s]] of Object.entries(SITIO)) parcelas[id] = parcela(scene, x, z, s);
 
@@ -443,6 +467,7 @@ function crearParque() {
         const sitio = op.pos[p.key] ? [...op.pos[p.key], esc] : sitioPorDefecto(p, zona, ocupadas, op.abiertas);
         colocar(p, sitio, (op.nuevos || []).includes(p.key));
         if (parcelas[p.id] && !p.key.includes("_")) parcelas[p.id].visible = false;
+        if (fantasmas[p.id] && !p.key.includes("_")) fantasmas[p.id].visible = false;
       }
       tamano();
     },
