@@ -209,13 +209,14 @@ export const AREAS = {
 const COLOR_ZONA = {explanada: 0xD8CFB8, maniobras: 0xC9C4B8, barrio: 0x8E959C, forestal: 0x4E8A3E, aero: 0x6B737B};
 const PASO = 3.4; // separación de las celdas donde se colocan solas las piezas de las zonas nuevas
 
+const ETIQUETAS = new Set(); // se reescalan cada fotograma para verse siempre del mismo tamaño en pantalla
 function texto(t, color = "#1D1A19") {
   const c = document.createElement("canvas"); c.width = 512; c.height = 128;
   const x = c.getContext("2d"); x.font = "bold 56px system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
   x.fillStyle = "rgba(255,255,255,.85)"; x.beginPath(); x.roundRect(8, 14, 496, 100, 40); x.fill();
   x.fillStyle = color; x.fillText(t, 256, 66);
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(c), depthTest: false}));
-  sp.scale.set(8, 2, 1); sp.renderOrder = 10; return sp;
+  sp.scale.set(8, 2, 1); sp.renderOrder = 10; sp.userData.px = 190; ETIQUETAS.add(sp); return sp;
 }
 function losa(g, w, d, col, x, z, y = 0) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), mat(col)); m.position.set(x, y - 0.1, z); m.receiveShadow = true; g.add(m); return m;
@@ -231,6 +232,10 @@ function suelo(scene) {
   losa(g, 2, 3, 0xE8D9B5, -0.6, 8.5, 0.0);
   const valla = (w, d, x, z) => { const r = new THREE.Mesh(new THREE.BoxGeometry(w, 0.5, d), mat(0xF4F4F2)); r.position.set(x, 0.25, z); g.add(r); };
   valla(23.2, 0.08, 0, -9.6); valla(10.6, 0.08, -6.9, 9.6); valla(10.6, 0.08, 6.3, 9.6); valla(0.08, 19.2, -11.6, 0); valla(0.08, 19.2, 11.6, 0);
+  // Portada de la entrada con el rótulo del parque
+  for (const x of [-1.8, 0.6]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.6, 0.3), mat(0xB4472F)); p.position.set(x, 0.8, 9.6); p.castShadow = true; g.add(p); }
+  const arco = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.35, 0.3), mat(0xC1121F)); arco.position.set(-0.6, 1.75, 9.6); arco.castShadow = true; g.add(arco);
+  const r = texto("🚒 Parque de bomberos", "#8E0E17"); r.position.set(-0.6, 2.8, 9.6); r.userData.px = 170; g.add(r);
   scene.add(g);
 }
 function zonaSuelo(scene, id, abierta, horas) {
@@ -239,14 +244,14 @@ function zonaSuelo(scene, id, abierta, horas) {
   if (!abierta) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), new THREE.MeshStandardMaterial({color: 0xBFC5CA, transparent: true, opacity: 0.55}));
     m.position.set(cx, -0.12, cz); g.add(m);
-    const t = texto(`🔒 ${horas} h estudiadas`); t.position.set(cx, 1.5, cz); g.add(t);
+    const t = texto(`🔒 ${CIUDAD_NOMBRE[id] ? CIUDAD_NOMBRE[id].replace(/^\S+ /, "") + " · " : ""}${horas} h`); t.position.set(cx, 2.2, cz); t.userData.px = 150; t.material.opacity = 0.8; g.add(t);
   } else {
     losa(g, w, d, COLOR_ZONA[id], cx, cz, -0.02);
     if (id === "barrio") { for (let x = x0 + 4; x < x1; x += 8) losa(g, 1.2, d, 0x4A4F55, x, cz, 0.01); for (let z = z0 + 4; z < z1; z += 8) losa(g, w, 1.2, 0x4A4F55, cx, z, 0.01); }
     if (id === "maniobras") { for (let x = x0 + 2; x < x1; x += 4) losa(g, 0.12, d - 2, 0xF2B705, x, cz, 0.02); }
     if (id === "aero") { losa(g, w, 18, 0x2E86C1, cx, z1 - 9, 0.0); losa(g, 3, 40, 0x4A4F55, cx, z0 + 20, 0.02); for (let z = z0 + 2; z < z0 + 40; z += 3) losa(g, 0.3, 1.4, 0xF4F4F2, cx, z, 0.03); }
     if (id === "forestal") { losa(g, 2, d, 0x9C7A4D, x0 + 6, cz, 0.01); }
-    const t = texto(CIUDAD_NOMBRE[id] || id); t.position.set(cx, 0.6, z0 + 1.2); t.scale.set(6, 1.5, 1); g.add(t);
+    const t = texto(CIUDAD_NOMBRE[id] || id); t.position.set(cx, 2.2, cz); t.userData.px = 150; g.add(t);
   }
   scene.add(g);
   return g;
@@ -303,8 +308,24 @@ function crearParque() {
   scene.add(sol);
   suelo(scene);
   const ctr = new Orbit(cam, renderer.domElement);
-  ctr.enableDamping = true; ctr.minZoom = 0.35; ctr.maxZoom = 4; ctr.maxPolarAngle = 1.2; ctr.minPolarAngle = 0.5;
-  ctr.screenSpacePanning = true;
+  Object.assign(ctr, {enableDamping: true, dampingFactor: 0.08, rotateSpeed: 0.7, zoomSpeed: 1.1, panSpeed: 0.9,
+    minZoom: 0.35, maxZoom: 5, maxPolarAngle: 1.2, minPolarAngle: 0.45, screenSpacePanning: true, zoomToCursor: true});
+  // Botones sobre el mapa: vista general y pantalla completa.
+  const barra = document.createElement("div");
+  barra.className = "p3d-barra";
+  barra.innerHTML = `<button data-p="general" title="Vista general">🗺️ Vista general</button><button data-p="completa" title="Pantalla completa">⛶</button>`;
+  el.appendChild(barra);
+  const ir = {objetivo: null, zoom: null};
+  const vistaGeneral = () => { ir.objetivo = new THREE.Vector3(0, 0, 0); ir.zoom = 1; };
+  barra.querySelector('[data-p="general"]').onclick = vistaGeneral;
+  barra.querySelector('[data-p="completa"]').onclick = () => {
+    const doc = document;
+    if (doc.fullscreenElement === el) { doc.exitFullscreen(); return; }
+    if (el.classList.contains("completa")) { el.classList.remove("completa"); document.body.classList.remove("p3d-completa"); setTimeout(tamano, 50); return; }
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => { el.classList.add("completa"); document.body.classList.add("p3d-completa"); setTimeout(tamano, 50); });
+    else { el.classList.add("completa"); document.body.classList.add("p3d-completa"); setTimeout(tamano, 50); }
+  };
+  document.addEventListener("fullscreenchange", () => setTimeout(tamano, 50));
   const piezas = {}, parcelas = {}, anims = [], zonasG = {};
   let op = {piezas: [], pos: {}, abiertas: ["parque"], onMover: null}, modoEditar = false;
   for (const [id, [x, z, , s]] of Object.entries(SITIO)) parcelas[id] = parcela(scene, x, z, s);
@@ -322,7 +343,7 @@ function crearParque() {
   function tamano() {
     const w = el.clientWidth || 360, h = el.clientHeight || 320;
     renderer.setSize(w, h, false);
-    const a = w / h, v = 13;
+    const a = w / h, v = Math.max(11, 14.5 / a);
     Object.assign(cam, {left: -v * a, right: v * a, top: v, bottom: -v});
     cam.updateProjectionMatrix();
   }
@@ -330,7 +351,15 @@ function crearParque() {
 
   // Mover piezas: en modo editar, arrastra una pieza por el suelo; doble toque la gira 90°.
   const ray = new THREE.Raycaster(), plano = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), v2 = new THREE.Vector2(), punto = new THREE.Vector3();
-  let arrastre = null, ultimoToque = {key: null, t: 0};
+  let arrastre = null, ultimoToque = {key: null, t: 0}, toque = null;
+  // Tocar un punto del mapa (sin arrastrar) acerca la vista a ese sitio.
+  renderer.domElement.addEventListener("pointerdown", e => { toque = {x: e.clientX, y: e.clientY, t: performance.now(), n: (toque && performance.now() - toque.t < 50) ? 2 : 1}; });
+  renderer.domElement.addEventListener("pointerup", e => {
+    if (modoEditar || !toque || toque.n > 1) return;
+    if (Math.hypot(e.clientX - toque.x, e.clientY - toque.y) > 6 || performance.now() - toque.t > 400) return;
+    rayo(e);
+    if (ray.ray.intersectPlane(plano, punto)) { ir.objetivo = punto.clone(); ir.zoom = Math.max(cam.zoom, 2.2); }
+  });
   const rayo = e => { const r = renderer.domElement.getBoundingClientRect(); v2.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(v2, cam); };
   const piezaDe = o => { while (o && !(o.userData && o.userData.key)) o = o.parent; return o; };
   renderer.domElement.addEventListener("pointerdown", e => {
@@ -378,6 +407,17 @@ function crearParque() {
       a.g.scale.setScalar(Math.max(0.01, a.s * e));
       if (k >= 1) anims.splice(i, 1);
     }
+    // Vuelo suave hacia el punto tocado o la vista general.
+    if (ir.objetivo) {
+      const d = ir.objetivo.clone().sub(ctr.target).multiplyScalar(0.12);
+      ctr.target.add(d); cam.position.add(d);
+      if (ir.zoom) { cam.zoom += (ir.zoom - cam.zoom) * 0.12; cam.updateProjectionMatrix(); }
+      if (d.length() < 0.01 && (!ir.zoom || Math.abs(ir.zoom - cam.zoom) < 0.01)) { ir.objetivo = null; ir.zoom = null; }
+    }
+    // Etiquetas siempre del mismo tamaño en pantalla.
+    const upp = (cam.right - cam.left) / (cam.zoom * Math.max(1, el.clientWidth));
+    const maxPx = Math.max(90, el.clientWidth * 0.3);
+    for (const sp of ETIQUETAS) { const w = Math.min(sp.userData.px, maxPx) * upp; sp.scale.set(w, w / 4, 1); }
     ctr.update();
     renderer.render(scene, cam);
   })();

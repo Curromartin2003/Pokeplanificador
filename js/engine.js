@@ -61,7 +61,7 @@ export function estadoNuevo(hoy) {
 export const completar = s => {
   const b = estadoNuevo(s && s.inicio || hoyLocal());
   const o = {...b, ...(s || {})};
-  for (const k of ["semanas", "dias", "manual", "materiales", "titulos", "leidos", "fuera", "calle", "premios", "parque"]) o[k] = {...((s && s[k]) || {})};
+  for (const k of ["semanas", "dias", "manual", "materiales", "titulos", "leidos", "fuera", "calle", "premios", "parque", "marcas"]) o[k] = {...((s && s[k]) || {})};
   o.cambios = Array.isArray(s && s.cambios) ? s.cambios : [];
   return o;
 };
@@ -411,6 +411,26 @@ export function hastaAqui(st, hoy, fecha, id, frac) {
   const p = ajustar(st, hoy, des);
   p.dias = {[fecha]: {hastaAqui: true}};
   return p;
+}
+
+// «Me quedé aquí» desde el Temario: lo anterior de esa vuelta y materia queda hecho y ese trozo en la fracción dada.
+export function meQuede(st, hoy, t, id, frac) {
+  const q = cola(st, t), c = q.porId.get(id);
+  if (!c) return {};
+  const des = {};
+  for (const x of q.items.filter(z => z.v === c.v)) { if (x === c) break; des[x.id] = 1; }
+  des[id] = Math.max(0, Math.min(1, frac));
+  return ajustar(st, hoy, des);
+}
+// Rango de páginas y de artículos de un trozo (para poder decir «me quedé en la pág. 14» o «en el art. 41»).
+export function rangos(c) {
+  const p = (c.ref || "").match(/p[aá]gs\. (\d+)-(\d+)/), a = (c.nombre || "").match(/arts?\. (\d+)(?: bis)?-(\d+)/);
+  return {pags: p ? [+p[1], +p[2]] : null, arts: a ? [+a[1], +a[2]] : null};
+}
+export function fraccionDe(r, tipo, n) {
+  const [a, b] = r[tipo] || [0, 0];
+  if (b <= a) return n >= a ? 1 : 0;
+  return Math.max(0, Math.min(1, (n - a) / (b - a + 1)));
 }
 
 // Empezar por un trozo: lo anterior de esa vuelta y materia queda hecho; ese trozo y lo siguiente, pendiente.

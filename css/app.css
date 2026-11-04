@@ -416,3 +416,18 @@ img.ti, .ti.emo { width: 48px; height: 48px; object-fit: contain; flex: none; }
 .mis-piezas li { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 12px; padding: 6px 10px; font-size: 13px; }
 .mis-piezas li span { flex: 1; } .mis-piezas li b { font-family: "Barlow Condensed", sans-serif; font-size: 20px; color: var(--acc); }
 .tienda li.cerrada { opacity: .55; }
+
+.hoja-cab { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.hoja-cab h2 { flex: 1; }
+.hoja-cab.sticky { position: sticky; top: -20px; background: var(--card); padding: 12px 0 8px; margin-top: -12px; z-index: 2; border-bottom: 1px solid var(--line); }
+.ico.cerrar { width: 36px; height: 36px; font-size: 18px; background: var(--bg); border-radius: 50%; }
+.hasta label { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hasta input[type=number] { width: 100px; font: inherit; font-size: 20px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.quede { display: block; font-size: 12px; font-weight: 600; color: var(--leg); margin-top: 2px; }
+
+.parque3d { position: relative; height: min(62vh, 560px); }
+.p3d-barra { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; z-index: 2; }
+.p3d-barra button { border: 0; background: rgba(255,255,255,.9); color: #1D1A19; font: inherit; font-size: 13px; font-weight: 600; padding: 7px 11px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,.15); cursor: pointer; }
+.parque3d:fullscreen, .parque3d.completa { width: 100vw; height: 100vh; border-radius: 0; }
+.parque3d.completa { position: fixed; inset: 0; z-index: 60; height: 100dvh; }
+body.p3d-completa { overflow: hidden; }

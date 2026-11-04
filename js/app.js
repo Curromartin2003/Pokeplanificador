@@ -267,7 +267,7 @@ function planHTML(d) {
     const cambio = d.partes.length > 1 && it.t !== d.plan[0].t && it === d.plan.find(z => z.t === it.t)
       ? `<li class="aviso-vuelta">Terminas la vuelta de ${E.MATERIAS[d.plan[0].t].toLowerCase()}: el resto del tiempo, ${E.MATERIAS[it.t].toLowerCase()}.</li>` : "";
     return cambio + `<li><span class="tt">${it.v > 1 ? it.v + ".ª vuelta · " : ""}Tema ${it.n} · ${esc(it.titulo)}</span>
-      <span class="parte">${it.partes > 1 ? `Parte ${it.parte}/${it.partes}: ` : ""}${esc(it.nombre)}</span>${it.ref ? `<span class="ref">📄 ${esc(it.ref)}</span>` : ""}<span class="min">${estado}</span>${d.fecha <= HOY() && !d.hecho ? `<span class="acc-parte">${d.fecha === HOY() ? `<button class="btn peque temp" data-a="foco" data-t="estudio" data-item="${it.id}">⏱ Temporizador</button>` : ""}<button class="enlace peque" data-a="hastaAqui" data-f="${d.fecha}" data-id="${it.id}">📍 Hasta aquí</button></span>` : ""}</li>`;
+      <span class="parte">${it.partes > 1 ? `Parte ${it.parte}/${it.partes}: ` : ""}${esc(it.nombre)}</span>${it.ref ? `<span class="ref">📄 ${esc(it.ref)}</span>` : ""}<span class="min">${estado}</span>${marcaHTML(it.id)}${d.fecha <= HOY() ? `<span class="acc-parte">${d.fecha === HOY() && !d.hecho ? `<button class="btn peque temp" data-a="foco" data-t="estudio" data-item="${it.id}">⏱ Temporizador</button>` : ""}<button class="btn peque sec" data-a="hastaAqui" data-f="${d.fecha}" data-id="${it.id}">📍 Me quedé aquí</button></span>` : ""}</li>`;
   }).join("")}</ol>`;
 }
 
@@ -324,7 +324,7 @@ function vTemario(hoy) {
       const partes = abierto ? `<ul class="partes">${cs.map(c => {
         const f = E.fraccion(h, c.id), e = f >= 0.999 ? "hecho" : f > 0.001 ? "curso" : "pend";
         return `<li class="${e}"><span>${c.partes > 1 ? c.parte + ". " : ""}${esc(c.nombre)}${c.ref ? `<small class="ref">📄 ${esc(c.ref)}</small>` : ""}</span><span class="m">${c.min} min</span>
-          <span class="botones"><button class="enlace peque" data-a="irA" data-t="${t}" data-id="${c.id}">Empezar aquí</button>
+          ${marcaHTML(c.id)}<span class="botones"><button class="enlace peque" data-a="hastaAqui" data-t="${t}" data-id="${c.id}">📍 Me quedé aquí</button><button class="enlace peque" data-a="irA" data-t="${t}" data-id="${c.id}">Empezar aquí</button>
           ${v === 1 ? `<button class="enlace peque" data-a="noEntra" data-t="${t}" data-n="${tm.n}" data-key="${esc(c.key)}" data-v="1">No entra</button>` : ""}</span></li>`;
       }).join("")}</ul>
       ${(() => { const fuera = tm.todas.filter(x => !tm.partes.includes(x));
@@ -597,26 +597,46 @@ function pintarModal() {
 }
 
 /* ---------- «Hasta aquí» ---------- */
-function abrirHastaAqui(fecha, id) {
-  const hoy = HOY(), d = E.dia(st, hoy, fecha), it = (d.plan || []).find(x => x.id === id);
+// «📍 Me quedé aquí»: página, artículo o porcentaje de la parte, más una nota del apartado. Recoloca las vueltas.
+function abrirHastaAqui(fecha, id, t) {
+  const hoy = HOY();
+  let it = fecha ? (E.dia(st, hoy, fecha).plan || []).find(x => x.id === id) : null;
+  if (!it) it = (E.cola(st, "leg").porId.get(id) || E.cola(st, "esp").porId.get(id));
   if (!it) return;
-  const pags = (it.ref || "").match(/p[aá]gs\. (\d+)-(\d+)/);
+  const r = E.rangos(it), previa = (st.marcas || {})[id] || {};
+  let tipo = r.pags ? "pags" : r.arts ? "arts" : "pct", valor = previa.n || (r[tipo] ? r[tipo][0] : 50), nota = previa.txt || "";
   const box = $("#modal");
-  box.hidden = false;
-  let pct = 50;
-  const pag = v => pags ? Math.round(+pags[1] + (+pags[2] - +pags[1]) * v / 100) : null;
+  box.hidden = false; box.dataset.cerrable = "1";
+  const frac = () => tipo === "pct" ? valor / 100 : E.fraccionDe(r, tipo, valor);
   const pintarH = () => {
-    box.querySelector(".hoja").innerHTML = `<h2>¿Hasta dónde has llegado?</h2>
+    const opciones = [r.pags && ["pags", "Página"], r.arts && ["arts", "Artículo"], ["pct", "Porcentaje"]].filter(Boolean);
+    box.querySelector(".hoja").innerHTML = `<div class="hoja-cab"><h2>📍 ¿Dónde te has quedado?</h2><button class="ico cerrar" data-m="cancelar" aria-label="Cerrar">✕</button></div>
       <p><b>Tema ${it.n} · ${esc(it.titulo)}</b><br>${esc(it.nombre)}${it.ref ? `<br><small>📄 ${esc(it.ref)}</small>` : ""}</p>
-      <p class="nota">Lo anterior de hoy cuenta como hecho y el plan se recoloca desde aquí.</p>
-      <div class="hasta"><input type="range" id="pctH" min="0" max="100" step="5" value="${pct}"><b>${pct} % de esta parte${pags ? ` · hasta la pág. ${pag(pct)}` : ""}</b></div>
+      <div class="segm">${opciones.map(([k, n]) => `<button class="${tipo === k ? "on" : ""}" data-tipo="${k}">${n}</button>`).join("")}</div>
+      <div class="hasta">${tipo === "pct" ? `<input type="range" id="valH" min="0" max="100" step="5" value="${valor}">`
+        : `<label>${tipo === "pags" ? "Me he quedado en la página" : "Me he quedado en el artículo"} <input type="number" id="valH" inputmode="numeric" min="${r[tipo][0]}" max="${r[tipo][1]}" value="${valor}"></label>
+           <small>De ${tipo === "pags" ? "la pág." : "el art."} ${r[tipo][0]} a ${r[tipo][1]}</small>`}
+        <b id="fracH">≈ ${Math.round(frac() * 100)} % de esta parte hecho</b></div>
+      <label class="campo"><span>Apartado o nota (opcional)</span><input type="text" id="notaH" maxlength="80" placeholder="Ej.: Cap. III, art. 41.2 · tabla de presiones" value="${esc(nota)}"></label>
+      <p class="nota">Lo anterior cuenta como hecho y las vueltas se recolocan desde aquí.</p>
       <div class="acciones"><button class="btn sec" data-m="cancelar">Cancelar</button><button class="btn" data-m="ok">Guardar</button></div>`;
-    box.querySelector("#pctH").oninput = e => { pct = +e.target.value; box.querySelector(".hasta b").textContent = `${pct} % de esta parte${pags ? ` · hasta la pág. ${pag(pct)}` : ""}`; };
-    box.querySelector("[data-m=cancelar]").onclick = () => { box.hidden = true; };
-    box.querySelector("[data-m=ok]").onclick = () => { box.hidden = true; guardar(E.hastaAqui(st, hoy, fecha, id, pct / 100)); };
+    box.querySelectorAll("[data-tipo]").forEach(b => b.onclick = () => { tipo = b.dataset.tipo; valor = tipo === "pct" ? 50 : r[tipo][0]; pintarH(); });
+    const v = box.querySelector("#valH");
+    v.oninput = () => { valor = +v.value || 0; box.querySelector("#fracH").textContent = `≈ ${Math.round(frac() * 100)} % de esta parte hecho`; };
+    box.querySelector("#notaH").oninput = e => { nota = e.target.value; };
+    box.querySelectorAll("[data-m=cancelar]").forEach(b => b.onclick = () => { box.hidden = true; });
+    box.querySelector("[data-m=ok]").onclick = () => {
+      box.hidden = true;
+      const f = frac();
+      const parche = fecha ? E.hastaAqui(st, hoy, fecha, id, f) : E.meQuede(st, hoy, t || it.t, id, f);
+      const etiqueta = tipo === "pags" ? `pág. ${valor}` : tipo === "arts" ? `art. ${valor}` : `${valor} %`;
+      parche.marcas = {[id]: {n: valor, tipo, txt: nota.trim(), et: etiqueta, fecha: hoy}};
+      guardar(parche);
+    };
   };
   pintarH();
 }
+const marcaHTML = id => { const m = (st.marcas || {})[id]; return m ? `<span class="quede">📍 Te quedaste en ${esc(m.et || "")}${m.txt ? ` · ${esc(m.txt)}` : ""}</span>` : ""; };
 
 /* ---------- temporizador (crece lo que eliges mientras estudias) ---------- */
 // El estado del temporizador vive en este dispositivo (localStorage) para que siga aunque se recargue la app.
@@ -776,12 +796,12 @@ function vParque(hoy) {
   return `<div class="parque-cab"><h1>Mi parque</h1><div class="parque-btns">
       ${P3.disponible() ? `<button class="btn sec ${ui.editarParque ? "on" : ""}" data-a="editarParque">${ui.editarParque ? "✓ Listo" : "✋ Mover"}</button>` : ""}
       <button class="btn tienda-btn" data-a="tienda">🛒 Tienda · 🪙 ${e.monedas}</button></div></div>
+    ${ui.editarParque ? `<div class="aviso">✋ Arrastra cualquier pieza para cambiarla de sitio. Toca dos veces para girarla. Cuando acabes, pulsa «Listo».</div>` : ""}
+    <div id="parque3dHost" class="parque3d-host">${fallback}</div>
+    ${P3.disponible() ? `<p class="nota centro">Toca un sitio para acercarte · arrastra para girar · pellizca o usa la rueda para el zoom.</p>` : ""}
     <div class="parque-stats"><div class="grande"><b>${h(e.hoy)}</b><span>hoy</span></div><div><b>${h(e.semana)}</b><span>esta semana</span></div>
       <div><b>${h(e.mes)}</b><span>este mes</span></div><div><b>${h(e.anio)}</b><span>este año</span></div><div><b>${h(e.total)}</b><span>en total</span></div>
       <div class="monedas"><b>🪙 ${e.monedas}</b><span>monedas</span></div></div>
-    ${ui.editarParque ? `<div class="aviso">✋ Arrastra cualquier pieza para cambiarla de sitio. Toca dos veces para girarla. Cuando acabes, pulsa «Listo».</div>` : ""}
-    <div id="parque3dHost" class="parque3d-host">${fallback}</div>
-    ${P3.disponible() ? `<p class="nota centro">Arrastra para girar la vista, pellizca o usa la rueda para acercar.</p>` : ""}
     <div class="tarjeta"><h3>Tu ciudad de bomberos</h3><ul class="ciudad">${E.CIUDAD.map(z => {
       const ab = abiertas.includes(z.id), falta = Math.max(0, z.horas * 60 - e.total);
       const n = piezas.filter(p => (E.TIENDA.find(t => t.id === p.id) || {}).zona === z.id).length;
@@ -811,7 +831,8 @@ function abrirTienda() {
       ...E.CIUDAD.filter(z => z.id !== "parque").map(z => ({t: `${z.icono} ${z.nombre}${abiertas.includes(z.id) ? "" : ` · 🔒 ${z.horas} h`}`, xs: E.TIENDA.filter(x => x.zona === z.id)})),
     ];
     box.hidden = false;
-    box.querySelector(".hoja").innerHTML = `<div class="tienda-cab"><h2>🛒 Tienda</h2><b>🪙 ${e.monedas}</b></div>
+    box.dataset.cerrable = "1";
+    box.querySelector(".hoja").innerHTML = `<div class="hoja-cab sticky"><h2>🛒 Tienda</h2><b>🪙 ${e.monedas}</b><button class="ico cerrar" data-m="cerrar" aria-label="Cerrar">✕</button></div>
       <p class="nota">1 minuto estudiado = 1 moneda. Lo que compras queda desbloqueado para crearlo con el temporizador tantas veces como quieras: cada vez es otra copia en tu parque. Las zonas nuevas de la ciudad se abren con las horas estudiadas.</p>
       ${grupos.map(g => `<h4 class="zona-t">${g.t}</h4><ul class="tienda">${g.xs.map(item).join("")}</ul>`).join("")}
       <div class="acciones"><button class="btn" data-m="cerrar">Cerrar</button></div>`;
@@ -820,7 +841,7 @@ function abrirTienda() {
       if (it && confirm(`¿Comprar ${it.nombre} por ${it.precio} monedas?`)) { await guardar({parque: {compras: {[it.id]: hoy}}}); pintarT(); }
     });
     box.querySelectorAll("[data-u]").forEach(b => b.onclick = async () => { await guardar({parque: {sel: b.dataset.u}}); pintarT(); });
-    box.querySelector("[data-m=cerrar]").onclick = () => { box.hidden = true; };
+    box.querySelectorAll("[data-m=cerrar]").forEach(b => b.onclick = () => { box.hidden = true; });
   };
   pintarT();
 }
@@ -830,7 +851,8 @@ function abrirNiveles() {
   const box = $("#modal"), hoy = HOY(), total = E.resumen(st, hoy).total, actual = E.rango(total);
   const pintarN = () => {
     box.hidden = false;
-    box.querySelector(".hoja").innerHTML = `<h2>Niveles y recompensas</h2>
+    box.dataset.cerrable = "1";
+    box.querySelector(".hoja").innerHTML = `<div class="hoja-cab sticky"><h2>Niveles y recompensas</h2><button class="ico cerrar" data-m="cerrar" aria-label="Cerrar">✕</button></div>
       <p class="nota">Tienes <b>${total} puntos</b>. Cada nivel trae su recompensa: tú te encargas de cumplirla y aquí la marcas.</p>
       <ul class="niveles">${E.RANGOS.map(r => {
         const min = r.min === -Infinity ? 0 : r.min, ok = total >= min, es = r.nombre === actual.nombre;
@@ -847,7 +869,7 @@ function abrirNiveles() {
       await guardar({premios: {[b.dataset.p]: b.dataset.v === "1" ? hoy : null}});
       pintarN();
     });
-    box.querySelector("[data-m=cerrar]").onclick = () => { box.hidden = true; };
+    box.querySelectorAll("[data-m=cerrar]").forEach(b => b.onclick = () => { box.hidden = true; });
   };
   pintarN();
 }
@@ -931,7 +953,7 @@ function enlazar() {
     } else if (a === "foco") {
       elegirYEmpezar(b.dataset.t, b.dataset.item);
     } else if (a === "hastaAqui") {
-      abrirHastaAqui(b.dataset.f, b.dataset.id);
+      abrirHastaAqui(b.dataset.f || null, b.dataset.id, b.dataset.t);
     } else if (a === "editarParque") {
       ui.editarParque = !ui.editarParque; pintar();
     } else if (a === "tienda") {
@@ -987,6 +1009,9 @@ $("#btnAjustes").onclick = () => ir("ajustes");
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 main();
 setTimeout(cargarConv, 300);
+$("#modal").addEventListener("click", e => { if (e.target === e.currentTarget && e.currentTarget.dataset.cerrable) e.currentTarget.hidden = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#modal").hidden && $("#modal").dataset.cerrable) $("#modal").hidden = true; });
+new MutationObserver(() => { if ($("#modal").hidden) delete $("#modal").dataset.cerrable; }).observe($("#modal"), {attributes: true, attributeFilter: ["hidden"]});
 // Modelos 3D del parque: se cargan en segundo plano; mientras tanto (o sin WebGL) se ven iconos sencillos.
 P3.cargar().then(() => { if (st) pintar(); if (foco) pintarFoco(); }).catch(() => {});
 foco = leerFoco(); if (foco) pintarFoco(); // para el aviso de novedades en la pestaña
