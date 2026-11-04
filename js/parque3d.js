@@ -249,7 +249,7 @@ function suelo(scene) {
   // Portada de la entrada con el rótulo del parque
   for (const x of [-1.8, 0.6]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.6, 0.3), mat(0xB4472F)); p.position.set(x, 0.8, 9.6); p.castShadow = true; g.add(p); }
   const arco = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.35, 0.3), mat(0xC1121F)); arco.position.set(-0.6, 1.75, 9.6); arco.castShadow = true; g.add(arco);
-  const r = texto("🚒 Parque de bomberos", "#8E0E17"); r.position.set(-0.6, 2.8, 9.6); g.add(r);
+  const r = texto("🚒 Parque", "#8E0E17"); r.position.set(-0.6, 2.8, 9.6); g.add(r);
   scene.add(g);
 }
 function zonaSuelo(scene, id, abierta, horas) {
@@ -270,7 +270,7 @@ function zonaSuelo(scene, id, abierta, horas) {
   scene.add(g);
   return g;
 }
-const CIUDAD_NOMBRE = {explanada: "Explanada (piezas repetidas)", maniobras: "🧯 Campo de maniobras", barrio: "🏬 Barrio", forestal: "🌲 Base forestal", aero: "🛩️ Aeródromo y puerto"};
+const CIUDAD_NOMBRE = {explanada: "Explanada", maniobras: "🧯 Maniobras", barrio: "🏬 Barrio", forestal: "🌲 Forestal", aero: "🛩️ Aeródromo"};
 function parcela(scene, x, z, s) {
   const w = s < 0.8 ? 0.7 : s > 1.2 ? 3 : 2;
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w), new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.28}));
@@ -333,7 +333,7 @@ function crearParque() {
   const divs = new Map(), vtmp = new THREE.Vector3();
   const enEscena = o => { while (o.parent) o = o.parent; return o === scene; };
   function dibujarEtiquetas() {
-    const w = el.clientWidth, h = el.clientHeight;
+    const w = el.clientWidth, h = el.clientHeight, puestas = [];
     for (const o of ETIQUETAS) {
       let d = divs.get(o);
       if (!enEscena(o)) { if (d) { d.remove(); divs.delete(o); } continue; }
@@ -342,6 +342,11 @@ function crearParque() {
       const dw = d.offsetWidth, dh = d.offsetHeight, m = 6;
       let x = (vtmp.x + 1) / 2 * w - dw / 2, y = (1 - vtmp.y) / 2 * h - dh / 2;
       x = Math.max(m, Math.min(w - dw - m, x)); y = Math.max(m + 40, Math.min(h - dh - m, y));
+      // Si pisa a otra etiqueta, se aparta hacia abajo (o hacia arriba si no cabe).
+      for (let i = 0; i < 8 && puestas.some(r => x < r.x + r.w + 4 && x + dw + 4 > r.x && y < r.y + r.h + 3 && y + dh + 3 > r.y); i++) {
+        y = y + dh + 4 <= h - dh - m ? y + dh + 4 : Math.max(m + 40, y - (dh + 4) * (i + 1));
+      }
+      puestas.push({x, y, w: dw, h: dh});
       d.style.transform = `translate(${x}px, ${y}px)`;
     }
   }

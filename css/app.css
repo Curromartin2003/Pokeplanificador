@@ -439,3 +439,5 @@ body.p3d-completa { overflow: hidden; }
 .p3d-etiquetas { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
 .p3d-et { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
   background: rgba(255,255,255,.88); box-shadow: 0 1px 6px rgba(0,0,0,.15); will-change: transform; }
+
+.p3d-et { font-size: 11px; padding: 3px 8px; max-width: none; }
