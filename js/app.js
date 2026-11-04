@@ -427,7 +427,7 @@ function vProgreso(hoy, res) {
   const obj = E.OBJETIVOS.map((t, i) => `<li><span>${esc(i === E.I_ESTUDIO ? "Estudio del día / clase" : t)}</span><span class="barra"><i style="width:${Math.round(res.cumple[i] * 100)}%"></i></span><b>${Math.round(res.cumple[i] * 100)} %</b></li>`).join("");
   const rg = E.rango(res.total);
   const rangoHTML = `<div class="tarjeta rango"><div class="rg-ic">${rg.icono}</div><div><span class="nota">Tu rango</span><h3>${esc(rg.nombre)}</h3>
-    ${rg.sig ? `<span class="barra"><i style="width:${Math.round(rg.pct * 100)}%"></i></span><p class="nota">Te ${rg.faltan === 1 ? "falta 1 punto" : `faltan ${rg.faltan} puntos`} para <b>${esc(rg.sig.nombre)}</b> ${rg.sig.icono}</p>` : `<p class="nota">Rango máximo. ¡Ya eres jefe/a de parque!</p>`}
+    ${rg.sig ? `<span class="barra"><i style="width:${Math.round(rg.pct * 100)}%"></i></span><p class="nota">Te ${rg.faltan === 1 ? "falta 1 punto" : `faltan ${rg.faltan} puntos`} para <b>${esc(rg.sig.nombre)}</b> ${rg.sig.icono}</p>` : `<p class="nota">Rango máximo. ¡Ya eres Intendente!</p>`}
     <button class="enlace peque" data-a="niveles">Ver todos los niveles y recompensas</button></div></div>`;
   return `<h1>Progreso</h1>${rangoHTML}
     <div class="kpis"><div><b class="${res.total > 0 ? "pos" : res.total < 0 ? "neg" : ""}">${res.total > 0 ? "+" : ""}${res.total}</b><span>Puntos</span></div>

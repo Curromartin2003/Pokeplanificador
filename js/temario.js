@@ -222,6 +222,7 @@ export const CAMBIOS = [
   {id: "c1", fecha: "2026-11-03", texto: "Legislación completa con tus PDF y ritmo de subrayado salvo Constitución, PRL y TREBEP."},
   {id: "c2", fecha: "2026-11-03", texto: "Vueltas a la par: acabada la legislación, solo específico hasta acabarlo; luego se empieza todo."},
   {id: "c3", fecha: "2026-11-03", texto: "Específico con tus PDF (temas 1, 3-10, 12-18). Los temas sin PDF quedan fuera de la vuelta hasta que los subas."},
+  {id: "c8", fecha: "2026-11-04", texto: "Nuevos niveles: Opositor tieso → Opositor → Bombero (C1) → Jefe de dotación (C1) → Subinspector (B) → Inspector (B) → Oficial (A2) → Intendente (A1)."},
   {id: "c7", fecha: "2026-11-04", texto: "Temporizador en el estudio y el callejero (lo que eliges crece mientras estudias), «📍 Hasta aquí» en cada parte del plan y nueva pestaña «Mi parque» con tus horas, tu parque y la tienda."},
   {id: "c6", fecha: "2026-11-04", texto: "Niveles con recompensas: toca tu nivel (arriba a la derecha) para ver los siguientes y lo que ganas en cada uno."},
   {id: "c5", fecha: "2026-11-03", texto: "Los puntos empiezan en 7. En Temario verás lo que tardas en cada tema. Nueva pestaña «Convocatorias»."},

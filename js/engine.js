@@ -479,16 +479,14 @@ export function fijarBase(st, hoy) {
 // Rangos de bombero según los puntos.
 // Rangos de bombero según los puntos, cada uno con su recompensa (la cumples tú; en la app la marcas como cumplida).
 export const RANGOS = [
-  {min: -Infinity, nombre: "Aspirante", icono: "🔰", premio: null},
-  {min: 10, nombre: "Opositor/a en forma", icono: "💪", premio: "Comer fuera en tu sitio favorito"},
-  {min: 25, nombre: "Bombero/a en prácticas", icono: "🧯", premio: "Comprarte algo que te guste (hasta 50 €)"},
-  {min: 50, nombre: "Bombero/a", icono: "🧑‍🚒", premio: "Un fin de semana libre entero, sin estudio ni callejero"},
-  {min: 75, nombre: "Bombero/a conductor/a", icono: "🚒", premio: "Cena especial en un buen restaurante"},
-  {min: 100, nombre: "Cabo", icono: "🎖️", premio: "Escapada de fin de semana a donde quieras"},
-  {min: 150, nombre: "Sargento", icono: "🎖️", premio: "Capricho grande: ropa, zapatillas o lo que llevas tiempo queriendo (hasta 150 €)"},
-  {min: 200, nombre: "Suboficial", icono: "⭐", premio: "Finde libre + comida o cena de las buenas"},
-  {min: 300, nombre: "Oficial", icono: "⭐⭐", premio: "Viaje de 3 o 4 días"},
-  {min: 400, nombre: "Jefe/a de parque", icono: "🏆", premio: "El gran viaje o el capricho gordo que te tengas guardado"},
+  {min: -Infinity, nombre: "Opositor tieso", icono: "🥲", premio: null},
+  {min: 10, nombre: "Opositor", icono: "📚", premio: "Comer fuera en tu sitio favorito"},
+  {min: 25, nombre: "Bombero (C1)", icono: "🧑‍🚒", premio: "Comprarte algo que te guste (hasta 50 €)"},
+  {min: 50, nombre: "Jefe de dotación (C1)", icono: "🚒", premio: "Un fin de semana libre entero, sin estudio ni callejero"},
+  {min: 100, nombre: "Subinspector (B)", icono: "🎖️", premio: "Escapada de fin de semana a donde quieras"},
+  {min: 150, nombre: "Inspector (B)", icono: "⭐", premio: "Capricho grande: ropa, zapatillas o lo que llevas tiempo queriendo (hasta 150 €)"},
+  {min: 250, nombre: "Oficial (A2)", icono: "⭐⭐", premio: "Viaje de 3 o 4 días"},
+  {min: 400, nombre: "Intendente (A1)", icono: "🏆", premio: "El gran viaje o el capricho gordo que te tengas guardado"},
 ];
 export function rango(puntos) {
   let i = 0;
