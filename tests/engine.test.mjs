@@ -244,3 +244,11 @@ test("ciudad: cada repetición es otra copia en el mapa y las zonas se abren con
   assert.ok(E.zonaAbierta("parque", 0) && !E.zonaAbierta("maniobras", 39 * 60) && E.zonaAbierta("maniobras", 40 * 60));
   assert.ok(E.TIENDA.reduce((a, x) => a + x.precio, 0) > 120000, "completarlo todo lleva muchísimas horas");
 });
+
+test("semilla 3: las sesiones dadas por perdidas por bloqueo de pantalla cuentan si duraron lo suficiente", () => {
+  const ses = [{tipo: "callejero", est: 33, desc: 0, obj: "extintor", ok: false}, {tipo: "estudio", est: 4, obj: "extintor", ok: false}];
+  const st = E.completar({...E.estadoNuevo("2026-11-03"), semilla: 2, dias: {"2026-11-04": {ses}}});
+  const p = E.semilla(st, "2026-11-04");
+  assert.equal(p.semilla, 3);
+  assert.deepEqual(p.dias["2026-11-04"].ses.map(x => x.ok), [true, false]);
+});

@@ -470,6 +470,11 @@ export function semilla(st, hoy) {
       const c = cola(s2, t).items.find(z => z.v === 1 && z.n === x.n && z.nombre === x.nombre);
       if (c) Object.assign(p.manual, irA(s2, hoy, t, c.id).manual);
     }
+    // Sesiones que se dieron por perdidas sin culpa (pantalla bloqueada): si duraron lo suficiente, cuentan.
+    for (const f of S.arreglarSesiones || []) {
+      const ses = (st.dias[f] && st.dias[f].ses) || [];
+      if (ses.some(x => !x.ok && (x.est || 0) >= MIN_SESION)) p.dias[f] = {...(p.dias[f] || {}), ses: ses.map(x => (!x.ok && (x.est || 0) >= MIN_SESION ? {...x, ok: true} : x))};
+    }
   }
   return p;
 }

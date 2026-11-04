@@ -1,7 +1,7 @@
 // Service worker: la app abre sin conexión. Lo propio, primero red (para tener siempre la última versión) y si no hay
 // conexión, caché. Las librerías de Firebase (gstatic) no cambian de versión: primero caché.
 // Los datos no pasan por aquí: los guarda y sincroniza Firestore con su propia caché.
-const CACHE = "pokeplanificador-v32";
+const CACHE = "pokeplanificador-v33";
 const CORE = ["./", "index.html", "css/app.css", "js/app.js", "js/engine.js", "js/store.js", "js/temario.js", "js/docs_esp.js", "js/parque3d.js",
   "firebase-config.js", "manifest.webmanifest", "icons/icon-192.png"];
 

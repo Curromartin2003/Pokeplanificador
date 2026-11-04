@@ -678,9 +678,10 @@ function elegirYEmpezar(tipo, item) {
 
 function pintarFoco() {
   const box = $("#foco");
-  if (!foco) { box.hidden = true; document.body.classList.remove("enfoco"); clearInterval(focoTick); focoTick = null; return; }
+  if (!foco) { box.hidden = true; document.body.classList.remove("enfoco"); clearInterval(focoTick); focoTick = null; mantenerPantalla(false); return; }
   box.hidden = false;
   document.body.classList.add("enfoco");
+  mantenerPantalla(foco.estado === "run");
   const obj = E.TIENDA.find(x => x.id === foco.obj) || E.TIENDA[0];
   const est = msEst(foco), desc = msDesc(foco), min = est / 60000;
   const crece = Math.min(1, min / 25);  // a los 25 min está crecido del todo
@@ -691,6 +692,8 @@ function pintarFoco() {
     <div class="foco-arbol" style="--c:${crece}"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" class="pista"/><circle cx="60" cy="60" r="54" class="avance" style="stroke-dashoffset:${339.3 * (1 - Math.min(1, min / 25))}"/></svg>
       ${P3.disponible() ? `<span class="visor3d" id="visorFoco"></span>` : `<span class="obj ${foco.seco ? "seco" : ""}" style="transform:scale(${0.35 + 0.65 * crece})">${foco.seco ? (obj.tipo === "exterior" ? "🥀" : "💥") : listo ? obj.icono : obj.tipo === "exterior" ? "🌱" : "🏗️"}</span>`}</div>
     <p class="foco-obj">${foco.seco ? (obj.tipo === "exterior" ? "Se ha secado" : "Se ha estropeado") + " por salir de la app. El tiempo sigue contando." : listo ? `${esc(obj.nombre)} ya está a salvo: sigue para terminarlo del todo` : `${obj.tipo === "exterior" ? "Plantando" : obj.tipo === "material" ? "Fabricando" : "Construyendo"}: ${esc(obj.nombre)} (a salvo a los ${E.MIN_SESION} min)`}</p>
+    ${foco.pregunta ? `<div class="foco-pregunta"><b>La app ha estado oculta ${foco.pregunta >= 120 ? Math.round(foco.pregunta / 60) + " min" : foco.pregunta + " s"}. ¿Qué ha pasado?</b>
+      <div class="foco-btns"><button class="btn grande2" data-f="bloqueo">🔒 Se bloqueó la pantalla</button><button class="btn sec grande2" data-f="sali">📱 He salido de la app</button></div></div>` : ""}
     <div class="foco-tiempos"><div><b>${mmss(est)}</b><span>estudio</span></div><div><b>${mmss(desc)}</b><span>descanso</span></div></div>
     <div class="foco-btns">${foco.estado === "run"
       ? `<button class="btn sec grande2" data-f="parar">⏸ Parar</button>`
@@ -706,7 +709,9 @@ function pintarFoco() {
 async function accionFoco(a) {
   if (!foco) return;
   const t = ahora();
-  if (a === "parar" && foco.estado === "run") { foco.est += t - foco.desde; foco.estado = "pause"; foco.desde = t; }
+  if (a === "bloqueo") { delete foco.pregunta; }
+  else if (a === "sali") { delete foco.pregunta; foco.seco = true; }
+  else if (a === "parar" && foco.estado === "run") { foco.est += t - foco.desde; foco.estado = "pause"; foco.desde = t; }
   else if (a === "seguir" && foco.estado === "pause") { foco.desc += t - foco.desde; foco.estado = "run"; foco.desde = t; }
   else if (a === "fin") {
     if (foco.estado === "run") foco.est += t - foco.desde; else foco.desc += t - foco.desde;
@@ -746,11 +751,25 @@ function finFoco(f, est, desc, ok) {
 }
 
 // Si sales de la app con el temporizador en marcha más de 20 s, lo que crece se seca (el tiempo sigue contando).
+// Pantalla siempre encendida mientras cuenta (Screen Wake Lock, si el móvil lo permite).
+let bloqueoPantalla = null, pidiendoPantalla = false;
+async function mantenerPantalla(on) {
+  try {
+    if (on && "wakeLock" in navigator && !bloqueoPantalla && !pidiendoPantalla && !document.hidden) {
+      pidiendoPantalla = true;
+      bloqueoPantalla = await navigator.wakeLock.request("screen").finally(() => { pidiendoPantalla = false; });
+      bloqueoPantalla.addEventListener("release", () => { bloqueoPantalla = null; });
+    } else if (!on && bloqueoPantalla) { await bloqueoPantalla.release(); bloqueoPantalla = null; }
+  } catch (e) { bloqueoPantalla = null; }
+}
+// Si la app se oculta más de 20 s con el temporizador en marcha, al volver se pregunta qué ha pasado: si solo se
+// bloqueó la pantalla, sigue creciendo; si saliste de la app, se pierde (el tiempo cuenta igual).
 document.addEventListener("visibilitychange", () => {
   if (!foco || foco.estado !== "run") { ocultoDesde = null; return; }
-  if (document.hidden) ocultoDesde = ahora();
-  else if (ocultoDesde && ahora() - ocultoDesde > 20000) { foco.seco = true; guardarFoco(); pintarFoco(); ocultoDesde = null; }
-  else ocultoDesde = null;
+  if (document.hidden) { ocultoDesde = ahora(); return; }
+  mantenerPantalla(true);
+  if (ocultoDesde && ahora() - ocultoDesde > 20000 && !foco.seco) { foco.pregunta = Math.round((ahora() - ocultoDesde) / 1000); guardarFoco(); pintarFoco(); }
+  ocultoDesde = null;
 });
 window.addEventListener("beforeunload", e => { if (foco && foco.estado === "run") { e.preventDefault(); e.returnValue = ""; } });
 

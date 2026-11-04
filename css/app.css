@@ -441,3 +441,6 @@ body.p3d-completa { overflow: hidden; }
   background: rgba(255,255,255,.88); box-shadow: 0 1px 6px rgba(0,0,0,.15); will-change: transform; }
 
 .p3d-et { font-size: 11px; padding: 3px 8px; max-width: none; }
+
+.foco-pregunta { background: rgba(255,255,255,.14); border-radius: 16px; padding: 14px; margin: 10px 0 16px; }
+.foco-pregunta .foco-btns { margin-top: 10px; flex-wrap: wrap; }
