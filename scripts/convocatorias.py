@@ -223,15 +223,28 @@ def bop_sevilla_dia(f):
     except Exception:
         _BOPSE[f] = out
         return out
-    prev = 0
-    for m in re.finditer(r'<a[^>]+href="([^"]*/buscador-anuncios/anuncio/[^"]*)"[^>]*>(.*?)</a>', pag, re.I | re.S):
-        titulo = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", m.group(2)))).strip()
-        # El organismo es el último texto que aparece antes del enlace (desde el anuncio anterior).
-        trozos = [html.unescape(x).strip() for x in re.sub(r"<script.*?</script>|<style.*?</style>", " ", pag[prev:m.start()], flags=re.S).split("<")]
-        textos = [re.sub(r"^[^>]*>", "", x).strip() for x in trozos]
-        textos = [x for x in textos if re.search(r"[A-Za-zÁÉÍÓÚáéíóúñÑ]{3}", x) and len(x) < 120]
-        out.append({"url": urljoin(u, html.unescape(m.group(1))), "titulo": titulo, "org": textos[-1] if textos else ""})
+    # Cada anuncio puede tener varios enlaces (título, «Ir al detalle»...): se agrupan por dirección y se toma como
+    # título el texto más largo del bloque (o el de la dirección si no hay) y como organismo el primer texto corto.
+    enlaces = list(re.finditer(r'<a[^>]+href="([^"]*/buscador-anuncios/anuncio/[^"]*)"[^>]*>(.*?)</a>', pag, re.I | re.S))
+    prev, bloques = 0, {}
+    for m in enlaces:
+        url = urljoin(u, html.unescape(m.group(1)))
+        b = bloques.setdefault(url, {"ini": prev, "fin": m.end(), "anchor": []})
+        b["fin"] = m.end()
+        b["anchor"].append(html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", m.group(2)))).strip())
         prev = m.end()
+    ruido = re.compile(r"^(ir al detalle|ver|descargar|pdf|anuncio|BOP-SE-[\d-]+|\d[\d/ .-]*|p[aá]g\S*.*)$", re.I)
+    for url, b in bloques.items():
+        trozo = re.sub(r"<script.*?</script>|<style.*?</style>", " ", pag[b["ini"]:b["fin"]], flags=re.S)
+        textos = [html.unescape(re.sub(r"\s+", " ", x)).strip() for x in re.split(r"<[^>]+>", trozo)]
+        textos = [x for x in textos if x and not ruido.match(x) and re.search(r"[A-Za-zÁÉÍÓÚáéíóúñÑ]{3}", x)]
+        largos = sorted(textos, key=len, reverse=True)
+        titulo = largos[0] if largos and len(largos[0]) > 25 else ""
+        if not titulo:
+            slug = url.rstrip("/").rsplit("/", 1)[-1].replace("-", " ")
+            titulo = slug[:1].upper() + slug[1:]
+        cortos = [x for x in textos if x != titulo and len(x) < 90]
+        out.append({"url": url, "titulo": titulo, "org": cortos[0] if cortos else ""})
     _BOPSE[f] = out
     return out
 
@@ -239,15 +252,21 @@ def bop_sevilla_dia(f):
 def radar_sevilla(fechas, previos):
     """Todo lo de bomberos (turno libre) del BOP de Sevilla en esas fechas: bases, listas, tribunal, exámenes..."""
     vistos = {x["url"] for x in previos}
+    por_url = {x["url"]: x for x in previos}
     nuevos = []
     for f in fechas:
         for a in bop_sevilla_dia(f):
+            # Si ya estaba, se mejora el título y el organismo con la lectura nueva.
+            if a["url"] in por_url and a["titulo"] and len(a["titulo"]) >= len(por_url[a["url"]]["titulo"]) - 5:
+                por_url[a["url"]]["titulo"] = a["titulo"]
+                por_url[a["url"]]["org"] = a["org"] or por_url[a["url"]].get("org", "")
             t = a["titulo"] + " " + a["url"].rsplit("/anuncio/", 1)[-1].replace("-", " ")
             if a["url"] in vistos or not re.search(r"bomber|extinci[oó]n de incendios|SPEIS", t, re.I):
                 continue
             if re.search(r"promoci[oó]n interna", t, re.I) and not re.search(r"turno libre", t, re.I):
                 continue
-            tipo = ("Bases" if re.search(r"\bbases\b|convocatoria para la provisi", t, re.I) and not re.search(r"lista|admitid|tribunal", t, re.I)
+            tipo = ("Plantilla" if re.search(r"plantilla|relaci[oó]n de puestos|\bRPT\b|oferta de empleo", t, re.I)
+                    else "Bases" if re.search(r"\bbases\b|convocatoria para la provisi", t, re.I) and not re.search(r"lista|admitid|tribunal", t, re.I)
                     else "Lista" if re.search(r"lista|admitid|excluid|relaci[oó]n", t, re.I)
                     else "Examen" if re.search(r"ejercicio|examen|prueba|fecha|calificaci|nota", t, re.I)
                     else "Tribunal" if re.search(r"tribunal", t, re.I) else "Anuncio")
@@ -383,7 +402,7 @@ def main():
     # Radar del BOP de Sevilla (toda la provincia). La primera vez mira los últimos 60 días.
     sevilla = datos.get("sevilla", [])
     # Mientras no se haya podido leer nunca, se intentan los últimos 60 días.
-    dias_se = fechas if datos.get("sevilla_ok") else [hoy - timedelta(days=i) for i in range(60)]
+    dias_se = fechas if datos.get("sevilla_ok") and datos.get("sevilla_v", 0) >= 2 else [hoy - timedelta(days=i) for i in range(60)]
     if "--sevilla-dias" in sys.argv:
         dias_se = [hoy - timedelta(days=i) for i in range(int(sys.argv[sys.argv.index("--sevilla-dias") + 1]))]
     with ThreadPoolExecutor(6) as ex:
@@ -406,7 +425,7 @@ def main():
         "actualizado": datetime.now(timezone.utc).isoformat(timespec="minutes"),
         "fuente": "BOE, sección II.B (datos abiertos)",
         "mias": mias, "espana": lista, "boja_ultimo": boja_ultimo, "sevilla": sevilla,
-        "sevilla_ok": bool(datos.get("sevilla_ok") or leidos_se),
+        "sevilla_ok": bool(datos.get("sevilla_ok") or leidos_se), "sevilla_v": 2 if leidos_se else datos.get("sevilla_v", 0),
     }, ensure_ascii=False, indent=1) + "\n")
     REVISADOS.write_text(json.dumps(revisados, separators=(",", ":")) + "\n")
 
