@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-11-03T23:58+00:00",
+ "actualizado": "2026-11-04T00:06+00:00",
  "fuente": "BOE, sección II.B (datos abiertos)",
  "mias": [
   {
@@ -58,14 +58,14 @@
     {
      "nombre": "Portal de empleo de Aena",
      "url": "https://empleo.aena.es/",
-     "revisada": "2026-11-03",
+     "revisada": "2026-11-04",
      "hash": "1a82e3440c2325c2",
      "pdfs": []
     },
     {
      "nombre": "Programa IC10 (PDF)",
      "url": "https://empleo.aena.es/ocupaciones/Lists/Ocupaciones/Attachments/40/3.Programa_IC10.pdf",
-     "revisada": "2026-11-03",
+     "revisada": "2026-11-04",
      "hash": "8b0d482f844d991d",
      "pdfs": []
     }
@@ -166,7 +166,7 @@
       "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2026/BOP_Lista_prov_Cazorla.pdf"
      ],
      "hash": "a415bee941b58bab",
-     "revisada": "2026-11-03"
+     "revisada": "2026-11-04"
     },
     {
      "nombre": "Ficha del proceso de Segura",
@@ -176,7 +176,7 @@
       "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2026/BOP_Lista_Prov_Segura_OL.pdf"
      ],
      "hash": "97a5efa42cbb684d",
-     "revisada": "2026-11-03"
+     "revisada": "2026-11-04"
     },
     {
      "nombre": "Ofertas de empleo de los consorcios (Diputación de Jaén)",
@@ -191,7 +191,7 @@
       "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2025/BOP_Bases_Segura_OL.pdf"
      ],
      "hash": "c579f5e0202fcade",
-     "revisada": "2026-11-03"
+     "revisada": "2026-11-04"
     }
    ],
    "aviso": "Las listas, el tribunal y la fecha de examen salen en el BOP de Jaén y en la ficha de cada proceso de la Diputación. La app revisa las dos fichas cada mañana y te pone el enlace directo de cada documento nuevo.",
@@ -544,12 +544,33 @@
  "boja_ultimo": 213,
  "sevilla": [
   {
+   "fecha": "2026-10-20",
+   "org": "BOP-SE-2026-203025",
+   "titulo": "Ir al detalle",
+   "tipo": "Lista",
+   "url": "https://bopsevilla.dipusevilla.es/publica/buscador-anuncios/anuncio/Aprobacion-de-una-nueva-modificacion-de-la-relacion-de-puestos-de-trabajo-que-se-cita-del-Servicio-de-Prevencion-Extincion-de-Incendios-y-Salvamento/"
+  },
+  {
    "fecha": "2026-10-16",
    "org": "Alcalá de Guadaíra",
    "tipo": "Lista",
    "titulo": "Lista provisional de personas admitidas y excluidas y composición del tribunal de la convocatoria para la provisión, en turno libre, de cinco plazas de Bombero vacantes en la plantilla de personal funcionario (OEP 2026)",
    "url": "https://bopsevilla.dipusevilla.es/publica/buscador-anuncios/anuncio/Lista-provisional-de-personas-admitidas-y-excluidas-y-composicion-del-tribunal-de-la-convocatoria-para-la-provision-en-turno-libre-de-cinco-plazas-de-Bombero-vacantes-en-la-plantilla-de-personal-fu/"
+  },
+  {
+   "fecha": "2026-09-23",
+   "org": "BOP-SE-2026-185015",
+   "titulo": "Ir al detalle",
+   "tipo": "Anuncio",
+   "url": "https://bopsevilla.dipusevilla.es/publica/buscador-anuncios/anuncio/Aprobacion-inicial-de-la-modificacion-de-la-plantilla-municipal-del-Servicio-de-Prevencion-Extincion-de-Incendios-y-Salvamento/"
+  },
+  {
+   "fecha": "2026-09-16",
+   "org": "BOP-SE-2026-180015",
+   "titulo": "Ir al detalle",
+   "tipo": "Lista",
+   "url": "https://bopsevilla.dipusevilla.es/publica/buscador-anuncios/anuncio/Aprobacion-de-la-modificacion-de-la-relacion-de-puestos-de-trabajo-que-se-cita-del-Servicio-de-Prevencion-Extincion-de-Incendios-y-Salvamento/"
   }
  ],
- "sevilla_ok": false
+ "sevilla_ok": true
 }
