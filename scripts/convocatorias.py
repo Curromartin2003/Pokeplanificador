@@ -249,6 +249,12 @@ def bop_sevilla_dia(f):
     return out
 
 
+def clave_anuncio(x):
+    import unicodedata
+    t = unicodedata.normalize("NFD", x["titulo"]).encode("ascii", "ignore").decode().lower()
+    return x["fecha"] + re.sub(r"[^a-z0-9]", "", t)[:90]
+
+
 def radar_sevilla(fechas, previos):
     """Todo lo de bomberos (turno libre) del BOP de Sevilla en esas fechas: bases, listas, tribunal, exámenes..."""
     vistos = {x["url"] for x in previos}
@@ -265,7 +271,8 @@ def radar_sevilla(fechas, previos):
                 continue
             if re.search(r"promoci[oó]n interna", t, re.I) and not re.search(r"turno libre", t, re.I):
                 continue
-            tipo = ("Plantilla" if re.search(r"plantilla|relaci[oó]n de puestos|\bRPT\b|oferta de empleo", t, re.I)
+            tipo = ("Lista" if re.search(r"\blista|admitid|excluid", t, re.I)
+                    else "Plantilla" if re.search(r"modificaci[oó]n de la plantilla|plantilla municipal|relaci[oó]n de puestos|\bRPT\b|oferta de empleo", t, re.I)
                     else "Bases" if re.search(r"\bbases\b|convocatoria para la provisi", t, re.I) and not re.search(r"lista|admitid|tribunal", t, re.I)
                     else "Lista" if re.search(r"lista|admitid|excluid|relaci[oó]n", t, re.I)
                     else "Examen" if re.search(r"ejercicio|examen|prueba|fecha|calificaci|nota", t, re.I)
@@ -412,7 +419,11 @@ def main():
         print("  + BOP Sevilla", x["fecha"], x["org"], "|", x["titulo"][:90])
     leidos_se = sum(1 for f in dias_se if _BOPSE.get(f))
     print(f"BOP de Sevilla: {leidos_se} boletines leídos de {len(dias_se)} días, {len(nuevos_se)} anuncios de bomberos nuevos")
-    sevilla = sorted(sevilla + nuevos_se, key=lambda x: x["fecha"], reverse=True)
+    # Sin repetidos (el mismo anuncio puede leerse con direcciones algo distintas): gana el que tiene organismo.
+    unicos = {}
+    for x in sorted(sevilla + nuevos_se, key=lambda x: bool(x.get("org")), reverse=True):
+        unicos.setdefault(clave_anuncio(x), x)
+    sevilla = sorted(unicos.values(), key=lambda x: x["fecha"], reverse=True)
     sevilla = [x for x in sevilla if x["fecha"] >= (hoy - timedelta(days=365)).isoformat()]
 
     # Limpieza: los revisados de más de 15 días ya no hacen falta; las de España, un año.
