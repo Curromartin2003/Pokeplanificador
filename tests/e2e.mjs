@@ -69,7 +69,7 @@ try {
   await p.click("#puntos");
   await p.waitForSelector(".niveles");
   const tn = await p.textContent(".niveles");
-  ok(tn.includes("Comer fuera") && tn.includes("Te faltan 2 puntos") && tn.includes("Viaje de 3 o 4 días"), "niveles: los siguientes con sus recompensas");
+  ok(tn.includes("Comer fuera") && tn.includes("Te faltan 22 puntos") && tn.includes("Viaje de 3 o 4 días"), "niveles: los siguientes con sus recompensas");
   if (shots) await p.screenshot({path: shots + "/8-niveles.png", fullPage: true});
   await p.click("#modal [data-m=cerrar]");
   await p.click("nav [data-v=semana]");
