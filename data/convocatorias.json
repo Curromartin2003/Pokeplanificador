@@ -541,5 +541,15 @@
    "fase": "plazo"
   }
  ],
- "boja_ultimo": 213
+ "boja_ultimo": 213,
+ "sevilla": [
+  {
+   "fecha": "2026-10-16",
+   "org": "Alcalá de Guadaíra",
+   "tipo": "Lista",
+   "titulo": "Lista provisional de personas admitidas y excluidas y composición del tribunal de la convocatoria para la provisión, en turno libre, de cinco plazas de Bombero vacantes en la plantilla de personal funcionario (OEP 2026)",
+   "url": "https://bopsevilla.dipusevilla.es/publica/buscador-anuncios/anuncio/Lista-provisional-de-personas-admitidas-y-excluidas-y-composicion-del-tribunal-de-la-convocatoria-para-la-provision-en-turno-libre-de-cinco-plazas-de-Bombero-vacantes-en-la-plantilla-de-personal-fu/"
+  }
+ ],
+ "sevilla_ok": false
 }

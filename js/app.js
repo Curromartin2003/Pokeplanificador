@@ -198,7 +198,8 @@ function vHoy(hoy) {
 function avisoConv() {
   if (!conv) return "";
   const v = st.convVisto || E.sumaDias(HOY(), -7);
-  const nov = conv.mias.flatMap(c => (c.novedades || []).filter(n => n.fecha > v).map(n => ({...n, conv: c.nombre.split(" · ")[0]})))
+  const nov = [...conv.mias.flatMap(c => (c.novedades || []).filter(n => n.fecha > v).map(n => ({...n, conv: c.nombre.split(" · ")[0]}))),
+    ...(conv.sevilla || []).filter(x => x.fecha > v).map(x => ({fecha: x.fecha, url: x.url, texto: x.titulo, conv: `BOP de Sevilla · ${x.org || "Sevilla"} · ${x.tipo}`}))]
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
   if (!nov.length) return "";
   return `<div class="avisoconv"><b>📢 Novedades en tus convocatorias</b><ul>${nov.slice(0, 4).map(n =>
@@ -468,6 +469,7 @@ function novedadesSinVer() {
   if (!conv) return 0;
   const v = st.convVisto || E.sumaDias(HOY(), -7);
   return conv.mias.reduce((a, c) => a + (c.novedades || []).filter(n => n.fecha > v).length, 0)
+    + (conv.sevilla || []).filter(x => x.fecha > v).length
     + conv.espana.filter(c => ((c.fin && c.fin >= HOY()) || c.fase === "bases") && (c.fecha || "") > v).length;
 }
 function badgeConv() {
@@ -514,6 +516,12 @@ function vConvocatorias(hoy) {
   const abiertas = conv.espana.filter(c => c.fin && c.fin >= hoy).length;
   return `<h1>Convocatorias</h1><p class="sub">Se revisan cada mañana (BOE y páginas oficiales). Última revisión con cambios: ${E.fechaLarga(conv.actualizado.slice(0, 10), false)}.</p>
     <section class="bloque"><div class="bcab"><h2>Mis convocatorias</h2></div>${mias}</section>
+    <section class="bloque"><div class="bcab"><h2>Radar BOP de Sevilla</h2><span>toda la provincia</span></div>
+      <p class="nota">Todo lo de bomberos por turno libre que sale en el Boletín de la Provincia de Sevilla (bases, listas, tribunales, exámenes), revisado cada mañana. Lo nuevo sale también en Hoy.</p>
+      ${(conv.sevilla || []).length ? `<ul class="novedades radar">${conv.sevilla.slice(0, 25).map(x => `<li class="${x.fecha > visto ? "nueva" : ""}"><small>${E.fechaLarga(x.fecha, false)} · ${esc(x.org || "Sevilla")} · <b>${esc(x.tipo)}</b></small><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titulo)}</a></li>`).join("")}</ul>`
+        : `<div class="vacio"><p>Nada de bomberos en el BOP de Sevilla por ahora.</p></div>`}
+      ${conv.sevilla_ok === false ? `<p class="nota">La primera revisión completa del BOP de Sevilla se hace en la próxima actualización de la mañana.</p>` : ""}
+    </section>
     <section class="bloque"><div class="bcab"><h2>Convocatorias España</h2><span>${abiertas} con plazo abierto</span></div>
       <p class="nota">Bombero/a por turno libre (oposición o concurso-oposición), sin promoción interna ni movilidad, del último año. Primero las de plazo de instancias abierto, después las que ya tienen bases y aún no plazo. Fuentes: BOE (toda España, cuando se abre el plazo) y BOJA (bases de Andalucía en cuanto se publican).</p>
       <div class="filtros">${[["todas", "Todas"], ["abiertas", "Plazo abierto"], ["bases", "Bases publicadas"], ["andalucia", "Andalucía"]].map(([k, t]) => `<button class="${f === k ? "on" : ""}" data-a="filtroConv" data-f="${k}">${t}</button>`).join("")}</div>

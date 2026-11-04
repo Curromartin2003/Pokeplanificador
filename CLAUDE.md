@@ -33,7 +33,9 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   (fichas escritas a mano + novedades automáticas con enlace directo: anuncios del BOE que las nombran, PDF nuevos en las
   páginas vigiladas (`vigilar[].pdfs`), anuncios del BOP de Sevilla (`bop_sevilla`) y cambios de texto en las páginas).
   Las novedades sin ver salen también en Hoy.
-  `data/revisados.json` guarda los anuncios ya mirados.
+  `data/revisados.json` guarda los anuncios ya mirados. Radar BOP de Sevilla (`sevilla`): todo anuncio de bomberos de
+  turno libre de la provincia (bases, listas, tribunal, examen) con enlace directo; si nunca se ha podido leer
+  (`sevilla_ok` falso) intenta los últimos 60 días.
 - Callejero: `calle.sel` = distritos que se están estudiando (varios a la vez, se quedan); al marcar el callejero se
   guarda en `dias[f].cal`.
 - Los PDF no se suben al repositorio.

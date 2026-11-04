@@ -211,6 +211,51 @@ def boja_bases(desde, hasta=None):
     return out, ultimo
 
 
+_BOPSE = {}
+def bop_sevilla_dia(f):
+    """Anuncios del BOP de Sevilla de un día: [{url, titulo, org}] (vacío si no hay boletín o no se puede leer)."""
+    if f in _BOPSE:
+        return _BOPSE[f]
+    u = f"https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-{f:%d-%m-%Y}/"
+    out = []
+    try:
+        pag = get(u, timeout=40)
+    except Exception:
+        _BOPSE[f] = out
+        return out
+    prev = 0
+    for m in re.finditer(r'<a[^>]+href="([^"]*/buscador-anuncios/anuncio/[^"]*)"[^>]*>(.*?)</a>', pag, re.I | re.S):
+        titulo = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", m.group(2)))).strip()
+        # El organismo es el último texto que aparece antes del enlace (desde el anuncio anterior).
+        trozos = [html.unescape(x).strip() for x in re.sub(r"<script.*?</script>|<style.*?</style>", " ", pag[prev:m.start()], flags=re.S).split("<")]
+        textos = [re.sub(r"^[^>]*>", "", x).strip() for x in trozos]
+        textos = [x for x in textos if re.search(r"[A-Za-zÁÉÍÓÚáéíóúñÑ]{3}", x) and len(x) < 120]
+        out.append({"url": urljoin(u, html.unescape(m.group(1))), "titulo": titulo, "org": textos[-1] if textos else ""})
+        prev = m.end()
+    _BOPSE[f] = out
+    return out
+
+
+def radar_sevilla(fechas, previos):
+    """Todo lo de bomberos (turno libre) del BOP de Sevilla en esas fechas: bases, listas, tribunal, exámenes..."""
+    vistos = {x["url"] for x in previos}
+    nuevos = []
+    for f in fechas:
+        for a in bop_sevilla_dia(f):
+            t = a["titulo"] + " " + a["url"].rsplit("/anuncio/", 1)[-1].replace("-", " ")
+            if a["url"] in vistos or not re.search(r"bomber|extinci[oó]n de incendios|SPEIS", t, re.I):
+                continue
+            if re.search(r"promoci[oó]n interna", t, re.I) and not re.search(r"turno libre", t, re.I):
+                continue
+            tipo = ("Bases" if re.search(r"\bbases\b|convocatoria para la provisi", t, re.I) and not re.search(r"lista|admitid|tribunal", t, re.I)
+                    else "Lista" if re.search(r"lista|admitid|excluid|relaci[oó]n", t, re.I)
+                    else "Examen" if re.search(r"ejercicio|examen|prueba|fecha|calificaci|nota", t, re.I)
+                    else "Tribunal" if re.search(r"tribunal", t, re.I) else "Anuncio")
+            nuevos.append({"fecha": f.isoformat(), "org": a["org"], "titulo": a["titulo"] or "Anuncio", "tipo": tipo, "url": a["url"]})
+            vistos.add(a["url"])
+    return nuevos
+
+
 def menciona(ident, claves, titulo=""):
     for _ in range(3):
         try:
@@ -286,20 +331,13 @@ def main():
         bs = c.get("bop_sevilla")
         if bs:
             for f in fechas:
-                u = f"https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-{f:%d-%m-%Y}/"
-                try:
-                    pag = get(u, timeout=40)
-                except Exception:
-                    continue
-                for m in re.finditer(r'<a[^>]+href="([^"]*/buscador-anuncios/anuncio/[^"]*)"[^>]*>(.*?)</a>', pag, re.I | re.S):
-                    url = urljoin(u, html.unescape(m.group(1)))
-                    titulo = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", m.group(2)))).strip()
-                    contexto = re.sub(r"<[^>]+>", " ", pag[max(0, m.start() - 2500):m.start()])
+                for an in bop_sevilla_dia(f):
+                    url, titulo = an["url"], an["titulo"]
                     if url in hechos or not re.search(bs["claves"], titulo + " " + url, re.I):
                         continue
                     if re.search(r"promoci[oó]n interna", titulo, re.I):
                         continue
-                    if not re.search(bs["org"], titulo + " " + contexto, re.I):
+                    if not re.search(bs["org"], titulo + " " + an["org"], re.I):
                         continue
                     c.setdefault("novedades", []).append({"fecha": f.isoformat(), "auto": True, "url": url,
                                                            "texto": f"BOP de Sevilla: {titulo or 'anuncio nuevo'}"})
@@ -342,6 +380,22 @@ def main():
             v["hash"] = h
             v["revisada"] = hoy.isoformat()
 
+    # Radar del BOP de Sevilla (toda la provincia). La primera vez mira los últimos 60 días.
+    sevilla = datos.get("sevilla", [])
+    # Mientras no se haya podido leer nunca, se intentan los últimos 60 días.
+    dias_se = fechas if datos.get("sevilla_ok") else [hoy - timedelta(days=i) for i in range(60)]
+    if "--sevilla-dias" in sys.argv:
+        dias_se = [hoy - timedelta(days=i) for i in range(int(sys.argv[sys.argv.index("--sevilla-dias") + 1]))]
+    with ThreadPoolExecutor(6) as ex:
+        list(ex.map(bop_sevilla_dia, dias_se))
+    nuevos_se = radar_sevilla(dias_se, sevilla)
+    for x in nuevos_se:
+        print("  + BOP Sevilla", x["fecha"], x["org"], "|", x["titulo"][:90])
+    leidos_se = sum(1 for f in dias_se if _BOPSE.get(f))
+    print(f"BOP de Sevilla: {leidos_se} boletines leídos de {len(dias_se)} días, {len(nuevos_se)} anuncios de bomberos nuevos")
+    sevilla = sorted(sevilla + nuevos_se, key=lambda x: x["fecha"], reverse=True)
+    sevilla = [x for x in sevilla if x["fecha"] >= (hoy - timedelta(days=365)).isoformat()]
+
     # Limpieza: los revisados de más de 15 días ya no hacen falta; las de España, un año.
     limite = (hoy - timedelta(days=15)).isoformat()
     revisados = {k: v for k, v in revisados.items() if v >= limite}
@@ -351,7 +405,8 @@ def main():
     SALIDA.write_text(json.dumps({
         "actualizado": datetime.now(timezone.utc).isoformat(timespec="minutes"),
         "fuente": "BOE, sección II.B (datos abiertos)",
-        "mias": mias, "espana": lista, "boja_ultimo": boja_ultimo,
+        "mias": mias, "espana": lista, "boja_ultimo": boja_ultimo, "sevilla": sevilla,
+        "sevilla_ok": bool(datos.get("sevilla_ok") or leidos_se),
     }, ensure_ascii=False, indent=1) + "\n")
     REVISADOS.write_text(json.dumps(revisados, separators=(",", ":")) + "\n")
 
