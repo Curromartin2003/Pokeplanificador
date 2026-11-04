@@ -435,3 +435,7 @@ body.p3d-completa { overflow: hidden; }
 .escena .z-ciudad { background: linear-gradient(180deg, #CFE8C9, #B5DBAE); }
 .escena .z-ciudad.cerrada { background: repeating-linear-gradient(45deg, #DADFE3 0 10px, #CDD3D8 10px 20px); }
 .huecos .pieza .mini3d { width: 40px; height: 40px; }
+
+.p3d-etiquetas { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
+.p3d-et { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+  background: rgba(255,255,255,.88); box-shadow: 0 1px 6px rgba(0,0,0,.15); will-change: transform; }
