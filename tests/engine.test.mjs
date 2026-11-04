@@ -209,3 +209,28 @@ test("día con 0 h de estudio: no cuentan estudio ni callejero, con los otros 6 
   const sig = E.dias(st, HOY, "2026-11-04", "2026-11-10").find(x => x.tipo === "estudio");
   assert.equal(sig.materia, "leg");
 });
+
+test("Mi parque: minutos, monedas y tienda", () => {
+  const st = base(undefined, {dias: {[HOY]: {ses: [{tipo: "estudio", est: 50, desc: 10, obj: "arbol", ok: true}, {tipo: "callejero", est: 20, desc: 0, obj: "banco", ok: true}]},
+    "2026-11-02": {s: {t: "leg", m: 42, real: 30, items: []}}}, parque: {compras: {girasol: HOY}}});
+  const e = E.estadisticas(st, HOY);
+  assert.equal(e.hoy, 70); assert.equal(e.total, 100); assert.equal(e.semana, 100); assert.equal(e.desc, 10);
+  assert.equal(e.monedas, 100 - 150);
+  assert.ok(E.tengo(st, "girasol") && E.tengo(st, "arbol") && !E.tengo(st, "noria"));
+  assert.equal(e.plantados.length, 2);
+});
+
+test("«Hasta aquí»: lo anterior hecho, la parte a medias y marcar el estudio no vuelve a sumar", () => {
+  let st = base();
+  const d = E.dia(st, HOY, HOY);
+  const segundo = d.plan[1];
+  st = aplicar(st, E.hastaAqui(st, HOY, HOY, segundo.id, 0.5));
+  st.dias[HOY] = {...st.dias[HOY], hastaAqui: true};
+  const h = E.hecho(st, HOY);
+  assert.equal(E.fraccion(h, d.plan[0].id), 1);
+  assert.ok(Math.abs(E.fraccion(h, segundo.id) - 0.5) < 1e-9);
+  const p = E.marcar(st, HOY, HOY, E.I_ESTUDIO, true);
+  assert.deepEqual(p.dias[HOY].s.items, []);
+  const st2 = aplicar(st, p);
+  assert.ok(Math.abs(E.fraccion(E.hecho(st2, HOY), segundo.id) - 0.5) < 1e-9);
+});

@@ -122,7 +122,7 @@ function pintar() {
   $("#puntos").onclick = () => abrirNiveles();
   $("#puntos").className = "puntos " + (res.total > 0 ? "pos" : res.total < 0 ? "neg" : "");
   document.querySelectorAll("nav.tabs button").forEach(b => b.classList.toggle("on", b.dataset.v === ui.vista));
-  const f = {hoy: vHoy, semana: vSemana, temario: vTemario, progreso: vProgreso, ajustes: vAjustes, convocatorias: vConvocatorias}[ui.vista] || vHoy;
+  const f = {hoy: vHoy, semana: vSemana, temario: vTemario, progreso: vProgreso, ajustes: vAjustes, convocatorias: vConvocatorias, parque: vParque}[ui.vista] || vHoy;
   badgeConv();
   pantalla(f(hoy, res));
   enlazar();
@@ -168,7 +168,10 @@ function vHoy(hoy) {
       else {
         titulo = `Estudio: ${d.partes.map(x => E.MATERIAS[x.t]).join(" y ")} · ${E.textoMin(d.min)}`;
         const real = rec.s && typeof rec.s.real === "number" ? rec.s.real : null;
-        det = (rec.s ? `<p class="det tardado">${real !== null ? `Has tardado <b>${E.textoMin(real)}</b> (previsto ${E.textoMin(d.min)})` : "¿Cuánto has tardado?"} <button class="enlace peque" data-a="tiempoReal" data-f="${fecha}" data-m="${real ?? d.min}">${real !== null ? "Cambiar" : "Apuntarlo"}</button></p>` : "") + planHTML(d);
+        const fm = E.minutosDia(rec).est;
+        det = (fecha === hoy ? `<button class="btn peque temp" data-a="foco" data-t="estudio">⏱ Temporizador</button>${fm ? ` <span class="nota">Hoy llevas ${E.textoMin(fm)} de estudio con temporizador o apuntado.</span>` : ""}` : "")
+          + (rec.hastaAqui && !rec.s ? `<p class="det">📍 Ya marcaste hasta dónde llegaste hoy. Marca el estudio cuando acabes.</p>` : "")
+          + (rec.s ? `<p class="det tardado">${real !== null ? `Has tardado <b>${E.textoMin(real)}</b> (previsto ${E.textoMin(d.min)})` : "¿Cuánto has tardado?"} <button class="enlace peque" data-a="tiempoReal" data-f="${fecha}" data-m="${real ?? d.min}">${real !== null ? "Cambiar" : "Apuntarlo"}</button></p>` : "") + planHTML(d);
       }
     }
     if (i === 4) {
@@ -179,6 +182,7 @@ function vHoy(hoy) {
       const sel = (rec.cal && rec.cal.length ? rec.cal : (st.calle && st.calle.sel) || []);
       det = `<p class="det">${sel.length ? `Estudiando: <b>${sel.map(esc).join(" · ")}</b>` : `Sugerencia: <b>${esc(d.foco)}</b>`}
         <button class="enlace peque" data-a="distritos" data-f="${fecha}">${sel.length ? "Cambiar distritos" : "Elegir distritos"}</button>
+        ${fecha === hoy ? `<br><button class="btn peque temp" data-a="foco" data-t="callejero">⏱ Temporizador</button>${E.minutosDia(rec).cal ? ` <span class="nota">Llevas ${E.textoMin(E.minutosDia(rec).cal)}.</span>` : ""}` : ""}
         ${url ? ` · <a href="${esc(url)}" target="_blank" rel="noopener">Abrir Pokecallejero</a>` : ""}</p>`;
     }
     if (!cuentan.includes(i)) return `<li class="obj nocuenta"><span class="tick fuera">–</span>
@@ -261,7 +265,7 @@ function planHTML(d) {
     const cambio = d.partes.length > 1 && it.t !== d.plan[0].t && it === d.plan.find(z => z.t === it.t)
       ? `<li class="aviso-vuelta">Terminas la vuelta de ${E.MATERIAS[d.plan[0].t].toLowerCase()}: el resto del tiempo, ${E.MATERIAS[it.t].toLowerCase()}.</li>` : "";
     return cambio + `<li><span class="tt">${it.v > 1 ? it.v + ".ª vuelta · " : ""}Tema ${it.n} · ${esc(it.titulo)}</span>
-      <span class="parte">${it.partes > 1 ? `Parte ${it.parte}/${it.partes}: ` : ""}${esc(it.nombre)}</span>${it.ref ? `<span class="ref">📄 ${esc(it.ref)}</span>` : ""}<span class="min">${estado}</span></li>`;
+      <span class="parte">${it.partes > 1 ? `Parte ${it.parte}/${it.partes}: ` : ""}${esc(it.nombre)}</span>${it.ref ? `<span class="ref">📄 ${esc(it.ref)}</span>` : ""}<span class="min">${estado}</span>${d.fecha <= HOY() && !d.hecho ? `<button class="enlace peque" data-a="hastaAqui" data-f="${d.fecha}" data-id="${it.id}">📍 Hasta aquí</button>` : ""}</li>`;
   }).join("")}</ol>`;
 }
 
@@ -590,6 +594,173 @@ function pintarModal() {
   };
 }
 
+/* ---------- «Hasta aquí» ---------- */
+function abrirHastaAqui(fecha, id) {
+  const hoy = HOY(), d = E.dia(st, hoy, fecha), it = (d.plan || []).find(x => x.id === id);
+  if (!it) return;
+  const pags = (it.ref || "").match(/p[aá]gs\. (\d+)-(\d+)/);
+  const box = $("#modal");
+  box.hidden = false;
+  let pct = 50;
+  const pag = v => pags ? Math.round(+pags[1] + (+pags[2] - +pags[1]) * v / 100) : null;
+  const pintarH = () => {
+    box.querySelector(".hoja").innerHTML = `<h2>¿Hasta dónde has llegado?</h2>
+      <p><b>Tema ${it.n} · ${esc(it.titulo)}</b><br>${esc(it.nombre)}${it.ref ? `<br><small>📄 ${esc(it.ref)}</small>` : ""}</p>
+      <p class="nota">Lo anterior de hoy cuenta como hecho y el plan se recoloca desde aquí.</p>
+      <div class="hasta"><input type="range" id="pctH" min="0" max="100" step="5" value="${pct}"><b>${pct} % de esta parte${pags ? ` · hasta la pág. ${pag(pct)}` : ""}</b></div>
+      <div class="acciones"><button class="btn sec" data-m="cancelar">Cancelar</button><button class="btn" data-m="ok">Guardar</button></div>`;
+    box.querySelector("#pctH").oninput = e => { pct = +e.target.value; box.querySelector(".hasta b").textContent = `${pct} % de esta parte${pags ? ` · hasta la pág. ${pag(pct)}` : ""}`; };
+    box.querySelector("[data-m=cancelar]").onclick = () => { box.hidden = true; };
+    box.querySelector("[data-m=ok]").onclick = () => { box.hidden = true; guardar(E.hastaAqui(st, hoy, fecha, id, pct / 100)); };
+  };
+  pintarH();
+}
+
+/* ---------- temporizador (crece lo que eliges mientras estudias) ---------- */
+// El estado del temporizador vive en este dispositivo (localStorage) para que siga aunque se recargue la app.
+const FK = "pp.foco";
+let foco = null, focoTick = null, ocultoDesde = null;
+const leerFoco = () => { try { return JSON.parse(localStorage.getItem(FK) || "null"); } catch (e) { return null; } };
+const guardarFoco = () => { try { foco ? localStorage.setItem(FK, JSON.stringify(foco)) : localStorage.removeItem(FK); } catch (e) {} };
+const ahora = () => Date.now();
+const msEst = f => f.est + (f.estado === "run" ? ahora() - f.desde : 0);
+const msDesc = f => f.desc + (f.estado === "pause" ? ahora() - f.desde : 0);
+const mmss = ms => { const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
+
+function elegirYEmpezar(tipo) {
+  if (leerFoco()) { foco = leerFoco(); pintarFoco(); return; }
+  const box = $("#modal");
+  const disp = E.TIENDA.filter(x => E.tengo(st, x.id));
+  let sel = (st.parque && st.parque.sel && E.tengo(st, st.parque.sel)) ? st.parque.sel : "arbol";
+  const pintarE = () => {
+    box.hidden = false;
+    box.querySelector(".hoja").innerHTML = `<h2>⏱ ${tipo === "callejero" ? "Callejero" : "Estudio"}: ¿qué plantas o construyes en tu parque?</h2>
+      <p class="nota">Mientras estudias se va plantando o construyendo. Con al menos ${E.MIN_SESION} min sale adelante y va a tu parque. Si sales de la app más de 20 segundos con el temporizador en marcha, se pierde (el tiempo sí cuenta). Para descansar, usa «Parar».</p>
+      <div class="chips objetos">${disp.map(x => `<button class="${x.id === sel ? "on" : ""}" data-o="${x.id}"><span>${x.icono}</span>${esc(x.nombre)}</button>`).join("")}</div>
+      <p class="nota">Desbloquea más en la tienda de «Mi parque».</p>
+      <div class="acciones"><button class="btn sec" data-m="cancelar">Cancelar</button><button class="btn" data-m="ok">Empezar</button></div>`;
+    box.querySelectorAll("[data-o]").forEach(b => b.onclick = () => { sel = b.dataset.o; pintarE(); });
+    box.querySelector("[data-m=cancelar]").onclick = () => { box.hidden = true; };
+    box.querySelector("[data-m=ok]").onclick = () => {
+      box.hidden = true;
+      foco = {tipo, obj: sel, fecha: HOY(), ini: new Date().toISOString(), estado: "run", desde: ahora(), est: 0, desc: 0, seco: false};
+      guardarFoco();
+      if (!st.parque || st.parque.sel !== sel) guardar({parque: {sel}});
+      pintarFoco();
+    };
+  };
+  pintarE();
+}
+
+function pintarFoco() {
+  const box = $("#foco");
+  if (!foco) { box.hidden = true; document.body.classList.remove("enfoco"); clearInterval(focoTick); focoTick = null; return; }
+  box.hidden = false;
+  document.body.classList.add("enfoco");
+  const obj = E.TIENDA.find(x => x.id === foco.obj) || E.TIENDA[1];
+  const est = msEst(foco), desc = msDesc(foco), min = est / 60000;
+  const crece = Math.min(1, min / 25);  // a los 25 min está crecido del todo
+  const listo = min >= E.MIN_SESION;
+  box.innerHTML = `<div class="foco-in ${foco.estado}">
+    <p class="foco-tipo">${foco.tipo === "callejero" ? "🗺️ Callejero" : "📚 Estudio"} · ${foco.estado === "run" ? "concentrado" : "en descanso"}</p>
+    <div class="foco-arbol" style="--c:${crece}"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" class="pista"/><circle cx="60" cy="60" r="54" class="avance" style="stroke-dashoffset:${339.3 * (1 - Math.min(1, min / 25))}"/></svg>
+      <span class="obj ${foco.seco ? "seco" : ""}" style="transform:scale(${0.35 + 0.65 * crece})">${foco.seco ? (obj.tipo === "naturaleza" ? "🥀" : "💥") : listo ? obj.icono : obj.tipo === "naturaleza" ? "🌱" : "🏗️"}</span></div>
+    <p class="foco-obj">${foco.seco ? (obj.tipo === "naturaleza" ? "Se ha secado" : "Se ha estropeado") + " por salir de la app. El tiempo sigue contando." : listo ? `${esc(obj.nombre)} ya está a salvo: sigue para terminarlo del todo` : `${obj.tipo === "naturaleza" ? "Plantando" : "Construyendo"}: ${esc(obj.nombre)} (a salvo a los ${E.MIN_SESION} min)`}</p>
+    <div class="foco-tiempos"><div><b>${mmss(est)}</b><span>estudio</span></div><div><b>${mmss(desc)}</b><span>descanso</span></div></div>
+    <div class="foco-btns">${foco.estado === "run"
+      ? `<button class="btn sec grande2" data-f="parar">⏸ Parar</button>`
+      : `<button class="btn grande2" data-f="seguir">▶ Seguir</button>`}
+      <button class="btn grande2 fin" data-f="fin">⏹ Finalizar</button></div>
+    <p class="nota claro">No puedes salir de aquí hasta parar o finalizar.</p></div>`;
+  box.querySelectorAll("[data-f]").forEach(b => b.onclick = () => accionFoco(b.dataset.f));
+  if (!focoTick) focoTick = setInterval(() => { if (foco) pintarFoco(); }, 1000);
+}
+
+async function accionFoco(a) {
+  if (!foco) return;
+  const t = ahora();
+  if (a === "parar" && foco.estado === "run") { foco.est += t - foco.desde; foco.estado = "pause"; foco.desde = t; }
+  else if (a === "seguir" && foco.estado === "pause") { foco.desc += t - foco.desde; foco.estado = "run"; foco.desde = t; }
+  else if (a === "fin") {
+    if (foco.estado === "run") foco.est += t - foco.desde; else foco.desc += t - foco.desde;
+    const f = foco; foco = null; guardarFoco(); pintarFoco();
+    const est = Math.round(f.est / 60000), desc = Math.round(f.desc / 60000);
+    const ok = !f.seco && est >= E.MIN_SESION;
+    const rec = st.dias[f.fecha] || {};
+    const ses = [...(rec.ses || []), {tipo: f.tipo, ini: f.ini, est, desc, obj: f.obj, ok}];
+    await guardar({dias: {[f.fecha]: {ses}}});
+    finFoco(f, est, desc, ok);
+    return;
+  }
+  guardarFoco(); pintarFoco();
+}
+
+function finFoco(f, est, desc, ok) {
+  const box = $("#modal"), obj = E.TIENDA.find(x => x.id === f.obj) || E.TIENDA[1];
+  const hoy = HOY(), d = E.dia(st, hoy, f.fecha), rec = st.dias[f.fecha] || {};
+  const i = f.tipo === "callejero" ? 4 : E.I_ESTUDIO;
+  const yaHecho = rec.c && rec.c[i];
+  const totalHoy = f.tipo === "callejero" ? E.minutosDia(rec).cal : E.minutosDia(rec).est;
+  box.hidden = false;
+  box.querySelector(".hoja").innerHTML = `<div class="fin-foco"><div class="big">${ok ? obj.icono : obj.tipo === "naturaleza" ? "🥀" : "💥"}</div>
+    <h2>${ok ? `¡${esc(obj.nombre)} ya está en tu parque!` : f.seco ? "Se perdió por salir de la app" : `Menos de ${E.MIN_SESION} min: no ha salido adelante`}</h2>
+    <p>Estudio: <b>${E.textoMin(est)}</b> · Descanso: <b>${E.textoMin(desc)}</b> · +${est} monedas</p>
+    <p class="nota">Hoy llevas ${E.textoMin(totalHoy)} de ${f.tipo === "callejero" ? "callejero" : "estudio"}.</p></div>
+    <div class="acciones">${!yaHecho && d.tipo !== "libre" ? `<button class="btn sec" data-m="no">Aún no he acabado</button><button class="btn" data-m="marcar">Marcar ${f.tipo === "callejero" ? "el callejero" : "el estudio"} como hecho</button>` : `<button class="btn" data-m="no">Vale</button>`}</div>`;
+  box.querySelector("[data-m=no]").onclick = () => { box.hidden = true; };
+  const mb = box.querySelector("[data-m=marcar]");
+  if (mb) mb.onclick = async () => {
+    box.hidden = true;
+    const parche = E.marcar(st, hoy, f.fecha, i, true);
+    if (i === 4) parche.dias[f.fecha].cal = (st.calle && st.calle.sel) || [];
+    if (i === E.I_ESTUDIO && parche.dias[f.fecha].s) parche.dias[f.fecha].s.real = totalHoy;
+    await guardar(parche);
+  };
+}
+
+// Si sales de la app con el temporizador en marcha más de 20 s, lo que crece se seca (el tiempo sigue contando).
+document.addEventListener("visibilitychange", () => {
+  if (!foco || foco.estado !== "run") { ocultoDesde = null; return; }
+  if (document.hidden) ocultoDesde = ahora();
+  else if (ocultoDesde && ahora() - ocultoDesde > 20000) { foco.seco = true; guardarFoco(); pintarFoco(); ocultoDesde = null; }
+  else ocultoDesde = null;
+});
+window.addEventListener("beforeunload", e => { if (foco && foco.estado === "run") { e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------- Mi parque ---------- */
+function vParque(hoy) {
+  const e = E.estadisticas(st, hoy);
+  const h = m => m >= 60 ? `${Math.floor(m / 60)} h ${Math.round(m % 60)} min` : `${Math.round(m)} min`;
+  const plantados = e.plantados.filter(x => x.ok);
+  const secos = e.plantados.length - plantados.length;
+  const sel = st.parque && st.parque.sel;
+  const tiendaItem = x => {
+    const tiene = E.tengo(st, x.id), puede = e.monedas >= x.precio;
+    return `<li class="${tiene ? "tiene" : puede ? "puede" : ""}"><span class="ti">${x.icono}</span><div><b>${esc(x.nombre)}</b>
+      <small>${x.precio ? `🪙 ${x.precio}` : "Gratis"}${!tiene && !puede ? ` · te faltan ${x.precio - e.monedas}` : ""}</small></div>
+      ${tiene ? (sel === x.id ? `<span class="chip visto">elegido</span>` : `<button class="enlace peque" data-a="selObj" data-id="${x.id}">Usar</button>`)
+        : `<button class="btn peque" data-a="comprar" data-id="${x.id}" ${puede ? "" : "disabled"}>Comprar</button>`}</li>`;
+  };
+  return `<h1>Mi parque</h1>
+    <div class="parque-stats"><div class="grande"><b>${h(e.hoy)}</b><span>hoy</span></div><div><b>${h(e.semana)}</b><span>esta semana</span></div>
+      <div><b>${h(e.mes)}</b><span>este mes</span></div><div><b>${h(e.anio)}</b><span>este año</span></div><div><b>${h(e.total)}</b><span>en total</span></div>
+      <div class="monedas"><b>🪙 ${e.monedas}</b><span>monedas</span></div></div>
+    <p class="nota">Estudio ${h(e.est)} · Callejero ${h(e.cal)} · Descanso ${h(e.desc)} · ${e.sesiones} sesiones con temporizador. 1 minuto estudiado = 1 moneda.</p>
+    <div class="tarjeta"><h3>Mi parque (${plantados.length} ${plantados.length === 1 ? "pieza" : "piezas"})</h3>
+      <p class="nota">Cada sesión de estudio de al menos ${E.MIN_SESION} min añade una pieza: así lo vas construyendo poco a poco.</p>
+      ${plantados.length ? (() => {
+        const ico = x => E.TIENDA.find(t => t.id === x.obj) || E.TIENDA[1];
+        const tit = (o, x) => `${esc(o.nombre)} · ${x.fecha} · ${x.est} min`;
+        return `<div class="escena"><div class="cielo">☀️<span class="nube">☁️</span></div>
+          ${E.ZONAS.map(z => { const xs = plantados.filter(x => ico(x).tipo === z.tipo);
+            return `<div class="zona z-${z.tipo}"><span class="rotulo">${z.icono} ${z.nombre} (${xs.length})</span>${xs.length ? xs.map(x => `<span title="${tit(ico(x), x)}">${ico(x).icono}</span>`).join("") : `<em>Aún vacío</em>`}</div>`; }).join("")}
+        </div>`;
+      })() : `<p class="nota">Aún está vacío. Usa el temporizador en el estudio o el callejero de «Hoy» y lo que plantes o fabriques aparecerá aquí.</p>`}
+      ${secos ? `<p class="nota">🥀 ${secos} ${secos === 1 ? "se perdió" : "se perdieron"} por salir de la app o por no llegar a ${E.MIN_SESION} min.</p>` : ""}</div>
+    <div class="tarjeta"><h3>Tienda</h3><p class="nota">Desbloquea nuevas piezas para tu parque. Lo más chulo cuesta muchas horas de estudio.</p>
+      ${E.ZONAS.map(z => `<h4 class="zona-t">${z.icono} ${z.nombre}</h4><ul class="tienda">${E.TIENDA.filter(x => x.tipo === z.tipo).map(x => tiendaItem(x)).join("")}</ul>`).join("")}</div>`;
+}
+
 /* ---------- niveles y recompensas ---------- */
 function abrirNiveles() {
   const box = $("#modal"), hoy = HOY(), total = E.resumen(st, hoy).total, actual = E.rango(total);
@@ -693,6 +864,15 @@ function enlazar() {
       const t = b.dataset.t, n = +b.dataset.n;
       if (b.dataset.v === "1" && !confirm("¿Quitar esta parte de todas las vueltas? (No entra por decreto o no la estudias)")) return;
       guardar(E.noEntra(t, n, {key: b.dataset.key}, b.dataset.v === "1"));
+    } else if (a === "foco") {
+      elegirYEmpezar(b.dataset.t);
+    } else if (a === "hastaAqui") {
+      abrirHastaAqui(b.dataset.f, b.dataset.id);
+    } else if (a === "comprar") {
+      const it = E.TIENDA.find(x => x.id === b.dataset.id), est = E.estadisticas(st, hoy);
+      if (it && est.monedas >= it.precio && confirm(`¿Comprar ${it.nombre} por ${it.precio} monedas?`)) guardar({parque: {compras: {[it.id]: hoy}}});
+    } else if (a === "selObj") {
+      guardar({parque: {sel: b.dataset.id}});
     } else if (a === "niveles") {
       abrirNiveles();
     } else if (a === "distritos") {
@@ -738,4 +918,5 @@ $("#btnAjustes").onclick = () => ir("ajustes");
 
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 main();
-setTimeout(cargarConv, 300); // para el aviso de novedades en la pestaña
+setTimeout(cargarConv, 300);
+foco = leerFoco(); if (foco) pintarFoco(); // para el aviso de novedades en la pestaña

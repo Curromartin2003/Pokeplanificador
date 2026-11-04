@@ -61,7 +61,7 @@ export function estadoNuevo(hoy) {
 export const completar = s => {
   const b = estadoNuevo(s && s.inicio || hoyLocal());
   const o = {...b, ...(s || {})};
-  for (const k of ["semanas", "dias", "manual", "materiales", "titulos", "leidos", "fuera", "calle", "premios"]) o[k] = {...((s && s[k]) || {})};
+  for (const k of ["semanas", "dias", "manual", "materiales", "titulos", "leidos", "fuera", "calle", "premios", "parque"]) o[k] = {...((s && s[k]) || {})};
   o.cambios = Array.isArray(s && s.cambios) ? s.cambios : [];
   return o;
 };
@@ -269,11 +269,12 @@ export function recorrer(st, hoy, hasta, cb) {
       const por = {};
       for (const it of plan) por[it.t] = (por[it.t] || 0) + it.fr * it.min;
       d.partes = Object.entries(por).map(([t, m]) => ({t, m: Math.round(m)}));
+      if (!d.partes.length && rec && rec.s && rec.s.t) d.partes = [{t: rec.s.t, m: rec.s.m || 0}];
       if (!d.partes.length) d.partes = [{t: sig, m: 0}];
       d.materia = d.partes[0].t;
       d.min = d.hecho ? d.partes.reduce((x, p) => x + p.m, 0) : d.minEst;
       // Un día sin estudio no gasta el turno de la materia que tocaba.
-      const ult = plan.length ? plan[plan.length - 1].t : (sig === "leg" ? "esp" : "leg");
+      const ult = plan.length ? plan[plan.length - 1].t : rec && rec.s && rec.s.t ? rec.s.t : (sig === "leg" ? "esp" : "leg");
       sig = ult === "leg" ? "esp" : "leg";
     }
     d.h = h;
@@ -372,7 +373,10 @@ export function marcar(st, hoy, fecha, i, valor) {
   const c = OBJETIVOS.map((_, k) => !!(rec.c && rec.c[k]));
   c[i] = valor;
   let s = rec.s || null;
-  if (i === I_ESTUDIO && d.tipo === "estudio") {
+  if (i === I_ESTUDIO && d.tipo === "estudio" && rec.hastaAqui) {
+    // Ese día ya dijiste hasta dónde llegaste («Hasta aquí»): marcar el estudio no vuelve a sumar temario.
+    s = valor ? {t: d.partes[0].t, m: d.minEst, x: null, items: [], real: rec.s && rec.s.real} : null;
+  } else if (i === I_ESTUDIO && d.tipo === "estudio") {
     s = valor && d.plan && d.plan.length
       ? {t: d.partes[0].t, m: d.partes[0].m, x: d.partes[1] || null, items: d.plan.map(it => [it.id, it.fr])} : null;
   }
@@ -396,6 +400,19 @@ function ajustar(st, hoy, deseado) {
   for (const [id, x] of Object.entries(deseado)) manual[id] = x - (base[id] || 0);
   return {manual};
 }
+// «Hasta aquí»: en el plan de un día, los trozos anteriores al elegido quedan hechos y el elegido en la fracción dada.
+export function hastaAqui(st, hoy, fecha, id, frac) {
+  const d = dia(st, hoy, fecha);
+  const des = {}, h = hecho(st, hoy);
+  for (const it of d.plan || []) {
+    if (it.id === id) { des[it.id] = Math.max(0, Math.min(1, frac)); break; }
+    des[it.id] = 1;
+  }
+  const p = ajustar(st, hoy, des);
+  p.dias = {[fecha]: {hastaAqui: true}};
+  return p;
+}
+
 // Empezar por un trozo: lo anterior de esa vuelta y materia queda hecho; ese trozo y lo siguiente, pendiente.
 export function irA(st, hoy, t, id) {
   const q = cola(st, t), c = q.porId.get(id);
@@ -510,5 +527,74 @@ export function fraseDelDia(fecha) {
   return FRASES[h % FRASES.length];
 }
 export const ICONOS = ["⏰", "💊", "🏃", "📚", "🗺️", "🥗", "🚫", "📵"];
+
+/* ---------- Mi parque: tiempo estudiado, monedas y tienda ---------- */
+// Cada minuto de estudio (temporizador o tiempo apuntado) es una moneda. Lo básico es gratis o barato; lo más chulo
+// cuesta muchas horas (unas 10 h de estudio a la semana dan ~600 monedas).
+export const TIENDA = [
+  {id: "arbol", nombre: "Árbol", icono: "🌳", precio: 0, tipo: "naturaleza"},
+  {id: "banco", nombre: "Banco", icono: "🪑", precio: 0, tipo: "paseo"},
+  {id: "flores", nombre: "Parterre de flores", icono: "🌷", precio: 100, tipo: "naturaleza"},
+  {id: "girasol", nombre: "Girasoles", icono: "🌻", precio: 150, tipo: "naturaleza"},
+  {id: "pino", nombre: "Pino", icono: "🌲", precio: 200, tipo: "naturaleza"},
+  {id: "farola", nombre: "Farola", icono: "🏮", precio: 250, tipo: "paseo"},
+  {id: "palmera", nombre: "Palmera", icono: "🌴", precio: 300, tipo: "naturaleza"},
+  {id: "bebedero", nombre: "Fuente para beber", icono: "🚰", precio: 400, tipo: "paseo"},
+  {id: "cerezo", nombre: "Cerezo en flor", icono: "🌸", precio: 500, tipo: "naturaleza"},
+  {id: "estanque", nombre: "Estanque con patos", icono: "🦆", precio: 600, tipo: "ocio"},
+  {id: "naranjo", nombre: "Naranjo de Sevilla", icono: "🍊", precio: 800, tipo: "naturaleza"},
+  {id: "fuente", nombre: "Fuente", icono: "⛲", precio: 1000, tipo: "paseo"},
+  {id: "columpios", nombre: "Columpios y tobogán", icono: "🛝", precio: 1200, tipo: "ocio"},
+  {id: "puente", nombre: "Puente sobre el estanque", icono: "🌉", precio: 1500, tipo: "ocio"},
+  {id: "kiosco", nombre: "Kiosco", icono: "🎪", precio: 2000, tipo: "ocio"},
+  {id: "camion", nombre: "Camión de bomberos de exposición", icono: "🚒", precio: 2500, tipo: "bomberos"},
+  {id: "glorieta", nombre: "Glorieta de azulejos", icono: "🏛️", precio: 3000, tipo: "monumento"},
+  {id: "tiovivo", nombre: "Tiovivo", icono: "🎠", precio: 4000, tipo: "ocio"},
+  {id: "helicoptero", nombre: "Helipuerto con helicóptero", icono: "🚁", precio: 5000, tipo: "bomberos"},
+  {id: "estatua", nombre: "Estatua al bombero", icono: "🗿", precio: 6000, tipo: "monumento"},
+  {id: "noria", nombre: "Noria", icono: "🎡", precio: 8000, tipo: "ocio"},
+  {id: "palacete", nombre: "Palacete del parque", icono: "🏰", precio: 10000, tipo: "monumento"},
+  {id: "parquebomberos", nombre: "Parque de bomberos", icono: "🏢", precio: 12000, tipo: "bomberos"},
+  {id: "monumento", nombre: "Monumento a tu plaza", icono: "🏆", precio: 15000, tipo: "monumento"},
+];
+export const ZONAS = [
+  {tipo: "naturaleza", nombre: "Árboles y flores", icono: "🌳"},
+  {tipo: "paseo", nombre: "Paseo", icono: "🪑"},
+  {tipo: "ocio", nombre: "Zona de ocio", icono: "🛝"},
+  {tipo: "monumento", nombre: "Monumentos", icono: "🏛️"},
+  {tipo: "bomberos", nombre: "Rincón de bomberos", icono: "🚒"},
+];
+export const MIN_SESION = 10; // minutos mínimos para que lo que crece salga adelante
+
+export function minutosDia(rec) {
+  const ses = (rec && rec.ses) || [];
+  let est = 0, cal = 0, desc = 0;
+  for (const x of ses) { if (x.tipo === "callejero") cal += x.est || 0; else est += x.est || 0; desc += x.desc || 0; }
+  if (!ses.some(x => x.tipo !== "callejero") && rec && rec.s && typeof rec.s.real === "number") est = rec.s.real;
+  return {est, cal, desc, total: est + cal};
+}
+export function estadisticas(st, hoy) {
+  const r = {hoy: 0, semana: 0, mes: 0, anio: 0, total: 0, est: 0, cal: 0, desc: 0, plantados: [], sesiones: 0};
+  const mon = lunes(hoy);
+  for (const [f, rec] of Object.entries(st.dias)) {
+    if (f > hoy) continue;
+    const m = minutosDia(rec);
+    r.total += m.total; r.est += m.est; r.cal += m.cal; r.desc += m.desc;
+    if (f === hoy) r.hoy += m.total;
+    if (f >= mon) r.semana += m.total;
+    if (f.slice(0, 7) === hoy.slice(0, 7)) r.mes += m.total;
+    if (f.slice(0, 4) === hoy.slice(0, 4)) r.anio += m.total;
+    for (const x of (rec && rec.ses) || []) { r.sesiones++; if (x.obj) r.plantados.push({fecha: f, obj: x.obj, ok: x.ok !== false, est: x.est}); }
+  }
+  r.plantados.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const gastado = Object.keys((st.parque && st.parque.compras) || {}).reduce((a, id) => a + ((TIENDA.find(x => x.id === id) || {}).precio || 0), 0);
+  r.monedas = Math.floor(r.total) - gastado;
+  r.gastado = gastado;
+  return r;
+}
+export const tengo = (st, id) => {
+  const it = TIENDA.find(x => x.id === id);
+  return !!it && (it.precio === 0 || !!((st.parque && st.parque.compras) || {})[id]);
+};
 
 export const textoMin = m => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? " " + (m % 60) + " min" : ""}` : `${m} min`);

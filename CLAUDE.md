@@ -38,6 +38,12 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   (`sevilla_ok` falso) intenta los últimos 60 días.
 - Callejero: `calle.sel` = distritos que se están estudiando (varios a la vez, se quedan); al marcar el callejero se
   guarda en `dias[f].cal`.
+- Temporizador (app.js, estado en localStorage `pp.foco`): Parar = descanso, Seguir, Finalizar. Al finalizar guarda la
+  sesión en `dias[f].ses` [{tipo: estudio|callejero, ini, est, desc, obj, ok}]; con ≥ `MIN_SESION` min (y sin salir de la
+  app más de 20 s) la pieza elegida va al parque. «📍 Hasta aquí» (`hastaAqui`) fija el avance del día y marca
+  `dias[f].hastaAqui` para que marcar el estudio no vuelva a sumar temario.
+- Mi parque: `estadisticas` (horas hoy/semana/mes/año/total; 1 min = 1 moneda), `TIENDA` por `ZONAS`,
+  `parque: {compras: {id: fecha}, sel}`.
 - Los PDF no se suben al repositorio.
 - Probar: `python3 -m http.server` y abrir `/?local&hoy=AAAA-MM-DD`. `node tests/e2e.mjs` (Playwright).
 - Si cambias archivos que se precargan, sube la versión de `CACHE` en `sw.js`.

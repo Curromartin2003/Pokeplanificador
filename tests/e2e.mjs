@@ -99,6 +99,36 @@ try {
   await p.click("[data-a=filtroConv][data-f=andalucia]");
   ok(!(await p.textContent("#vista")).includes("Zaragoza"), "filtro Andalucía");
   if (shots) await p.screenshot({path: shots + "/7-convocatorias.png", fullPage: true});
+  // Temporizador: empezar, parar (descanso), seguir y finalizar; va al parque y marca el estudio.
+  await p.goto(URL("2026-11-12"));
+  await p.waitForSelector(".objs");
+  await p.click("[data-a=foco][data-t=estudio]");
+  await p.click("#modal [data-m=ok]");
+  await p.waitForSelector("#foco:not([hidden])");
+  ok((await p.textContent("#foco")).includes("Parar"), "temporizador a pantalla completa con Parar y Finalizar");
+  await p.click("[data-f=parar]");
+  ok((await p.textContent("#foco")).includes("Seguir"), "parar = descanso, con opción de seguir");
+  await p.evaluate(() => { const f = JSON.parse(localStorage.getItem("pp.foco")); f.est += 30 * 60000; localStorage.setItem("pp.foco", JSON.stringify(f)); });
+  await p.reload();
+  await p.waitForSelector("#foco:not([hidden])");
+  ok(true, "el temporizador sigue aunque se recargue la app");
+  await p.click("[data-f=fin]");
+  await p.waitForSelector("#modal .fin-foco");
+  ok((await p.textContent("#modal")).includes("ya está en tu parque"), "al finalizar, lo plantado va al parque");
+  await p.click("#modal [data-m=marcar]");
+  await p.waitForSelector("#modal", {state: "hidden"});
+  ok((await p.textContent(".objs")).includes("Has tardado 30 min"), "el tiempo del temporizador se apunta en el estudio");
+  // «Hasta aquí» en otro día de estudio.
+  await p.goto(URL("2026-11-13"));
+  await p.waitForSelector(".plan");
+  await p.click("[data-a=hastaAqui]");
+  await p.click("#modal [data-m=ok]");
+  await p.waitForSelector("#modal", {state: "hidden"});
+  ok((await p.textContent(".objs")).includes("Ya marcaste hasta dónde llegaste"), "«Hasta aquí» recoloca el plan");
+  await p.click("nav [data-v=parque]");
+  const tp = await p.textContent("#vista");
+  ok(tp.includes("Mi parque (1 pieza)") && tp.includes("monedas") && tp.includes("Tienda"), "Mi parque: horas, parque y tienda");
+  if (shots) await p.screenshot({path: shots + "/9-parque.png", fullPage: true});
   await p.goto(URL("2026-11-15"));
   await p.waitForSelector(".libre");
   ok(true, "el domingo libre no tiene objetivos");
