@@ -44,6 +44,9 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   `dias[f].hastaAqui` para que marcar el estudio no vuelva a sumar temario.
 - Mi parque: `estadisticas` (horas hoy/semana/mes/año/total; 1 min = 1 moneda), `TIENDA` por `ZONAS` (parque de bomberos: cocheras, instalaciones, material, exterior con pocas plantas, trofeos),
   `parque: {compras: {id: fecha}, sel}`.
+- Parque 3D: `js/parque3d.js` (three.js 0.160 por import map desde jsDelivr): modelos de baja poligonización propios
+  para cada pieza de `TIENDA` (`MODELOS`), plano isométrico con una parcela por pieza (`SITIO`), miniaturas para la tienda
+  y visor del temporizador. Sin WebGL se ven iconos.
 - Los PDF no se suben al repositorio.
 - Probar: `python3 -m http.server` y abrir `/?local&hoy=AAAA-MM-DD`. `node tests/e2e.mjs` (Playwright).
 - Si cambias archivos que se precargan, sube la versión de `CACHE` en `sw.js`.

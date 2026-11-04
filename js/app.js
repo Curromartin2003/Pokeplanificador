@@ -1,6 +1,7 @@
 // Interfaz del planificador. Pinta todo a partir del estado (engine.js) y guarda los cambios con store.js.
 import * as E from "./engine.js";
 import {abrir} from "./store.js";
+import * as P3 from "./parque3d.js";
 import {FUENTE, CAMBIOS} from "./temario.js";
 
 const $ = s => document.querySelector(s);
@@ -126,6 +127,11 @@ function pintar() {
   badgeConv();
   pantalla(f(hoy, res));
   enlazar();
+  if (ui.vista === "parque") {
+    const veces = {};
+    for (const x of E.estadisticas(st, hoy).plantados) if (x.ok) veces[x.obj] = (veces[x.obj] || 0) + 1;
+    montarParque(veces);
+  }
   // Al empezar la semana (o si aún no está puesta) se pregunta el día libre y las clases de Luis.
   const mon = E.lunes(hoy);
   if (!st.semanas[mon] && !ui.modalSemana && !ui.cerradoSemana) abrirSemana(mon);
@@ -636,7 +642,7 @@ function elegirYEmpezar(tipo, item) {
     box.hidden = false;
     box.querySelector(".hoja").innerHTML = `<h2>⏱ ${tipo === "callejero" ? "Callejero" : "Estudio"}: ¿qué consigues para tu parque de bomberos?</h2>
       <p class="nota">Mientras estudias se va fabricando o construyendo. Con al menos ${E.MIN_SESION} min sale adelante y va a tu parque. Si sales de la app más de 20 segundos con el temporizador en marcha, se pierde (el tiempo sí cuenta). Para descansar, usa «Parar».</p>
-      <div class="chips objetos">${disp.map(x => `<button class="${x.id === sel ? "on" : ""}" data-o="${x.id}"><span>${x.icono}</span>${esc(x.nombre)}</button>`).join("")}</div>
+      <div class="chips objetos">${disp.map(x => `<button class="${x.id === sel ? "on" : ""}" data-o="${x.id}">${iconoPieza(x, "mini3d chico")}${esc(x.nombre)}</button>`).join("")}</div>
       <p class="nota">Desbloquea más en la tienda de «Mi parque».</p>
       <div class="acciones"><button class="btn sec" data-m="cancelar">Cancelar</button><button class="btn" data-m="ok">Empezar</button></div>`;
     box.querySelectorAll("[data-o]").forEach(b => b.onclick = () => { sel = b.dataset.o; pintarE(); });
@@ -667,7 +673,7 @@ function pintarFoco() {
     <p class="foco-tipo">${foco.tipo === "callejero" ? "🗺️ Callejero" : "📚 Estudio"} · ${foco.estado === "run" ? "concentrado" : "en descanso"}</p>
     ${foco.que ? `<p class="foco-que">${esc(foco.que)}</p>` : ""}
     <div class="foco-arbol" style="--c:${crece}"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" class="pista"/><circle cx="60" cy="60" r="54" class="avance" style="stroke-dashoffset:${339.3 * (1 - Math.min(1, min / 25))}"/></svg>
-      <span class="obj ${foco.seco ? "seco" : ""}" style="transform:scale(${0.35 + 0.65 * crece})">${foco.seco ? (obj.tipo === "exterior" ? "🥀" : "💥") : listo ? obj.icono : obj.tipo === "exterior" ? "🌱" : "🏗️"}</span></div>
+      ${P3.disponible() ? `<span class="visor3d" id="visorFoco"></span>` : `<span class="obj ${foco.seco ? "seco" : ""}" style="transform:scale(${0.35 + 0.65 * crece})">${foco.seco ? (obj.tipo === "exterior" ? "🥀" : "💥") : listo ? obj.icono : obj.tipo === "exterior" ? "🌱" : "🏗️"}</span>`}</div>
     <p class="foco-obj">${foco.seco ? (obj.tipo === "exterior" ? "Se ha secado" : "Se ha estropeado") + " por salir de la app. El tiempo sigue contando." : listo ? `${esc(obj.nombre)} ya está a salvo: sigue para terminarlo del todo` : `${obj.tipo === "exterior" ? "Plantando" : obj.tipo === "material" ? "Fabricando" : "Construyendo"}: ${esc(obj.nombre)} (a salvo a los ${E.MIN_SESION} min)`}</p>
     <div class="foco-tiempos"><div><b>${mmss(est)}</b><span>estudio</span></div><div><b>${mmss(desc)}</b><span>descanso</span></div></div>
     <div class="foco-btns">${foco.estado === "run"
@@ -676,6 +682,8 @@ function pintarFoco() {
       <button class="btn grande2 fin" data-f="fin">⏹ Finalizar</button></div>
     <p class="nota claro">No puedes salir de aquí hasta parar o finalizar.</p></div>`;
   box.querySelectorAll("[data-f]").forEach(b => b.onclick = () => accionFoco(b.dataset.f));
+  const vh = box.querySelector("#visorFoco");
+  if (vh) { try { P3.visorCreciendo(vh, obj.id, listo ? Math.max(crece, 0.5) : crece, foco.seco); } catch (e) {} }
   if (!focoTick) focoTick = setInterval(() => { if (foco) pintarFoco(); }, 1000);
 }
 
@@ -705,7 +713,7 @@ function finFoco(f, est, desc, ok) {
   const yaHecho = rec.c && rec.c[i];
   const totalHoy = f.tipo === "callejero" ? E.minutosDia(rec).cal : E.minutosDia(rec).est;
   box.hidden = false;
-  box.querySelector(".hoja").innerHTML = `<div class="fin-foco"><div class="big">${ok ? obj.icono : obj.tipo === "exterior" ? "🥀" : "💥"}</div>
+  box.querySelector(".hoja").innerHTML = `<div class="fin-foco"><div class="big">${ok ? iconoPieza(obj, "mini3d grande") : obj.tipo === "exterior" ? "🥀" : "💥"}</div>
     <h2>${ok ? `¡${esc(obj.nombre)} ya está en tu parque!` : f.seco ? "Se perdió por salir de la app" : `Menos de ${E.MIN_SESION} min: no ha salido adelante`}</h2>
     <p>Estudio: <b>${E.textoMin(est)}</b> · Descanso: <b>${E.textoMin(desc)}</b> · +${est} monedas</p>
     <p class="nota">Hoy llevas ${E.textoMin(totalHoy)} de ${f.tipo === "callejero" ? "callejero" : "estudio"}.</p></div>
@@ -731,6 +739,19 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("beforeunload", e => { if (foco && foco.estado === "run") { e.preventDefault(); e.returnValue = ""; } });
 
 /* ---------- Mi parque ---------- */
+function iconoPieza(x, cls = "mini3d") {
+  if (P3.disponible()) { try { return `<img class="${cls}" src="${P3.miniatura(x.id)}" alt="${esc(x.nombre)}">`; } catch (e) {} }
+  return `<span class="${cls} emo">${x.icono}</span>`;
+}
+function montarParque(veces) {
+  const host = $("#parque3dHost");
+  if (!host || !P3.disponible()) return;
+  let visto = [];
+  try { visto = JSON.parse(localStorage.getItem("pp.parqueVisto") || "[]"); } catch (e) {}
+  const ids = Object.keys(veces), nuevos = ids.filter(id => !visto.includes(id));
+  try { localStorage.setItem("pp.parqueVisto", JSON.stringify(ids)); } catch (e) {}
+  try { host.appendChild(P3.parque(veces, nuevos)); host.classList.add("con3d"); } catch (e) { console.warn("parque 3D", e); }
+}
 function vParque(hoy) {
   const e = E.estadisticas(st, hoy);
   const h = m => m >= 60 ? `${Math.floor(m / 60)} h ${Math.round(m % 60)} min` : `${Math.round(m)} min`;
@@ -752,7 +773,8 @@ function vParque(hoy) {
     <div class="parque-stats"><div class="grande"><b>${h(e.hoy)}</b><span>hoy</span></div><div><b>${h(e.semana)}</b><span>esta semana</span></div>
       <div><b>${h(e.mes)}</b><span>este mes</span></div><div><b>${h(e.anio)}</b><span>este año</span></div><div><b>${h(e.total)}</b><span>en total</span></div>
       <div class="monedas"><b>🪙 ${e.monedas}</b><span>monedas</span></div></div>
-    <div class="escena plano">${plano}</div>
+    <div id="parque3dHost" class="parque3d-host"><div class="escena plano">${plano}</div></div>
+    ${P3.disponible() ? `<p class="nota centro">Arrastra para girar, pellizca o usa la rueda para acercar.</p>` : ""}
     <p class="nota">${distintas ? `Llevas ${distintas} de ${E.TIENDA.length} piezas distintas en tu parque.` : "Tu parque está vacío."} Para conseguir una pieza, usa el temporizador junto a lo que estudias en «Hoy» y elige qué quieres crear: con al menos ${E.MIN_SESION} min aparece aquí. Las piezas nuevas se desbloquean en la tienda.</p>
     ${perdidos ? `<p class="nota">💥 ${perdidos} ${perdidos === 1 ? "se perdió" : "se perdieron"} por salir de la app o por no llegar a ${E.MIN_SESION} min.</p>` : ""}
     <p class="nota">Estudio ${h(e.est)} · Callejero ${h(e.cal)} · Descanso ${h(e.desc)} · ${e.sesiones} sesiones con temporizador. 1 minuto estudiado = 1 moneda.</p>`;
@@ -764,7 +786,7 @@ function abrirTienda() {
     const e = E.estadisticas(st, hoy), sel = st.parque && st.parque.sel;
     const item = x => {
       const tiene = E.tengo(st, x.id), puede = e.monedas >= x.precio;
-      return `<li class="${tiene ? "tiene" : puede ? "puede" : ""}"><span class="ti">${x.icono}</span><div><b>${esc(x.nombre)}</b>
+      return `<li class="${tiene ? "tiene" : puede ? "puede" : ""}">${iconoPieza(x, "ti")}<div><b>${esc(x.nombre)}</b>
         <small>${x.precio ? `🪙 ${x.precio}` : "Gratis"}${!tiene && !puede ? ` · te faltan ${x.precio - e.monedas}` : tiene ? " · desbloqueado" : ""}</small></div>
         ${tiene ? (sel === x.id ? `<span class="chip visto">elegido</span>` : `<button class="enlace peque" data-u="${x.id}">Usar</button>`)
           : `<button class="btn peque" data-c="${x.id}" ${puede ? "" : "disabled"}>Comprar</button>`}</li>`;
@@ -944,4 +966,6 @@ $("#btnAjustes").onclick = () => ir("ajustes");
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 main();
 setTimeout(cargarConv, 300);
+// Modelos 3D del parque: se cargan en segundo plano; mientras tanto (o sin WebGL) se ven iconos sencillos.
+P3.cargar().then(() => { if (st) pintar(); if (foco) pintarFoco(); }).catch(() => {});
 foco = leerFoco(); if (foco) pintarFoco(); // para el aviso de novedades en la pestaña
