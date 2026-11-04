@@ -288,3 +288,15 @@ main { padding-top: 22px; }
 
 .novedades.radar small { display: block; color: var(--muted); }
 .novedades.radar a { color: var(--ink); font-weight: 600; }
+
+#puntos { cursor: pointer; }
+.niveles { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 8px; }
+.niveles li { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 14px; background: var(--bg); opacity: .7; }
+.niveles li.ok { opacity: 1; background: var(--okbg); }
+.niveles li.actual { opacity: 1; outline: 2px solid var(--acc); background: var(--card); }
+.niveles .ni { font-size: 26px; width: 40px; text-align: center; flex: none; }
+.niveles p { margin: 4px 0 6px; font-size: 14px; }
+.niveles small { color: var(--muted); }
+.cumplida { color: var(--ok); font-weight: 700; font-size: 13px; }
+.avisopremio { display: flex; gap: 12px; align-items: center; background: var(--orobg); border-radius: var(--radio); padding: 12px 14px; margin: 12px 0; font-size: 14px; }
+.avisopremio .big { font-size: 32px; } .avisopremio p { margin: 2px 0 8px; }

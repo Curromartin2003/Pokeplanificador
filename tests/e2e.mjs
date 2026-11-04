@@ -66,6 +66,12 @@ try {
   await p.goto(URL("2026-11-11"));
   await p.waitForSelector(".marcador");
   ok((await p.textContent("#puntos")).includes("+8"), "empieza en 7 y el día cerrado suma 1 punto");
+  await p.click("#puntos");
+  await p.waitForSelector(".niveles");
+  const tn = await p.textContent(".niveles");
+  ok(tn.includes("Comer fuera") && tn.includes("Te faltan 2 puntos") && tn.includes("Viaje de 3 o 4 días"), "niveles: los siguientes con sus recompensas");
+  if (shots) await p.screenshot({path: shots + "/8-niveles.png", fullPage: true});
+  await p.click("#modal [data-m=cerrar]");
   await p.click("nav [data-v=semana]");
   if (shots) await p.screenshot({path: shots + "/3-semana.png", fullPage: true});
   ok((await p.$$(".semana .dia")).length === 6, "la semana va del martes (inicio del plan) al domingo");

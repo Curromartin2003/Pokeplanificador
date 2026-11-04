@@ -118,7 +118,8 @@ function pintar() {
   const hoy = HOY();
   const res = E.resumen(st, hoy);
   const rg = E.rango(res.total);
-  $("#puntos").innerHTML = `<b>${res.total > 0 ? "+" : ""}${res.total}</b><span>${rg.icono} ${esc(rg.nombre)}</span>`;
+  $("#puntos").innerHTML = `<b>${res.total > 0 ? "+" : ""}${res.total}</b><span>${rg.icono} ${esc(rg.nombre)} ›</span>`;
+  $("#puntos").onclick = () => abrirNiveles();
   $("#puntos").className = "puntos " + (res.total > 0 ? "pos" : res.total < 0 ? "neg" : "");
   document.querySelectorAll("nav.tabs button").forEach(b => b.classList.toggle("on", b.dataset.v === ui.vista));
   const f = {hoy: vHoy, semana: vSemana, temario: vTemario, progreso: vProgreso, ajustes: vAjustes, convocatorias: vConvocatorias}[ui.vista] || vHoy;
@@ -145,7 +146,7 @@ function vHoy(hoy) {
   let aviso = "";
   if (fecha === hoy && d.dow === 6 && !st.semanas[E.lunes(E.sumaDias(hoy, 1))])
     aviso = `<div class="aviso">Mañana empieza semana. <button class="btn peque" data-a="semanaSig">Elegir día libre y clases de Luis</button></div>`;
-  if (fecha === hoy) aviso = avisoCambios(hoy) + avisoConv() + aviso + camino(hoy);
+  if (fecha === hoy) aviso = avisoCambios(hoy) + avisoPremio(hoy) + avisoConv() + aviso + camino(hoy);
   if (antes) return nav + `<div class="vacio"><p>El plan empieza el ${E.fechaLarga(st.inicio)}.</p></div>`;
   if (d.tipo === "libre") return nav + aviso + `<div class="libre"><div class="big">🌴</div><h2>Día libre</h2><p>Hoy no hay objetivos ni estudio: descansa de verdad. La puntuación no cambia.</p></div>` + manana(hoy, fecha);
 
@@ -192,6 +193,16 @@ function vHoy(hoy) {
       .map(([v, t]) => `<option value="${v}" ${(d.horasCambiadas ? String(d.total) : "") === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
     ${d.horasCambiadas ? `<span class="nota">Cambiado solo este día.</span>` : ""}</div>`;
   return nav + aviso + marcador + `<ul class="objs">${items}</ul>` + tiempo + manana(hoy, fecha);
+}
+
+// Recompensas ganadas y aún sin cumplir.
+function avisoPremio(hoy) {
+  const total = E.resumen(st, hoy).total;
+  const pend = E.RANGOS.filter(r => r.premio && total >= r.min && !(st.premios || {})[r.nombre]);
+  if (!pend.length) return "";
+  const r = pend[pend.length - 1];
+  return `<div class="avisopremio"><span class="big">🎉</span><div><b>¡Has llegado a ${esc(r.nombre)}!</b><p>Te has ganado: <b>${esc(r.premio)}</b>${pend.length > 1 ? ` (y ${pend.length - 1} más sin cumplir)` : ""}.</p>
+    <button class="btn peque" data-a="niveles">Ver recompensas</button></div></div>`;
 }
 
 // Novedades de tus convocatorias sin ver, con el enlace directo a cada documento.
@@ -412,7 +423,8 @@ function vProgreso(hoy, res) {
   const obj = E.OBJETIVOS.map((t, i) => `<li><span>${esc(i === E.I_ESTUDIO ? "Estudio del día / clase" : t)}</span><span class="barra"><i style="width:${Math.round(res.cumple[i] * 100)}%"></i></span><b>${Math.round(res.cumple[i] * 100)} %</b></li>`).join("");
   const rg = E.rango(res.total);
   const rangoHTML = `<div class="tarjeta rango"><div class="rg-ic">${rg.icono}</div><div><span class="nota">Tu rango</span><h3>${esc(rg.nombre)}</h3>
-    ${rg.sig ? `<span class="barra"><i style="width:${Math.round(rg.pct * 100)}%"></i></span><p class="nota">Te ${rg.faltan === 1 ? "falta 1 punto" : `faltan ${rg.faltan} puntos`} para <b>${esc(rg.sig.nombre)}</b> ${rg.sig.icono}</p>` : `<p class="nota">Rango máximo. ¡Ya eres jefe/a de parque!</p>`}</div></div>`;
+    ${rg.sig ? `<span class="barra"><i style="width:${Math.round(rg.pct * 100)}%"></i></span><p class="nota">Te ${rg.faltan === 1 ? "falta 1 punto" : `faltan ${rg.faltan} puntos`} para <b>${esc(rg.sig.nombre)}</b> ${rg.sig.icono}</p>` : `<p class="nota">Rango máximo. ¡Ya eres jefe/a de parque!</p>`}
+    <button class="enlace peque" data-a="niveles">Ver todos los niveles y recompensas</button></div></div>`;
   return `<h1>Progreso</h1>${rangoHTML}
     <div class="kpis"><div><b class="${res.total > 0 ? "pos" : res.total < 0 ? "neg" : ""}">${res.total > 0 ? "+" : ""}${res.total}</b><span>Puntos</span></div>
       <div><b>${res.racha}</b><span>Racha de +1</span></div><div><b>${res.mejor}</b><span>Mejor racha</span></div></div>
@@ -578,6 +590,33 @@ function pintarModal() {
   };
 }
 
+/* ---------- niveles y recompensas ---------- */
+function abrirNiveles() {
+  const box = $("#modal"), hoy = HOY(), total = E.resumen(st, hoy).total, actual = E.rango(total);
+  const pintarN = () => {
+    box.hidden = false;
+    box.querySelector(".hoja").innerHTML = `<h2>Niveles y recompensas</h2>
+      <p class="nota">Tienes <b>${total} puntos</b>. Cada nivel trae su recompensa: tú te encargas de cumplirla y aquí la marcas.</p>
+      <ul class="niveles">${E.RANGOS.map(r => {
+        const min = r.min === -Infinity ? 0 : r.min, ok = total >= min, es = r.nombre === actual.nombre;
+        const hecho = (st.premios || {})[r.nombre];
+        const falta = min - total;
+        return `<li class="${ok ? "ok" : ""} ${es ? "actual" : ""}"><span class="ni">${r.icono}</span>
+          <div><b>${esc(r.nombre)}</b> <small>${r.min === -Infinity ? "inicio" : `${min} puntos`}${es ? " · tu nivel" : ""}</small>
+          ${r.premio ? `<p>🎁 ${esc(r.premio)}</p>` : `<p class="nota">El punto de partida.</p>`}
+          ${r.premio ? (ok ? (hecho ? `<span class="cumplida">✓ Cumplida el ${E.fechaLarga(hecho, false)}</span> <button class="enlace peque" data-p="${esc(r.nombre)}" data-v="0">Desmarcar</button>`
+            : `<button class="btn peque" data-p="${esc(r.nombre)}" data-v="1">Marcar como cumplida</button>`) : `<span class="nota">Te faltan ${falta} ${falta === 1 ? "punto" : "puntos"}</span>`) : ""}</div></li>`;
+      }).join("")}</ul>
+      <div class="acciones"><button class="btn" data-m="cerrar">Cerrar</button></div>`;
+    box.querySelectorAll("[data-p]").forEach(b => b.onclick = async () => {
+      await guardar({premios: {[b.dataset.p]: b.dataset.v === "1" ? hoy : null}});
+      pintarN();
+    });
+    box.querySelector("[data-m=cerrar]").onclick = () => { box.hidden = true; };
+  };
+  pintarN();
+}
+
 /* ---------- distritos del callejero ---------- */
 function abrirDistritos(fecha) {
   const box = $("#modal");
@@ -654,6 +693,8 @@ function enlazar() {
       const t = b.dataset.t, n = +b.dataset.n;
       if (b.dataset.v === "1" && !confirm("¿Quitar esta parte de todas las vueltas? (No entra por decreto o no la estudias)")) return;
       guardar(E.noEntra(t, n, {key: b.dataset.key}, b.dataset.v === "1"));
+    } else if (a === "niveles") {
+      abrirNiveles();
     } else if (a === "distritos") {
       abrirDistritos(b.dataset.f);
     } else if (a === "verConv") {
