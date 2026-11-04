@@ -127,11 +127,7 @@ function pintar() {
   badgeConv();
   pantalla(f(hoy, res));
   enlazar();
-  if (ui.vista === "parque") {
-    const veces = {};
-    for (const x of E.estadisticas(st, hoy).plantados) if (x.ok) veces[x.obj] = (veces[x.obj] || 0) + 1;
-    montarParque(veces);
-  }
+  if (ui.vista === "parque") montarParque();
   // Al empezar la semana (o si aún no está puesta) se pregunta el día libre y las clases de Luis.
   const mon = E.lunes(hoy);
   if (!st.semanas[mon] && !ui.modalSemana && !ui.cerradoSemana) abrirSemana(mon);
@@ -743,58 +739,81 @@ function iconoPieza(x, cls = "mini3d") {
   if (P3.disponible()) { try { return `<img class="${cls}" src="${P3.miniatura(x.id)}" alt="${esc(x.nombre)}">`; } catch (e) {} }
   return `<span class="${cls} emo">${x.icono}</span>`;
 }
-function montarParque(veces) {
+function datosCiudad(hoy) {
+  const e = E.estadisticas(st, hoy), piezas = E.piezasCiudad(st, hoy);
+  const abiertas = E.CIUDAD.filter(z => E.zonaAbierta(z.id, e.total)).map(z => z.id);
+  const cuenta = {};
+  for (const p of piezas) cuenta[p.id] = (cuenta[p.id] || 0) + 1;
+  return {e, piezas, abiertas, cuenta};
+}
+function montarParque() {
   const host = $("#parque3dHost");
   if (!host || !P3.disponible()) return;
+  const hoy = HOY(), {piezas, abiertas} = datosCiudad(hoy);
   let visto = [];
   try { visto = JSON.parse(localStorage.getItem("pp.parqueVisto") || "[]"); } catch (e) {}
-  const ids = Object.keys(veces), nuevos = ids.filter(id => !visto.includes(id));
-  try { localStorage.setItem("pp.parqueVisto", JSON.stringify(ids)); } catch (e) {}
-  try { host.appendChild(P3.parque(veces, nuevos)); host.classList.add("con3d"); } catch (e) { console.warn("parque 3D", e); }
+  const keys = piezas.map(p => p.key), nuevos = keys.filter(k => !visto.includes(k));
+  try { localStorage.setItem("pp.parqueVisto", JSON.stringify(keys)); } catch (e) {}
+  const zonaDe = {}, horas = {};
+  for (const x of E.TIENDA) zonaDe[x.id] = x.zona;
+  for (const z of E.CIUDAD) horas[z.id] = z.horas;
+  try {
+    host.appendChild(P3.parque({piezas, zonaDe, pos: (st.parque && st.parque.pos) || {}, abiertas, horas, nuevos,
+      onMover: (key, v) => guardar({parque: {pos: {[key]: v.map(n => Math.round(n * 100) / 100)}}})}));
+    P3.editar(!!ui.editarParque);
+    host.classList.add("con3d");
+  } catch (e) { console.warn("parque 3D", e); }
 }
+
 function vParque(hoy) {
-  const e = E.estadisticas(st, hoy);
+  const {e, piezas, abiertas, cuenta} = datosCiudad(hoy);
   const h = m => m >= 60 ? `${Math.floor(m / 60)} h ${Math.round(m % 60)} min` : `${Math.round(m)} min`;
-  const hechos = e.plantados.filter(x => x.ok);
-  const perdidos = e.plantados.length - hechos.length;
-  // Cuántas veces has conseguido cada pieza: el plano empieza vacío y cada pieza aparece la primera vez que la consigues.
-  const veces = {};
-  for (const x of hechos) veces[x.obj] = (veces[x.obj] || 0) + 1;
-  const distintas = Object.keys(veces).length;
-  const plano = E.ZONAS.map(z => {
-    const xs = E.TIENDA.filter(x => x.tipo === z.tipo);
-    const n = xs.filter(x => veces[x.id]).length;
-    return `<div class="zona z-${z.tipo}"><span class="rotulo">${z.icono} ${z.nombre} · ${n}/${xs.length}</span>
-      <div class="huecos">${xs.map(x => veces[x.id]
-        ? `<span class="pieza" title="${esc(x.nombre)} · conseguido ${veces[x.id]} ${veces[x.id] === 1 ? "vez" : "veces"}">${x.icono}${veces[x.id] > 1 ? `<i>×${veces[x.id]}</i>` : ""}</span>`
-        : `<span class="hueco" title="${esc(x.nombre)}: aún sin conseguir"></span>`).join("")}</div></div>`;
-  }).join("");
-  return `<div class="parque-cab"><h1>Mi parque</h1><button class="btn tienda-btn" data-a="tienda">🛒 Tienda · 🪙 ${e.monedas}</button></div>
+  const perdidos = e.plantados.filter(x => !x.ok).length;
+  const sig = E.CIUDAD.find(z => !abiertas.includes(z.id));
+  const lista = E.TIENDA.filter(x => cuenta[x.id]).sort((a, b) => cuenta[b.id] - cuenta[a.id]);
+  const fallback = `<div class="escena plano">${E.CIUDAD.map(z => `<div class="zona"><span class="rotulo">${z.nombre}</span><div class="huecos">${
+    piezas.filter(p => (E.TIENDA.find(t => t.id === p.id) || {}).zona === z.id).map(p => iconoPieza(E.TIENDA.find(t => t.id === p.id), "mini3d")).join("") || "<em>Vacío</em>"}</div></div>`).join("")}</div>`;
+  return `<div class="parque-cab"><h1>Mi parque</h1><div class="parque-btns">
+      ${P3.disponible() ? `<button class="btn sec ${ui.editarParque ? "on" : ""}" data-a="editarParque">${ui.editarParque ? "✓ Listo" : "✋ Mover"}</button>` : ""}
+      <button class="btn tienda-btn" data-a="tienda">🛒 Tienda · 🪙 ${e.monedas}</button></div></div>
     <div class="parque-stats"><div class="grande"><b>${h(e.hoy)}</b><span>hoy</span></div><div><b>${h(e.semana)}</b><span>esta semana</span></div>
       <div><b>${h(e.mes)}</b><span>este mes</span></div><div><b>${h(e.anio)}</b><span>este año</span></div><div><b>${h(e.total)}</b><span>en total</span></div>
       <div class="monedas"><b>🪙 ${e.monedas}</b><span>monedas</span></div></div>
-    <div id="parque3dHost" class="parque3d-host"><div class="escena plano">${plano}</div></div>
-    ${P3.disponible() ? `<p class="nota centro">Arrastra para girar, pellizca o usa la rueda para acercar.</p>` : ""}
-    <p class="nota">${distintas ? `Llevas ${distintas} de ${E.TIENDA.length} piezas distintas en tu parque.` : "Tu parque está vacío."} Para conseguir una pieza, usa el temporizador junto a lo que estudias en «Hoy» y elige qué quieres crear: con al menos ${E.MIN_SESION} min aparece aquí. Las piezas nuevas se desbloquean en la tienda.</p>
-    ${perdidos ? `<p class="nota">💥 ${perdidos} ${perdidos === 1 ? "se perdió" : "se perdieron"} por salir de la app o por no llegar a ${E.MIN_SESION} min.</p>` : ""}
+    ${ui.editarParque ? `<div class="aviso">✋ Arrastra cualquier pieza para cambiarla de sitio. Toca dos veces para girarla. Cuando acabes, pulsa «Listo».</div>` : ""}
+    <div id="parque3dHost" class="parque3d-host">${fallback}</div>
+    ${P3.disponible() ? `<p class="nota centro">Arrastra para girar la vista, pellizca o usa la rueda para acercar.</p>` : ""}
+    <div class="tarjeta"><h3>Tu ciudad de bomberos</h3><ul class="ciudad">${E.CIUDAD.map(z => {
+      const ab = abiertas.includes(z.id), falta = Math.max(0, z.horas * 60 - e.total);
+      const n = piezas.filter(p => (E.TIENDA.find(t => t.id === p.id) || {}).zona === z.id).length;
+      return `<li class="${ab ? "ok" : ""}"><b>${z.icono} ${z.nombre}</b><span>${ab ? `${n} ${n === 1 ? "pieza" : "piezas"}` : `🔒 se abre a las ${z.horas} h · te faltan ${h(falta)}`}</span></li>`;
+    }).join("")}</ul>${sig ? `<p class="nota">Cuantas más horas estudies, más grande se hace tu ciudad. La próxima zona, ${sig.nombre}, se abre a las ${sig.horas} h.</p>` : `<p class="nota">¡Has abierto toda la ciudad!</p>`}</div>
+    <div class="tarjeta"><h3>Tus piezas (${piezas.length})</h3>
+      ${lista.length ? `<ul class="mis-piezas">${lista.map(x => `<li>${iconoPieza(x, "mini3d")}<span>${esc(x.nombre)}</span><b>×${cuenta[x.id]}</b></li>`).join("")}</ul>`
+        : `<p class="nota">Aún no tienes piezas. Usa el temporizador junto a lo que estudias en «Hoy» y elige qué quieres crear: con al menos ${E.MIN_SESION} min aparece en tu parque. Cada repetición es otra copia en el mapa.</p>`}
+      ${perdidos ? `<p class="nota">💥 ${perdidos} ${perdidos === 1 ? "se perdió" : "se perdieron"} por salir de la app o por no llegar a ${E.MIN_SESION} min.</p>` : ""}</div>
     <p class="nota">Estudio ${h(e.est)} · Callejero ${h(e.cal)} · Descanso ${h(e.desc)} · ${e.sesiones} sesiones con temporizador. 1 minuto estudiado = 1 moneda.</p>`;
 }
 
 function abrirTienda() {
   const box = $("#modal"), hoy = HOY();
   const pintarT = () => {
-    const e = E.estadisticas(st, hoy), sel = st.parque && st.parque.sel;
+    const {e, abiertas, cuenta} = datosCiudad(hoy), sel = st.parque && st.parque.sel;
     const item = x => {
-      const tiene = E.tengo(st, x.id), puede = e.monedas >= x.precio;
-      return `<li class="${tiene ? "tiene" : puede ? "puede" : ""}">${iconoPieza(x, "ti")}<div><b>${esc(x.nombre)}</b>
-        <small>${x.precio ? `🪙 ${x.precio}` : "Gratis"}${!tiene && !puede ? ` · te faltan ${x.precio - e.monedas}` : tiene ? " · desbloqueado" : ""}</small></div>
+      const tiene = E.tengo(st, x.id), abierta = abiertas.includes(x.zona), puede = abierta && e.monedas >= x.precio;
+      const zona = E.CIUDAD.find(z => z.id === x.zona);
+      return `<li class="${tiene ? "tiene" : puede ? "puede" : ""} ${abierta ? "" : "cerrada"}">${iconoPieza(x, "ti")}<div><b>${esc(x.nombre)}</b>${cuenta[x.id] ? ` <span class="chip visto">×${cuenta[x.id]}</span>` : ""}
+        <small>${!abierta ? `🔒 se abre con ${zona.horas} h estudiadas` : x.precio ? `🪙 ${x.precio}` : "Gratis"}${abierta && !tiene && !puede ? ` · te faltan ${x.precio - e.monedas}` : tiene ? " · desbloqueado" : ""}${x.repetible ? " · repetible" : ""}</small></div>
         ${tiene ? (sel === x.id ? `<span class="chip visto">elegido</span>` : `<button class="enlace peque" data-u="${x.id}">Usar</button>`)
           : `<button class="btn peque" data-c="${x.id}" ${puede ? "" : "disabled"}>Comprar</button>`}</li>`;
     };
+    const grupos = [
+      ...E.ZONAS.map(z => ({t: `${z.icono} ${z.nombre}`, xs: E.TIENDA.filter(x => x.zona === "parque" && x.tipo === z.tipo)})),
+      ...E.CIUDAD.filter(z => z.id !== "parque").map(z => ({t: `${z.icono} ${z.nombre}${abiertas.includes(z.id) ? "" : ` · 🔒 ${z.horas} h`}`, xs: E.TIENDA.filter(x => x.zona === z.id)})),
+    ];
     box.hidden = false;
     box.querySelector(".hoja").innerHTML = `<div class="tienda-cab"><h2>🛒 Tienda</h2><b>🪙 ${e.monedas}</b></div>
-      <p class="nota">1 minuto estudiado = 1 moneda. Lo que compras queda desbloqueado para crearlo con el temporizador. Lo más chulo cuesta muchas horas de estudio.</p>
-      ${E.ZONAS.map(z => `<h4 class="zona-t">${z.icono} ${z.nombre}</h4><ul class="tienda">${E.TIENDA.filter(x => x.tipo === z.tipo).map(item).join("")}</ul>`).join("")}
+      <p class="nota">1 minuto estudiado = 1 moneda. Lo que compras queda desbloqueado para crearlo con el temporizador tantas veces como quieras: cada vez es otra copia en tu parque. Las zonas nuevas de la ciudad se abren con las horas estudiadas.</p>
+      ${grupos.map(g => `<h4 class="zona-t">${g.t}</h4><ul class="tienda">${g.xs.map(item).join("")}</ul>`).join("")}
       <div class="acciones"><button class="btn" data-m="cerrar">Cerrar</button></div>`;
     box.querySelectorAll("[data-c]").forEach(b => b.onclick = async () => {
       const it = E.TIENDA.find(x => x.id === b.dataset.c);
@@ -913,6 +932,8 @@ function enlazar() {
       elegirYEmpezar(b.dataset.t, b.dataset.item);
     } else if (a === "hastaAqui") {
       abrirHastaAqui(b.dataset.f, b.dataset.id);
+    } else if (a === "editarParque") {
+      ui.editarParque = !ui.editarParque; pintar();
     } else if (a === "tienda") {
       abrirTienda();
     } else if (a === "comprar") {

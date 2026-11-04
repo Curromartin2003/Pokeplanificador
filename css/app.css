@@ -405,3 +405,14 @@ img.ti, .ti.emo { width: 48px; height: 48px; object-fit: contain; flex: none; }
 .mini3d.grande { width: 120px; height: 120px; font-size: 72px; }
 .foco-arbol .visor3d { position: absolute; inset: 0; display: grid; place-items: center; }
 .foco-arbol .visor3d canvas { width: 200px !important; height: 200px !important; }
+
+.parque-btns { display: flex; gap: 8px; }
+.parque-btns .btn.on { background: var(--ok); color: #fff; }
+.parque3d.editando { outline: 3px solid var(--oro); cursor: grab; }
+.ciudad { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 14px; }
+.ciudad li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--bg); opacity: .75; }
+.ciudad li.ok { opacity: 1; background: var(--okbg); } .ciudad li span { color: var(--muted); font-size: 13px; text-align: right; }
+.mis-piezas { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.mis-piezas li { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 12px; padding: 6px 10px; font-size: 13px; }
+.mis-piezas li span { flex: 1; } .mis-piezas li b { font-family: "Barlow Condensed", sans-serif; font-size: 20px; color: var(--acc); }
+.tienda li.cerrada { opacity: .55; }

@@ -234,3 +234,13 @@ test("«Hasta aquí»: lo anterior hecho, la parte a medias y marcar el estudio 
   const st2 = aplicar(st, p);
   assert.ok(Math.abs(E.fraccion(E.hecho(st2, HOY), segundo.id) - 0.5) < 1e-9);
 });
+
+test("ciudad: cada repetición es otra copia en el mapa y las zonas se abren con las horas", () => {
+  const ses = [{tipo: "estudio", est: 30, obj: "extintor", ok: true}, {tipo: "estudio", est: 30, obj: "extintor", ok: true},
+    {tipo: "estudio", est: 30, obj: "bul", ok: true}, {tipo: "estudio", est: 5, obj: "bul", ok: false}];
+  const st = base(undefined, {dias: {[HOY]: {ses}}});
+  const p = E.piezasCiudad(st, HOY);
+  assert.deepEqual(p.map(x => x.key), ["extintor", "extintor_2", "bul"]);
+  assert.ok(E.zonaAbierta("parque", 0) && !E.zonaAbierta("maniobras", 39 * 60) && E.zonaAbierta("maniobras", 40 * 60));
+  assert.ok(E.TIENDA.reduce((a, x) => a + x.precio, 0) > 120000, "completarlo todo lleva muchísimas horas");
+});

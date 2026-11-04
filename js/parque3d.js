@@ -135,6 +135,54 @@ const MODELOS = {
     const d = cil(g, 0.28, 0.28, 0.07, COL.oro, 0, 1.25, 0, 18, {metalness: 0.6, roughness: 0.3}); d.rotation.x = Math.PI / 2; },
   placa(g) { caja(g, 0.8, 0.7, 0.8, 0x2B2F36); cil(g, 0.12, 0.22, 0.25, COL.oro, 0, 0.7, 0, 12, {metalness: 0.6, roughness: 0.3}); cil(g, 0.05, 0.05, 0.25, COL.oro, 0, 0.95, 0, 8, {metalness: 0.6, roughness: 0.3});
     cil(g, 0.35, 0.18, 0.45, COL.oro, 0, 1.2, 0, 14, {metalness: 0.6, roughness: 0.3}); caja(g, 0.5, 0.2, 0.02, COL.oro, 0, 0.25, 0.41, {metalness: 0.6, roughness: 0.3}); },
+  // Campo de maniobras
+  cocheexc(g) { caja(g, 1.6, 0.45, 0.8, 0x4F7CAC, 0, 0.18); const t = caja(g, 0.9, 0.35, 0.75, 0x4F7CAC, -0.1, 0.63); t.rotation.z = 0.12;
+    caja(g, 0.85, 0.25, 0.77, COL.cristal, -0.1, 0.68, 0, {roughness: 0.2}); for (const x of [-0.5, 0.5]) { rueda(g, x, 0.4, 0.18); rueda(g, x, -0.4, 0.18); }
+    caja(g, 0.5, 0.06, 0.3, COL.plata, 0.9, 0.05, 0.6); },
+  contenedor(g) { caja(g, 2.2, 1.1, 1.0, 0x8C3B20); for (let x = -0.9; x <= 0.9; x += 0.3) caja(g, 0.05, 1.1, 1.02, 0x6E2C16, x, 0);
+    caja(g, 0.4, 0.3, 0.04, 0xFF7A1A, 0.6, 0.5, 0.51, {emissive: 0xff5a00, emissiveIntensity: 1}); esfera(g, 0.25, 0x777777, 0.6, 1.4, 0.2, 8); esfera(g, 0.3, 0x999999, 0.8, 1.75, 0.1, 8); },
+  pozo(g) { cil(g, 0.7, 0.75, 0.5, COL.gris, 0, 0, 0, 16); cil(g, 0.55, 0.55, 0.02, COL.negro, 0, 0.5, 0, 16);
+    for (const [x, z] of [[-0.6, 0], [0.6, 0]]) caja(g, 0.08, 1.6, 0.08, COL.amarillo, x, 0.5, z); caja(g, 1.3, 0.08, 0.08, COL.amarillo, 0, 2.05, 0); cil(g, 0.01, 0.01, 1.5, COL.naranja, 0, 0.55, 0, 4); },
+  glp(g) { const t = cil(g, 0.5, 0.5, 2.0, COL.blanco, 0, 0.6, 0, 16); t.rotation.z = Math.PI / 2; t.position.y = 0.75;
+    for (const x of [-0.85, 0.85]) { const e = esfera(g, 0.5, COL.blanco, x, 0.75, 0, 10); e.scale.x = 0.5; }
+    for (const x of [-0.6, 0.6]) caja(g, 0.2, 0.3, 0.8, COL.grisOsc, x, 0, 0); caja(g, 0.5, 0.1, 0.02, 0xF28C28, 0, 0.9, 0.5); },
+  colapso(g) { caja(g, 1.8, 0.3, 1.4, 0xA59E93); const a = caja(g, 1.4, 0.15, 1.0, 0xC9C4B8, -0.1, 0.5, 0); a.rotation.z = 0.35; const b = caja(g, 0.2, 0.9, 0.2, 0x8E8A82, 0.6, 0.3, 0.3); b.rotation.x = 0.4;
+    for (const [x, z] of [[-0.6, 0.5], [0.5, -0.5], [0.1, 0.55]]) esfera(g, 0.18, 0x8E8A82, x, 0.38, z, 6); caja(g, 0.06, 0.8, 0.06, COL.madera, -0.3, 0.3, -0.3); },
+  tunel(g) { const t = sombra(new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 2.6, 16, 1, true, 0, Math.PI), mat(0x7A7F85, {side: THREE.DoubleSide})));
+    t.rotation.z = Math.PI / 2; t.rotation.y = Math.PI / 2; t.position.y = 0; g.add(t); caja(g, 2.6, 0.05, 2, 0x4A4F55, 0, 0, 0);
+    for (const z of [-0.5, 0.5]) caja(g, 2.4, 0.02, 0.06, COL.blanco, 0, 0.05, z); caja(g, 0.1, 0.1, 0.1, 0xFFE066, 0, 0.92, 0, {emissive: 0xffd000, emissiveIntensity: 1}); },
+  // Barrio
+  hidrante(g) { cil(g, 0.14, 0.16, 0.5, COL.rojo); esfera(g, 0.15, COL.rojo, 0, 0.52, 0, 8); for (const s of [-1, 1]) { const b = cil(g, 0.06, 0.06, 0.12, COL.plata, s * 0.18, 0.3, 0); b.rotation.z = Math.PI / 2; } cil(g, 0.2, 0.2, 0.05, COL.rojo, 0, 0); },
+  farolacalle(g) { cil(g, 0.05, 0.07, 2.0, COL.grisOsc, 0, 0, 0, 8); caja(g, 0.5, 0.05, 0.05, COL.grisOsc, 0.22, 1.95); esfera(g, 0.12, 0xFFF2B3, 0.45, 1.88, 0, 8, {emissive: 0xffe680, emissiveIntensity: 0.9}); },
+  semaforo(g) { cil(g, 0.05, 0.05, 1.6, COL.grisOsc, 0, 0, 0, 8); caja(g, 0.25, 0.65, 0.2, COL.negro, 0, 1.5);
+    [[0xff3030, 2.0], [0xffc400, 1.8], [0x2ecc71, 1.6]].forEach(([c, y]) => esfera(g, 0.07, c, 0, y, 0.11, 6, {emissive: c, emissiveIntensity: 0.7})); },
+  bloque(g) { const c = [0xEBDDBF, 0xD9C5A0, 0xC8D6E5, 0xF2D0A9][Math.floor(Math.random() * 4)]; caja(g, 1.8, 2.8, 1.6, c); caja(g, 1.9, 0.12, 1.7, COL.grisOsc, 0, 2.8, 0);
+    for (let y = 0.5; y < 2.6; y += 0.6) for (const x of [-0.55, 0, 0.55]) caja(g, 0.3, 0.32, 0.04, COL.cristal, x, y, 0.81, {roughness: 0.2}); caja(g, 0.4, 0.5, 0.04, COL.marron, 0, 0, 0.81); },
+  gasolinera(g) { caja(g, 2.4, 0.08, 1.6, 0xDADFE3); for (const [x, z] of [[-0.9, -0.6], [0.9, -0.6], [-0.9, 0.6], [0.9, 0.6]]) caja(g, 0.1, 1.3, 0.1, COL.blanco, x, 0, z);
+    caja(g, 2.2, 0.15, 1.5, COL.rojo, 0, 1.3, 0); for (const x of [-0.4, 0.4]) { caja(g, 0.25, 0.6, 0.2, COL.blanco, x, 0.08, 0); caja(g, 0.18, 0.15, 0.02, COL.negro, x, 0.5, 0.11); } },
+  colegio(g) { caja(g, 2.6, 1.3, 1.6, 0xF2D0A9); caja(g, 2.7, 0.12, 1.7, COL.ladrillo, 0, 1.3, 0); caja(g, 0.5, 0.75, 0.04, COL.verde, 0, 0, 0.81);
+    for (const x of [-0.9, -0.45, 0.45, 0.9]) caja(g, 0.3, 0.35, 0.04, COL.cristal, x, 0.7, 0.81, {roughness: 0.2}); cil(g, 0.02, 0.02, 1.2, COL.plata, 1.1, 1.42, 0.6, 6); caja(g, 0.35, 0.22, 0.02, 0xF2B705, 1.28, 2.3, 0.6); },
+  hospital(g) { caja(g, 2.6, 2.2, 2.0, COL.blanco); caja(g, 2.7, 0.12, 2.1, 0xB0B8BF, 0, 2.2, 0); caja(g, 0.6, 0.18, 0.04, COL.rojo, 0, 1.75, 1.01); caja(g, 0.18, 0.6, 0.04, COL.rojo, 0, 1.55, 1.01);
+    for (let y = 0.5; y < 1.5; y += 0.55) for (const x of [-0.9, -0.45, 0.45, 0.9]) caja(g, 0.3, 0.3, 0.04, COL.cristal, x, y, 1.01, {roughness: 0.2});
+    caja(g, 0.8, 0.6, 0.04, COL.cristal, 0, 0, 1.01); cil(g, 0.6, 0.6, 0.04, 0x3A3F45, 0.5, 2.32, -0.4, 16); },
+  // Base forestal
+  pino(g) { cil(g, 0.08, 0.1, 0.5, COL.marron); cono(g, 0.55, 0.9, COL.verdeOsc, 0, 0.4); cono(g, 0.42, 0.8, COL.verdeOsc, 0, 0.9); cono(g, 0.3, 0.6, COL.verde, 0, 1.4); },
+  torrevig(g) { for (const [x, z] of [[-0.4, -0.4], [0.4, -0.4], [-0.4, 0.4], [0.4, 0.4]]) { const p = caja(g, 0.08, 3, 0.08, COL.madera, x, 0, z); p.rotation.x = z * 0.05; p.rotation.z = -x * 0.05; }
+    caja(g, 1.1, 0.7, 1.1, COL.madera, 0, 3); caja(g, 1.3, 0.12, 1.3, COL.verdeOsc, 0, 3.7); caja(g, 1.0, 0.3, 1.02, COL.cristal, 0, 3.3, 0, {roughness: 0.2}); },
+  deposito(g) { cil(g, 0.9, 0.9, 1.6, 0x9DB4C0, 0, 0.9, 0, 16); cono(g, 0.95, 0.4, 0x7C97A6, 0, 2.5, 0, 16);
+    for (const [x, z] of [[-0.6, -0.6], [0.6, -0.6], [-0.6, 0.6], [0.6, 0.6]]) caja(g, 0.1, 0.9, 0.1, COL.grisOsc, x, 0, z); },
+  autoforestal(g) { camion(g, {largo: 2.5, alto: 1.0, color: 0xD9480F, franja: COL.amarillo}); caja(g, 1.2, 0.15, 0.85, COL.negro, -0.4, 1.22, 0); },
+  helicoptero(g) { caja(g, 2.6, 0.06, 2.6, 0x5E666E); cil(g, 1.0, 1.0, 0.01, COL.blanco, 0, 0.06, 0, 24); const e = esfera(g, 0.55, COL.rojo, 0, 0.75, 0, 12); e.scale.set(1.5, 0.9, 0.9);
+    caja(g, 1.4, 0.18, 0.18, COL.rojo, -1.1, 0.8, 0); caja(g, 0.08, 0.4, 0.05, COL.rojo, -1.75, 0.85, 0); caja(g, 0.5, 0.25, 0.6, COL.cristal, 0.45, 0.85, 0, {roughness: 0.2});
+    for (const z of [-0.35, 0.35]) caja(g, 1.4, 0.05, 0.05, COL.negro, 0, 0.22, z); caja(g, 3.2, 0.03, 0.15, COL.negro, 0, 1.35, 0); caja(g, 0.15, 0.03, 3.2, COL.negro, 0, 1.35, 0); cil(g, 0.05, 0.05, 0.2, COL.negro, 0, 1.15, 0); },
+  // Aeródromo y puerto
+  lancha(g) { caja(g, 2.6, 0.2, 2.0, 0x2E86C1, 0, 0, 0); const c = caja(g, 1.8, 0.45, 0.8, 0xF28C28, 0, 0.2, 0); cono(g, 0.4, 0.6, 0xF28C28, 1.15, 0.2, 0).rotation.z = -Math.PI / 2;
+    caja(g, 0.6, 0.4, 0.6, COL.blanco, -0.2, 0.65, 0); caja(g, 0.5, 0.2, 0.62, COL.cristal, -0.2, 0.8, 0, {roughness: 0.2}); caja(g, 0.2, 0.08, 0.3, COL.azul, -0.2, 1.06, 0, {emissive: 0x1b4aa8, emissiveIntensity: 0.6}); },
+  hangar(g) { const t = sombra(new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 3.2, 16, 1, false, 0, Math.PI), mat(0xB0B8BF)));
+    t.rotation.z = Math.PI / 2; t.rotation.y = Math.PI / 2; g.add(t); caja(g, 2.0, 1.2, 0.05, COL.grisOsc, 0, 0, 1.6); caja(g, 3.4, 0.05, 3.4, 0x6B737B); },
+  anfibio(g) { const f = cil(g, 0.3, 0.25, 2.6, COL.amarillo, 0, 0.8, 0, 12); f.rotation.z = Math.PI / 2; f.position.y = 0.9; caja(g, 0.7, 0.06, 3.6, COL.amarillo, 0.15, 1.1, 0);
+    caja(g, 0.5, 0.5, 0.06, COL.rojo, -1.2, 1.0, 0); caja(g, 0.4, 0.06, 1.0, COL.amarillo, -1.2, 0.95, 0); for (const z of [-0.9, 0.9]) { cil(g, 0.18, 0.18, 0.3, COL.rojo, 0.35, 1.0, z).rotation.z = Math.PI / 2; }
+    for (const z of [-0.6, 0.6]) caja(g, 1.8, 0.18, 0.22, COL.blanco, 0, 0.1, z); caja(g, 0.4, 0.2, 0.4, COL.cristal, 0.7, 1.05, 0, {roughness: 0.2}); caja(g, 2.6, 0.08, 2.6, 0x2E86C1, 0, 0, 0); },
 };
 export function modelo(id) {
   const g = new THREE.Group();
@@ -142,57 +190,100 @@ export function modelo(id) {
   return g;
 }
 
-/* ---------- plano del parque ---------- */
-// Posición de cada pieza (x, z, giro, escala). El parque mide 22 × 18 unidades.
+/* ---------- plano del parque y de la ciudad ---------- */
+// Posición de cada pieza del parque inicial (x, z, giro, escala). El parque mide 24 × 20 unidades.
 const SITIO = {
-  // Cocheras (izquierda, sobre asfalto)
   mando: [-8.2, -4.5, 0, 1], sanitaria: [-8.2, -2.3, 0, 1], bul: [-8.2, -0.1, 0, 1], bup: [-8.2, 2.1, 0, 1], autoescala: [-8.2, 4.3, 0, 1], brazo: [-4.4, 6.2, Math.PI / 2, 1],
-  // Instalaciones (fondo)
   edificio: [-3.5, -6.2, 0, 1.15], vestuarios: [0, -6.4, 0, 1], cocina: [2.6, -6.4, 0, 1], dormitorio: [5.2, -6.4, 0, 1], comunicaciones: [8, -6.4, 0, 1],
   epis: [-0.2, -3.4, 0, 1], gym: [2.6, -3.4, 0, 1], altura: [8.2, -3.2, 0, 1], humo: [5.4, -3.3, 0, 1], patio: [3.4, 0.2, 0, 1.4],
-  // Material (estantería del almacén, centro)
   extintor: [-4.2, -1.6, 0, 0.6], hacha: [-3.4, -1.6, 0, 0.6], linterna: [-2.6, -1.6, 0, 0.6], guantes: [-1.8, -1.6, 0, 0.6], casco: [-1, -1.6, 0, 0.6],
   cizalla: [-4.2, 0.2, 0, 0.6], cuerdas: [-3.4, 0.2, 0, 0.6], escalera: [-2.6, 0.2, 0, 0.6], era: [-1.8, 0.2, 0, 0.6], separador: [-1, 0.2, 0, 0.6],
-  // Exterior
   arbol: [9.5, 6.8, 0, 1], flores: [6.2, 7.2, 0, 1], palmera: [9.6, 3.2, 0, 1], naranjo: [2.4, 7, 0, 1],
-  // Trofeos (entrada)
   medalla: [-1.4, 4.4, 0, 0.9], placa: [0.2, 4.4, 0, 0.9],
 };
+// Zonas de la ciudad (rectángulos x0, x1, z0, z1) que rodean el parque.
+export const AREAS = {
+  parque: [-12, 12, -10, 10], explanada: [-12, 12, 10, 19], maniobras: [12, 34, -10, 19], barrio: [-12, 34, 19, 40],
+  forestal: [-12, 34, -32, -10], aero: [-36, -12, -32, 40],
+};
+const COLOR_ZONA = {explanada: 0xD8CFB8, maniobras: 0xC9C4B8, barrio: 0x8E959C, forestal: 0x4E8A3E, aero: 0x6B737B};
+const PASO = 3.4; // separación de las celdas donde se colocan solas las piezas de las zonas nuevas
 
+function texto(t, color = "#1D1A19") {
+  const c = document.createElement("canvas"); c.width = 512; c.height = 128;
+  const x = c.getContext("2d"); x.font = "bold 56px system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
+  x.fillStyle = "rgba(255,255,255,.85)"; x.beginPath(); x.roundRect(8, 14, 496, 100, 40); x.fill();
+  x.fillStyle = color; x.fillText(t, 256, 66);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(c), depthTest: false}));
+  sp.scale.set(8, 2, 1); sp.renderOrder = 10; return sp;
+}
+function losa(g, w, d, col, x, z, y = 0) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), mat(col)); m.position.set(x, y - 0.1, z); m.receiveShadow = true; g.add(m); return m;
+}
 function suelo(scene) {
   const g = new THREE.Group();
-  const c = (w, d, col, x, z, y = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), mat(col)); m.position.set(x, y - 0.1, z); m.receiveShadow = true; g.add(m); return m; };
-  c(24, 20, 0x7CC46F, 0, 0, -0.02);                    // césped
-  c(5.4, 13.2, 0x7E868E, -8.2, 0, 0.01);               // asfalto de cocheras
-  for (let z = -5.6; z <= 5.6; z += 2.2) c(3.6, 0.06, 0xF4F4F2, -8.2, z, 0.02);
-  c(13.6, 6.2, 0xC9C4B8, 3.2, -4.8, 0.01);             // hormigón de instalaciones
-  c(5, 3.6, 0xD9DEE2, -2.6, -0.7, 0.01);               // almacén de material
-  c(3.6, 1.8, 0xE8D9B5, -0.6, 4.4, 0.01);              // entrada
-  c(2, 8, 0xE8D9B5, -0.6, 7.2, 0.0);                   // camino
-  // Valla
-  for (let x = -11.5; x <= 11.5; x += 1) { for (const z of [-9.6, 9.6]) if (!(z > 0 && Math.abs(x + 0.6) < 1.2)) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.6, 0.08), mat(0xF4F4F2)); p.position.set(x, 0.3, z); g.add(p); } }
-  for (let z = -9.5; z <= 9.5; z += 1) for (const x of [-11.6, 11.6]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.6, 0.08), mat(0xF4F4F2)); p.position.set(x, 0.3, z); g.add(p); }
-  for (const z of [-9.6, 9.6]) { const r = new THREE.Mesh(new THREE.BoxGeometry(23.2, 0.06, 0.06), mat(0xF4F4F2)); r.position.set(0, 0.5, z); g.add(r); }
-  for (const x of [-11.6, 11.6]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 19.2), mat(0xF4F4F2)); r.position.set(x, 0.5, 0); g.add(r); }
+  losa(g, 24, 20, 0x7CC46F, 0, 0, -0.02);
+  losa(g, 5.4, 13.2, 0x7E868E, -8.2, 0, 0.01);
+  for (let z = -5.6; z <= 5.6; z += 2.2) losa(g, 3.6, 0.06, 0xF4F4F2, -8.2, z, 0.02);
+  losa(g, 13.6, 6.2, 0xC9C4B8, 3.2, -4.8, 0.01);
+  losa(g, 5, 3.6, 0xD9DEE2, -2.6, -0.7, 0.01);
+  losa(g, 3.6, 1.8, 0xE8D9B5, -0.6, 4.4, 0.01);
+  losa(g, 2, 3, 0xE8D9B5, -0.6, 8.5, 0.0);
+  const valla = (w, d, x, z) => { const r = new THREE.Mesh(new THREE.BoxGeometry(w, 0.5, d), mat(0xF4F4F2)); r.position.set(x, 0.25, z); g.add(r); };
+  valla(23.2, 0.08, 0, -9.6); valla(10.6, 0.08, -6.9, 9.6); valla(10.6, 0.08, 6.3, 9.6); valla(0.08, 19.2, -11.6, 0); valla(0.08, 19.2, 11.6, 0);
   scene.add(g);
 }
+function zonaSuelo(scene, id, abierta, horas) {
+  const [x0, x1, z0, z1] = AREAS[id], w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+  const g = new THREE.Group();
+  if (!abierta) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), new THREE.MeshStandardMaterial({color: 0xBFC5CA, transparent: true, opacity: 0.55}));
+    m.position.set(cx, -0.12, cz); g.add(m);
+    const t = texto(`🔒 ${horas} h estudiadas`); t.position.set(cx, 1.5, cz); g.add(t);
+  } else {
+    losa(g, w, d, COLOR_ZONA[id], cx, cz, -0.02);
+    if (id === "barrio") { for (let x = x0 + 4; x < x1; x += 8) losa(g, 1.2, d, 0x4A4F55, x, cz, 0.01); for (let z = z0 + 4; z < z1; z += 8) losa(g, w, 1.2, 0x4A4F55, cx, z, 0.01); }
+    if (id === "maniobras") { for (let x = x0 + 2; x < x1; x += 4) losa(g, 0.12, d - 2, 0xF2B705, x, cz, 0.02); }
+    if (id === "aero") { losa(g, w, 18, 0x2E86C1, cx, z1 - 9, 0.0); losa(g, 3, 40, 0x4A4F55, cx, z0 + 20, 0.02); for (let z = z0 + 2; z < z0 + 40; z += 3) losa(g, 0.3, 1.4, 0xF4F4F2, cx, z, 0.03); }
+    if (id === "forestal") { losa(g, 2, d, 0x9C7A4D, x0 + 6, cz, 0.01); }
+    const t = texto(CIUDAD_NOMBRE[id] || id); t.position.set(cx, 0.6, z0 + 1.2); t.scale.set(6, 1.5, 1); g.add(t);
+  }
+  scene.add(g);
+  return g;
+}
+const CIUDAD_NOMBRE = {explanada: "Explanada (piezas repetidas)", maniobras: "🧯 Campo de maniobras", barrio: "🏬 Barrio", forestal: "🌲 Base forestal", aero: "🛩️ Aeródromo y puerto"};
 function parcela(scene, x, z, s) {
   const w = s < 0.8 ? 0.7 : s > 1.2 ? 3 : 2;
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w), new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.28}));
   m.rotation.x = -Math.PI / 2; m.position.set(x, 0.03, z);
-  const borde = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(w, w)), new THREE.LineDashedMaterial({color: 0xffffff, dashSize: 0.15, gapSize: 0.1}));
-  borde.computeLineDistances(); borde.rotation.x = -Math.PI / 2; borde.position.set(x, 0.04, z);
-  scene.add(m); scene.add(borde);
-  return [m, borde];
+  scene.add(m);
+  return m;
 }
+// Sitio por defecto de una pieza: la parcela del parque o la siguiente celda libre de su zona.
+function sitioPorDefecto(p, zona, ocupadas, abiertas) {
+  if (SITIO[p.id] && !p.key.includes("_")) return SITIO[p.id];
+  // Copias repetidas de piezas del parque: a la explanada; si se llena, a cualquier zona abierta.
+  const orden = [zona === "parque" ? "explanada" : zona, "explanada", ...abiertas].filter((z, i, a) => z !== "parque" && a.indexOf(z) === i && (z === "explanada" || abiertas.includes(z)));
+  for (const zn of orden) {
+    const [x0, x1, z0, z1] = AREAS[zn];
+    for (let z = z0 + PASO / 2 + 0.4; z < z1 - 1; z += PASO) for (let x = x0 + PASO / 2 + 0.4; x < x1 - 1; x += PASO) {
+      const k = `${Math.round(x * 10)},${Math.round(z * 10)}`;
+      if (!ocupadas.has(k)) { ocupadas.add(k); return [x, z, 0, SITIO[p.id] ? Math.min(1, SITIO[p.id][3]) : 1]; }
+    }
+  }
+  return [(Math.random() - 0.5) * 20, 14, 0, 1];
+}
+const dentro = (x, z, zonas) => [...zonas, "parque", "explanada"].some(id => { const [x0, x1, z0, z1] = AREAS[id]; return x > x0 + 0.3 && x < x1 - 0.3 && z > z0 + 0.3 && z < z1 - 0.3; });
 
 let inst = null;
-// Devuelve (y reutiliza) el visor del parque: un elemento <div> con el lienzo, que la app mete donde toque.
-export function parque(veces, nuevos = []) {
+// Visor de la ciudad (se reutiliza): opciones {piezas: [{key, id}], zonaDe: {id: zona}, pos: {key: [x, z, giro]},
+// abiertas: [zonas], horas: {zona: horas}, nuevos: [keys], onMover(key, [x, z, giro])}.
+export function parque(op) {
   if (!inst) inst = crearParque();
-  inst.actualizar(veces, nuevos);
+  inst.actualizar(op);
   return inst.el;
 }
+export function editar(on) { if (inst) inst.editar(on); }
 function crearParque() {
   const el = document.createElement("div");
   el.className = "parque3d";
@@ -202,46 +293,88 @@ function crearParque() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   el.appendChild(renderer.domElement);
   const scene = new THREE.Scene();
-  const cam = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 200);
-  cam.position.set(18, 18, 18);
-  cam.lookAt(0, 0, 0);
+  const cam = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 400);
+  cam.position.set(30, 30, 30); cam.lookAt(0, 0, 0);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x6b8f5e, 0.9));
   const sol = new THREE.DirectionalLight(0xffffff, 1.25);
-  sol.position.set(10, 18, 8); sol.castShadow = true;
+  sol.position.set(14, 26, 10); sol.castShadow = true;
   sol.shadow.mapSize.set(2048, 2048);
-  Object.assign(sol.shadow.camera, {left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 60});
+  Object.assign(sol.shadow.camera, {left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 120});
   scene.add(sol);
   suelo(scene);
   const ctr = new Orbit(cam, renderer.domElement);
-  ctr.enableDamping = true; ctr.minZoom = 0.7; ctr.maxZoom = 3.5; ctr.maxPolarAngle = 1.2; ctr.minPolarAngle = 0.5;
-  ctr.enablePan = true; ctr.screenSpacePanning = true;
-  const piezas = {}, parcelas = {}, anims = [];
-  for (const [id, [x, z, r, s]] of Object.entries(SITIO)) parcelas[id] = parcela(scene, x, z, s);
-  function poner(id, animar) {
-    if (piezas[id]) return;
-    const [x, z, r, s] = SITIO[id] || [0, 0, 0, 1];
-    const g = modelo(id);
-    g.position.set(x, 0, z); g.rotation.y = r;
-    g.scale.setScalar(animar ? 0.01 : s);
-    scene.add(g); piezas[id] = g;
-    for (const p of parcelas[id] || []) p.visible = false;
-    if (animar) anims.push({g, s, t0: performance.now()});
+  ctr.enableDamping = true; ctr.minZoom = 0.35; ctr.maxZoom = 4; ctr.maxPolarAngle = 1.2; ctr.minPolarAngle = 0.5;
+  ctr.screenSpacePanning = true;
+  const piezas = {}, parcelas = {}, anims = [], zonasG = {};
+  let op = {piezas: [], pos: {}, abiertas: ["parque"], onMover: null}, modoEditar = false;
+  for (const [id, [x, z, , s]] of Object.entries(SITIO)) parcelas[id] = parcela(scene, x, z, s);
+
+  function colocar(p, sitio, animar) {
+    const [x, z, r, s] = sitio;
+    let g = piezas[p.key];
+    if (!g) {
+      g = new THREE.Group(); g.add(modelo(p.id)); g.userData = {key: p.key, s: s || 1};
+      scene.add(g); piezas[p.key] = g;
+      if (animar) { g.scale.setScalar(0.01); anims.push({g, s: s || 1, t0: performance.now()}); } else g.scale.setScalar(s || 1);
+    }
+    g.position.set(x, 0, z); g.rotation.y = r || 0;
   }
   function tamano() {
     const w = el.clientWidth || 360, h = el.clientHeight || 320;
     renderer.setSize(w, h, false);
-    const a = w / h, v = 12.5;
+    const a = w / h, v = 13;
     Object.assign(cam, {left: -v * a, right: v * a, top: v, bottom: -v});
     cam.updateProjectionMatrix();
   }
   new ResizeObserver(tamano).observe(el);
+
+  // Mover piezas: en modo editar, arrastra una pieza por el suelo; doble toque la gira 90°.
+  const ray = new THREE.Raycaster(), plano = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), v2 = new THREE.Vector2(), punto = new THREE.Vector3();
+  let arrastre = null, ultimoToque = {key: null, t: 0};
+  const rayo = e => { const r = renderer.domElement.getBoundingClientRect(); v2.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(v2, cam); };
+  const piezaDe = o => { while (o && !(o.userData && o.userData.key)) o = o.parent; return o; };
+  renderer.domElement.addEventListener("pointerdown", e => {
+    if (!modoEditar) return;
+    rayo(e);
+    const hit = ray.intersectObjects(Object.values(piezas), true)[0];
+    if (!hit) return;
+    const g = piezaDe(hit.object);
+    const t = performance.now();
+    if (ultimoToque.key === g.userData.key && t - ultimoToque.t < 350) {
+      g.rotation.y += Math.PI / 2;
+      op.onMover && op.onMover(g.userData.key, [g.position.x, g.position.z, g.rotation.y % (Math.PI * 2)]);
+      ultimoToque = {key: null, t: 0}; return;
+    }
+    ultimoToque = {key: g.userData.key, t};
+    arrastre = {g, x: g.position.x, z: g.position.z};
+    ctr.enabled = false; g.position.y = 0.35;
+    renderer.domElement.setPointerCapture(e.pointerId);
+  });
+  renderer.domElement.addEventListener("pointermove", e => {
+    if (!arrastre) return;
+    rayo(e);
+    if (ray.ray.intersectPlane(plano, punto)) {
+      const x = Math.round(punto.x * 2) / 2, z = Math.round(punto.z * 2) / 2;
+      arrastre.g.position.x = x; arrastre.g.position.z = z;
+    }
+  });
+  const soltar = () => {
+    if (!arrastre) return;
+    const g = arrastre.g; g.position.y = 0; ctr.enabled = true;
+    if (!dentro(g.position.x, g.position.z, op.abiertas)) { g.position.x = arrastre.x; g.position.z = arrastre.z; }
+    else if (g.position.x !== arrastre.x || g.position.z !== arrastre.z) op.onMover && op.onMover(g.userData.key, [g.position.x, g.position.z, g.rotation.y % (Math.PI * 2)]);
+    arrastre = null;
+  };
+  renderer.domElement.addEventListener("pointerup", soltar);
+  renderer.domElement.addEventListener("pointercancel", soltar);
+
   (function bucle() {
     requestAnimationFrame(bucle);
     if (!el.isConnected) return;
     const t = performance.now();
     for (let i = anims.length - 1; i >= 0; i--) {
       const a = anims[i], k = Math.min(1, (t - a.t0) / 700);
-      const e = k < 1 ? 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2) : 1; // rebote
+      const e = k < 1 ? 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2) : 1;
       a.g.scale.setScalar(Math.max(0.01, a.s * e));
       if (k >= 1) anims.splice(i, 1);
     }
@@ -250,8 +383,27 @@ function crearParque() {
   })();
   return {
     el,
-    actualizar(veces, nuevos) {
-      for (const id of Object.keys(SITIO)) if (veces[id]) poner(id, nuevos.includes(id));
+    editar(on) { modoEditar = on; el.classList.toggle("editando", on); },
+    actualizar(o) {
+      op = {...op, ...o};
+      // Zonas: suelo abierto o bloqueado con el aviso de las horas.
+      for (const id of Object.keys(AREAS)) {
+        if (id === "parque") continue;
+        const ab = id === "explanada" || op.abiertas.includes(id);
+        if (!zonasG[id] || zonasG[id].userData.ab !== ab) {
+          if (zonasG[id]) scene.remove(zonasG[id]);
+          zonasG[id] = zonaSuelo(scene, id, ab, (op.horas || {})[id] || 0); zonasG[id].userData.ab = ab;
+        }
+      }
+      const ocupadas = new Set();
+      for (const v of Object.values(op.pos)) ocupadas.add(`${Math.round(v[0] * 10)},${Math.round(v[1] * 10)}`);
+      for (const p of op.piezas) {
+        const zona = (op.zonaDe || {})[p.id] || "parque";
+        const esc = SITIO[p.id] ? (p.key.includes("_") ? Math.min(1, SITIO[p.id][3]) : SITIO[p.id][3]) : 1;
+        const sitio = op.pos[p.key] ? [...op.pos[p.key], esc] : sitioPorDefecto(p, zona, ocupadas, op.abiertas);
+        colocar(p, sitio, (op.nuevos || []).includes(p.key));
+        if (parcelas[p.id] && !p.key.includes("_")) parcelas[p.id].visible = false;
+      }
       tamano();
     },
   };

@@ -567,7 +567,56 @@ export const TIENDA = [
   // Trofeos
   {id: "medalla", nombre: "Medalla al mérito", icono: "🎖️", precio: 10000, tipo: "trofeos"},
   {id: "placa", nombre: "Placa de plaza conseguida", icono: "🏆", precio: 15000, tipo: "trofeos"},
+  // Campo de maniobras (se abre a las 40 h)
+  {id: "cocheexc", nombre: "Coche para excarcelación", icono: "🚗", precio: 600, tipo: "maniobras", zona: "maniobras"},
+  {id: "contenedor", nombre: "Contenedor de fuego", icono: "🔥", precio: 900, tipo: "maniobras", zona: "maniobras"},
+  {id: "pozo", nombre: "Pozo de rescate", icono: "🕳️", precio: 1200, tipo: "maniobras", zona: "maniobras"},
+  {id: "glp", nombre: "Tanque de GLP de prácticas", icono: "🛢️", precio: 1800, tipo: "maniobras", zona: "maniobras"},
+  {id: "colapso", nombre: "Estructura colapsada", icono: "🏚️", precio: 2500, tipo: "maniobras", zona: "maniobras"},
+  {id: "tunel", nombre: "Simulador de túnel", icono: "🚇", precio: 3500, tipo: "maniobras", zona: "maniobras"},
+  // Barrio (120 h)
+  {id: "hidrante", nombre: "Hidrante", icono: "🚰", precio: 150, tipo: "barrio", zona: "barrio", repetible: true},
+  {id: "farolacalle", nombre: "Farola", icono: "🏮", precio: 150, tipo: "barrio", zona: "barrio", repetible: true},
+  {id: "semaforo", nombre: "Semáforo", icono: "🚦", precio: 250, tipo: "barrio", zona: "barrio", repetible: true},
+  {id: "bloque", nombre: "Bloque de viviendas", icono: "🏬", precio: 1200, tipo: "barrio", zona: "barrio", repetible: true},
+  {id: "gasolinera", nombre: "Gasolinera", icono: "⛽", precio: 2500, tipo: "barrio", zona: "barrio"},
+  {id: "colegio", nombre: "Colegio", icono: "🏫", precio: 3000, tipo: "barrio", zona: "barrio"},
+  {id: "hospital", nombre: "Hospital", icono: "🏥", precio: 5000, tipo: "barrio", zona: "barrio"},
+  // Base forestal (250 h)
+  {id: "pino", nombre: "Pino", icono: "🌲", precio: 100, tipo: "forestal", zona: "forestal", repetible: true},
+  {id: "torrevig", nombre: "Torre de vigilancia", icono: "🗼", precio: 2000, tipo: "forestal", zona: "forestal"},
+  {id: "deposito", nombre: "Depósito de agua", icono: "💧", precio: 2500, tipo: "forestal", zona: "forestal"},
+  {id: "autoforestal", nombre: "Autobomba forestal", icono: "🚒", precio: 4500, tipo: "forestal", zona: "forestal"},
+  {id: "helicoptero", nombre: "Helicóptero", icono: "🚁", precio: 7000, tipo: "forestal", zona: "forestal"},
+  // Aeródromo y puerto (400 h)
+  {id: "lancha", nombre: "Embarcación de rescate", icono: "🚤", precio: 6000, tipo: "aero", zona: "aero"},
+  {id: "hangar", nombre: "Hangar", icono: "🛖", precio: 9000, tipo: "aero", zona: "aero"},
+  {id: "anfibio", nombre: "Avión anfibio", icono: "🛩️", precio: 12000, tipo: "aero", zona: "aero"},
 ];
+for (const x of TIENDA) if (!x.zona) x.zona = "parque";
+// Zonas de la ciudad: se abren según las horas totales estudiadas.
+export const CIUDAD = [
+  {id: "parque", nombre: "Parque de bomberos", icono: "🚒", horas: 0},
+  {id: "maniobras", nombre: "Campo de maniobras", icono: "🧯", horas: 40},
+  {id: "barrio", nombre: "Barrio", icono: "🏬", horas: 120},
+  {id: "forestal", nombre: "Base forestal", icono: "🌲", horas: 250},
+  {id: "aero", nombre: "Aeródromo y puerto", icono: "🛩️", horas: 400},
+];
+export const zonaAbierta = (z, minutos) => minutos >= (CIUDAD.find(c => c.id === z) || {horas: 0}).horas * 60;
+// Piezas colocadas en la ciudad: una por cada vez que se consigue (todas se ven en el mapa).
+export function piezasCiudad(st, hoy) {
+  const out = [], cuenta = {};
+  const dias = Object.keys(st.dias).filter(f => f <= hoy).sort();
+  for (const f of dias) for (const x of (st.dias[f] && st.dias[f].ses) || []) {
+    if (!x.ok || !x.obj) continue;
+    const it = TIENDA.find(t => t.id === x.obj);
+    if (!it) continue;
+    cuenta[x.obj] = (cuenta[x.obj] || 0) + 1;
+    // La primera copia de cada pieza va a su sitio; cada repetición es otra copia más en el mapa.
+    out.push({key: cuenta[x.obj] === 1 && !it.repetible ? x.obj : `${x.obj}_${cuenta[x.obj]}`, id: x.obj, n: cuenta[x.obj]});
+  }
+  return out;
+}
 export const ZONAS = [
   {tipo: "vehiculos", nombre: "Cocheras", icono: "🚒"},
   {tipo: "instalaciones", nombre: "Instalaciones", icono: "🏢"},

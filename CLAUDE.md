@@ -46,7 +46,9 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   `parque: {compras: {id: fecha}, sel}`.
 - Parque 3D: `js/parque3d.js` (three.js 0.160 por import map desde jsDelivr): modelos de baja poligonización propios
   para cada pieza de `TIENDA` (`MODELOS`), plano isométrico con una parcela por pieza (`SITIO`), miniaturas para la tienda
-  y visor del temporizador. Sin WebGL se ven iconos.
+  y visor del temporizador. Sin WebGL se ven iconos. Ciudad: zonas `CIUDAD` (parque, campo de maniobras 40 h, barrio 120 h,
+  base forestal 250 h, aeródromo 400 h) con `AREAS` en parque3d.js; `piezasCiudad` da una copia por cada vez conseguida
+  (las repetidas van a la explanada); `parque.pos[key] = [x, z, giro]` guarda lo movido a mano («✋ Mover»).
 - Los PDF no se suben al repositorio.
 - Probar: `python3 -m http.server` y abrir `/?local&hoy=AAAA-MM-DD`. `node tests/e2e.mjs` (Playwright).
 - Si cambias archivos que se precargan, sube la versión de `CACHE` en `sw.js`.
