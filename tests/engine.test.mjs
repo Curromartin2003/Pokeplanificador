@@ -259,3 +259,9 @@ test("semilla 4: devuelve la sesión perdida sin tocar las demás y sin duplicar
   const st3 = E.completar({...st2, semilla: 3});
   assert.equal(E.semilla(st3, "2026-11-04").dias["2026-11-04"], undefined);
 });
+
+test("semana con 3 clases de Luis", () => {
+  const st = base({"2026-11-02": {libre: 6, luis: [0, 2, 4]}});
+  const d = E.dias(st, HOY, "2026-11-02", "2026-11-08");
+  assert.deepEqual(d.map(x => x.tipo), ["luis", "estudio", "luis", "estudio", "luis", "estudio", "libre"]);
+});

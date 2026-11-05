@@ -574,12 +574,12 @@ function pintarModal() {
   if (!m) { box.hidden = true; return; }
   box.hidden = false;
   const fin = E.sumaDias(m.mon, 6);
-  const err = m.luis.length > 2 ? `<p class="err">Marca como mucho 2 días de clase.</p>` : "";
+  const err = m.luis.length ? `<p class="nota">${m.luis.length} ${m.luis.length === 1 ? "día" : "días"} de clase esta semana.</p>` : "";
   box.querySelector(".hoja").innerHTML = `<h2>Semana del ${E.fechaLarga(m.mon, false)} al ${E.fechaLarga(fin, false)}</h2>
     <h3>¿Qué día libras?</h3><div class="segm">${[5, 6].map(i => `<button class="${m.libre === i ? "on" : ""}" data-libre="${i}">${E.DIAS[i]}</button>`).join("")}</div>
-    <h3>¿Qué días son las clases de Luis?</h3><p class="nota">Esos días solo haces la clase y el callejero.</p>
+    <h3>¿Qué días son las clases de Luis?</h3><p class="nota">Marca todos los que haya esta semana (los que sean). Esos días solo haces la clase y el callejero.</p>
     <div class="chips">${E.DIAS.map((n, i) => `<button class="${m.luis.includes(i) ? "on" : ""}" data-luis="${i}" ${i === m.libre ? "disabled" : ""}>${n}</button>`).join("")}</div>
-    ${err}<div class="acciones"><button class="btn sec" data-m="cancelar">Ahora no</button><button class="btn" data-m="ok" ${m.luis.length > 2 ? "disabled" : ""}>Guardar semana</button></div>`;
+    ${err}<div class="acciones"><button class="btn sec" data-m="cancelar">Ahora no</button><button class="btn" data-m="ok">Guardar semana</button></div>`;
   box.querySelectorAll("[data-libre]").forEach(b => b.onclick = () => { m.libre = +b.dataset.libre; m.luis = m.luis.filter(x => x !== m.libre); pintarModal(); });
   box.querySelectorAll("[data-luis]").forEach(b => b.onclick = () => {
     const i = +b.dataset.luis;
