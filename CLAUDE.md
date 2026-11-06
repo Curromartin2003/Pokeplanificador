@@ -35,7 +35,9 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   Las novedades sin ver salen también en Hoy.
   `data/revisados.json` guarda los anuncios ya mirados. Radar BOP de Sevilla (`sevilla`): todo anuncio de bomberos de
   turno libre de la provincia (bases, listas, tribunal, examen) con enlace directo; si nunca se ha podido leer
-  (`sevilla_ok` falso) intenta los últimos 60 días.
+  (`sevilla_ok` falso) intenta los últimos 60 días. El título de cada anuncio se elige por parecido con su dirección
+  (texto de antes o de después del enlace); fuera subvenciones, obras, ordenanzas. Avisos al móvil con ntfy si el workflow
+  define `NTFY_TEMA` (aún sin activar: falta que el usuario lo confirme).
 - Callejero: `calle.sel` = distritos que se están estudiando (varios a la vez, se quedan); al marcar el callejero se
   guarda en `dias[f].cal`.
 - Temporizador (app.js, estado en localStorage `pp.foco`): Parar = descanso, Seguir, Finalizar. Al finalizar guarda la

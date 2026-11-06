@@ -9,7 +9,7 @@
 
 Solo usa la biblioteca estándar. Uso: python3 scripts/convocatorias.py [--dias N]
 """
-import hashlib, html, json, re, sys, urllib.request
+import hashlib, html, json, os, re, sys, urllib.request
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
@@ -223,28 +223,40 @@ def bop_sevilla_dia(f):
     except Exception:
         _BOPSE[f] = out
         return out
-    # Cada anuncio puede tener varios enlaces (título, «Ir al detalle»...): se agrupan por dirección y se toma como
-    # título el texto más largo del bloque (o el de la dirección si no hay) y como organismo el primer texto corto.
+    # Cada anuncio tiene uno o varios enlaces; su título se busca en el texto de antes y de después del enlace y se
+    # queda el que más se parece a la dirección (que se forma con el propio título). Así no se mezclan anuncios.
+    import unicodedata
+    norm = lambda t: re.sub(r"[^a-z0-9 ]", " ", unicodedata.normalize("NFD", t).encode("ascii", "ignore").decode().lower())
     enlaces = list(re.finditer(r'<a[^>]+href="([^"]*/buscador-anuncios/anuncio/[^"]*)"[^>]*>(.*?)</a>', pag, re.I | re.S))
-    prev, bloques = 0, {}
-    for m in enlaces:
+    ruido = re.compile(r"^(ir al detalle|ver|ver m[aá]s|descargar|pdf|anuncio|BOP-SE-[\d-]+|\d[\d/ .-]*|p[aá]g\S*.*)$", re.I)
+    def textos(a, b):
+        trozo = re.sub(r"<script.*?</script>|<style.*?</style>", " ", pag[a:b], flags=re.S)
+        ts = [html.unescape(re.sub(r"\s+", " ", x)).strip() for x in re.split(r"<[^>]+>", trozo)]
+        return [x for x in ts if x and not ruido.match(x) and re.search(r"[A-Za-zÁÉÍÓÚáéíóúñÑ]{3}", x)]
+    vistos = set()
+    for i, m in enumerate(enlaces):
         url = urljoin(u, html.unescape(m.group(1)))
-        b = bloques.setdefault(url, {"ini": prev, "fin": m.end(), "anchor": []})
-        b["fin"] = m.end()
-        b["anchor"].append(html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", m.group(2)))).strip())
-        prev = m.end()
-    ruido = re.compile(r"^(ir al detalle|ver|descargar|pdf|anuncio|BOP-SE-[\d-]+|\d[\d/ .-]*|p[aá]g\S*.*)$", re.I)
-    for url, b in bloques.items():
-        trozo = re.sub(r"<script.*?</script>|<style.*?</style>", " ", pag[b["ini"]:b["fin"]], flags=re.S)
-        textos = [html.unescape(re.sub(r"\s+", " ", x)).strip() for x in re.split(r"<[^>]+>", trozo)]
-        textos = [x for x in textos if x and not ruido.match(x) and re.search(r"[A-Za-zÁÉÍÓÚáéíóúñÑ]{3}", x)]
-        largos = sorted(textos, key=len, reverse=True)
-        titulo = largos[0] if largos and len(largos[0]) > 25 else ""
-        if not titulo:
-            slug = url.rstrip("/").rsplit("/", 1)[-1].replace("-", " ")
-            titulo = slug[:1].upper() + slug[1:]
-        cortos = [x for x in textos if x != titulo and len(x) < 90]
-        out.append({"url": url, "titulo": titulo, "org": cortos[0] if cortos else ""})
+        if url in vistos:
+            continue
+        vistos.add(url)
+        slug = url.rstrip("/").rsplit("/", 1)[-1]
+        pal = {w for w in norm(slug.replace("-", " ")).split() if len(w) > 3}
+        ini = enlaces[i - 1].end() if i else max(0, m.start() - 3000)
+        fin = enlaces[i + 1].start() if i + 1 < len(enlaces) else min(len(pag), m.end() + 3000)
+        mejor, puntos, seg = "", 0, []
+        for parte in (textos(ini, m.start()), [html.unescape(re.sub(r"<[^>]+>", " ", m.group(2))).strip()], textos(m.end(), fin)):
+            for t in parte:
+                if len(t) < 20:
+                    continue
+                pts = len(pal & set(norm(t).split()))
+                if pts > puntos:
+                    mejor, puntos, seg = t, pts, parte
+        if puntos < 2:
+            s2 = slug.replace("-", " ")
+            mejor, seg = s2[:1].upper() + s2[1:], textos(ini, m.start())
+        # Organismo: el último texto corto que aparece antes del enlace (encabezado del bloque).
+        antes = [x for x in textos(ini, m.start()) if x != mejor and len(x) < 90]
+        out.append({"url": url, "titulo": mejor, "org": antes[-1] if antes else ""})
     _BOPSE[f] = out
     return out
 
@@ -270,6 +282,10 @@ def radar_sevilla(fechas, previos):
             if a["url"] in vistos or not re.search(r"bomber|extinci[oó]n de incendios|SPEIS", t, re.I):
                 continue
             if re.search(r"promoci[oó]n interna", t, re.I) and not re.search(r"turno libre", t, re.I):
+                continue
+            if re.search(r"subvenci|ordenanza|licitaci|contrataci|presupuesto|suministro|obras? de|construcci[oó]n|tasa|precio p[uú]blico", t, re.I):
+                continue
+            if not re.search(r"plaza|convocatoria|bases|lista|admitid|tribunal|ejercicio|examen|calificaci|plantilla|puestos de trabajo|oferta de empleo", t, re.I):
                 continue
             tipo = ("Lista" if re.search(r"\blista|admitid|excluid", t, re.I)
                     else "Plantilla" if re.search(r"modificaci[oó]n de la plantilla|plantilla municipal|relaci[oó]n de puestos|\bRPT\b|oferta de empleo", t, re.I)
@@ -302,8 +318,11 @@ def main():
     hoy = date.today()
     datos = json.loads(SALIDA.read_text()) if SALIDA.exists() else {}
     espana = {c["id"]: c for c in datos.get("espana", [])}
+    espana_antes = set(espana)
+    primera_vez = not datos
     revisados = json.loads(REVISADOS.read_text()) if REVISADOS.exists() else datos.get("revisados", {})
     mias = json.loads(MIAS.read_text())
+    hechos_antes = {n.get("url") for c in mias for n in c.get("novedades", [])}
     # BOJA (Andalucía): bases de convocatorias de bombero en cuanto se publican, antes de que se abra el plazo en el BOE.
     boja_desde = datos.get("boja_ultimo", 0) + 1 or 1
     if "--boja-desde" in sys.argv:
@@ -409,7 +428,10 @@ def main():
     # Radar del BOP de Sevilla (toda la provincia). La primera vez mira los últimos 60 días.
     sevilla = datos.get("sevilla", [])
     # Mientras no se haya podido leer nunca, se intentan los últimos 60 días.
-    dias_se = fechas if datos.get("sevilla_ok") and datos.get("sevilla_v", 0) >= 2 else [hoy - timedelta(days=i) for i in range(60)]
+    rehaciendo = datos.get("sevilla_v", 0) < 3
+    if rehaciendo:
+        sevilla = []  # se rehace con la lectura corregida
+    dias_se = fechas if datos.get("sevilla_ok") and datos.get("sevilla_v", 0) >= 3 else [hoy - timedelta(days=i) for i in range(60)]
     if "--sevilla-dias" in sys.argv:
         dias_se = [hoy - timedelta(days=i) for i in range(int(sys.argv[sys.argv.index("--sevilla-dias") + 1]))]
     with ThreadPoolExecutor(6) as ex:
@@ -431,12 +453,35 @@ def main():
     revisados = {k: v for k, v in revisados.items() if v >= limite}
     hace_un_ano = (hoy - timedelta(days=365)).isoformat()
     lista = sorted((c for c in espana.values() if (c["fecha"] or "") >= hace_un_ano), key=lambda c: c["fecha"] or "", reverse=True)
+    # Avisos al móvil (app ntfy): todo lo nuevo de esta revisión. El tema va en la variable NTFY_TEMA del workflow.
+    tema = os.environ.get("NTFY_TEMA")
+    avisos = []
+    for c in mias:
+        for n in c.get("novedades", []):
+            if n.get("url") not in hechos_antes:
+                avisos.append((f"📢 {c['nombre'].split(' · ')[0]}", n["texto"], n.get("url")))
+    for c in lista:
+        if c["id"] not in espana_antes:
+            estado = "plazo abierto hasta el " + c["fin"] if c.get("fin") and c["fin"] >= hoy.isoformat() else "bases publicadas" if c.get("fase") == "bases" else "plazo cerrado"
+            avisos.append((f"🚒 {c['organismo']}", f"{c.get('plazas') or ''} plazas de bombero/a · {c.get('sistema')} · {estado}", c.get("url")))
+    for x in ([] if rehaciendo else nuevos_se):
+        avisos.append((f"📰 BOP de Sevilla · {x.get('org') or 'Sevilla'}", f"{x['tipo']}: {x['titulo']}", x["url"]))
+    if tema and avisos and not primera_vez:
+        for titulo, texto, url in avisos[:15]:
+            try:
+                cuerpo = json.dumps({"topic": tema, "title": titulo[:120], "message": texto[:900], "tags": ["fire_engine"],
+                                     "click": url or "https://pokeplanificador.pages.dev"}).encode()
+                req = urllib.request.Request("https://ntfy.sh/", data=cuerpo, method="POST", headers={"Content-Type": "application/json"})
+                urllib.request.urlopen(req, timeout=20)
+            except Exception as e:
+                print("aviso no enviado:", e)
+    print(f"{len(avisos)} novedades para avisar")
     MIAS.write_text(json.dumps(mias, ensure_ascii=False, indent=1) + "\n")
     SALIDA.write_text(json.dumps({
         "actualizado": datetime.now(timezone.utc).isoformat(timespec="minutes"),
         "fuente": "BOE, sección II.B (datos abiertos)",
         "mias": mias, "espana": lista, "boja_ultimo": boja_ultimo, "sevilla": sevilla,
-        "sevilla_ok": bool(datos.get("sevilla_ok") or leidos_se), "sevilla_v": 2 if leidos_se else datos.get("sevilla_v", 0),
+        "sevilla_ok": bool(datos.get("sevilla_ok") or leidos_se), "sevilla_v": 3 if leidos_se else datos.get("sevilla_v", 0),
     }, ensure_ascii=False, indent=1) + "\n")
     REVISADOS.write_text(json.dumps(revisados, separators=(",", ":")) + "\n")
 
