@@ -1,7 +1,8 @@
-// Service worker: la app abre sin conexión. Lo propio, primero red (para tener siempre la última versión) y si no hay
-// conexión, caché. Las librerías de Firebase (gstatic) no cambian de versión: primero caché.
+// Service worker: la app abre sin conexión. Lo propio, primero red (para tener siempre la última versión); si no hay
+// conexión o la red no contesta en 2,5 s (los bloqueos de LaLiga a Cloudflare en días de partido dejan las peticiones
+// colgadas y la app se quedaba en blanco), caché, y la respuesta de la red, si llega, se guarda para la próxima vez. Las librerías de Firebase (gstatic) no cambian de versión: primero caché.
 // Los datos no pasan por aquí: los guarda y sincroniza Firestore con su propia caché.
-const CACHE = "pokeplanificador-v36";
+const CACHE = "pokeplanificador-v37";
 const CORE = ["./", "index.html", "css/app.css", "js/app.js", "js/engine.js", "js/store.js", "js/temario.js", "js/docs_esp.js", "js/parque3d.js",
   "firebase-config.js", "manifest.webmanifest", "icons/icon-192.png"];
 
@@ -19,10 +20,21 @@ self.addEventListener("fetch", e => {
   if (url.host === "www.gstatic.com" || url.host === "fonts.gstatic.com" || url.host === "fonts.googleapis.com" || url.host === "cdn.jsdelivr.net") {
     e.respondWith(caches.match(req).then(r => r || fetch(req).then(res => guarda(req, res))));
   } else if (url.origin === location.origin) {
-    e.respondWith(fetch(req).then(res => guarda(req, res)).catch(() => caches.match(req, {ignoreSearch: true})));
+    e.respondWith(redOCache(req));
   }
 });
 function guarda(req, res) {
   if (res.ok || res.type === "opaque") { const copia = res.clone(); caches.open(CACHE).then(c => c.put(req, copia)); }
   return res;
+}
+function redOCache(req) {
+  const red = fetch(req).then(res => guarda(req, res));
+  const cache = () => caches.match(req, {ignoreSearch: true});
+  return new Promise(ok => {
+    let hecho = false;
+    const fin = r => { if (!hecho && r) { hecho = true; ok(r); } };
+    const t = setTimeout(() => cache().then(fin), 2500);
+    red.then(r => { clearTimeout(t); fin(r); })
+      .catch(() => { clearTimeout(t); cache().then(r => r ? fin(r) : red.catch(() => fin(Response.error()))); });
+  });
 }
