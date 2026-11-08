@@ -1,0 +1,40 @@
+# Publica la web en Firebase Hosting (https://pokeplanificador.web.app), del mismo proyecto de Firebase que la cuenta.
+# Firebase es de Google y no le afectan los bloqueos de LaLiga a Cloudflare en días de partido (Cloudflare Pages sigue
+# publicando también, en pokeplanificador.pages.dev).
+# Se ejecuta en cada push a main y después de cada revisión de convocatorias (sus commits no lanzan otros workflows).
+# Necesita el secreto FIREBASE_SERVICE_ACCOUNT: la clave JSON de una cuenta de servicio del proyecto pokecallejero.
+name: Firebase Hosting
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: [Convocatorias]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: hosting
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Credenciales
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then echo "::error::Falta el secreto FIREBASE_SERVICE_ACCOUNT en Settings → Secrets and variables → Actions"; exit 1; fi
+          printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Crear el sitio si aún no existe
+        run: npx -y firebase-tools@13 hosting:sites:create pokeplanificador --project pokecallejero --non-interactive || true
+      - name: Publicar
+        run: npx -y firebase-tools@13 deploy --only hosting --project pokecallejero --non-interactive
+      - name: Borrar credenciales
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
