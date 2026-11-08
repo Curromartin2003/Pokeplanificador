@@ -103,7 +103,7 @@ function errorAcceso(e) {
   return {"auth/invalid-credential": "Correo o contraseña incorrectos.", "auth/wrong-password": "La contraseña no es correcta.",
     "auth/user-not-found": "No hay ninguna cuenta con ese correo. Créala primero en Pokecallejero.",
     "auth/invalid-email": "Escribe un correo válido.", "auth/too-many-requests": "Demasiados intentos. Espera unos minutos.",
-    "auth/network-request-failed": "No hay conexión."}[c] || "No se pudo entrar. Inténtalo de nuevo.";
+    "auth/network-request-failed": "No hay conexión."}[c] || `No se pudo entrar (${c || (e && e.message) || "error desconocido"}). Inténtalo de nuevo.`;
 }
 
 /* ---------- pintado general ---------- */
@@ -217,10 +217,14 @@ function avisoConv() {
   if (!conv) return "";
   const v = st.convVisto || E.sumaDias(HOY(), -7);
   const nov = [...conv.mias.flatMap(c => (c.novedades || []).filter(n => n.fecha > v).map(n => ({...n, conv: c.nombre.split(" · ")[0]}))),
-    ...(conv.sevilla || []).filter(x => x.fecha > v).map(x => ({fecha: x.fecha, url: x.url, texto: x.titulo, conv: `BOP de Sevilla · ${x.org || "Sevilla"} · ${x.tipo}`}))]
+    ...(conv.sevilla || []).filter(x => x.fecha > v).map(x => ({fecha: x.fecha, url: x.url, texto: x.titulo, conv: `BOP de Sevilla · ${x.org || "Sevilla"} · ${x.tipo}`})),
+    // Todas las de bombero/a de turno libre de España que han salido desde la última vez.
+    ...conv.espana.filter(c => ((c.fin && c.fin >= HOY()) || c.fase === "bases") && (c.fecha || "") > v).map(c => ({fecha: c.fecha, url: c.url,
+      texto: `${c.plazas ? c.plazas + " plaza" + (c.plazas > 1 ? "s" : "") + " · " : ""}${c.organismo || c.titulo}${c.fin ? ` · plazo hasta ${E.fechaLarga(c.fin, false)}` : " · bases publicadas"}`,
+      conv: `Nueva convocatoria · ${c.provincia || "España"}`}))]
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
   if (!nov.length) return "";
-  return `<div class="avisoconv"><b>📢 Novedades en tus convocatorias</b><ul>${nov.slice(0, 4).map(n =>
+  return `<div class="avisoconv"><b>📢 Novedades de bombero/a</b><ul>${nov.slice(0, 6).map(n =>
     `<li><small>${esc(n.conv)} · ${E.fechaLarga(n.fecha, false)}</small>${n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.texto)}</a>` : esc(n.texto)}</li>`).join("")}</ul>
     <button class="btn peque" data-a="verConv">Ver todo</button></div>`;
 }
