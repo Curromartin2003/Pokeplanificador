@@ -265,3 +265,26 @@ test("semana con 3 clases de Luis", () => {
   const d = E.dias(st, HOY, "2026-11-02", "2026-11-08");
   assert.deepEqual(d.map(x => x.tipo), ["luis", "estudio", "luis", "estudio", "luis", "estudio", "libre"]);
 });
+
+test("objetivos: cambiar, quitar y añadir sin tocar los días pasados", () => {
+  let st = base(undefined, {dias: {"2026-11-02": {c: todos()}}});
+  const ayer = E.dia(st, HOY, "2026-11-02");
+  assert.equal(E.puntosDia(ayer, st.dias["2026-11-02"], st), 1);
+  st = E.completar({...st, ...E.editarObjetivo(st, 1, "Creatina y vitaminas", "💊")});
+  assert.equal(E.listaObjetivos(st)[1].t, "Creatina y vitaminas");
+  st = E.completar({...st, ...E.quitarObjetivo(st, 6, HOY)});
+  assert.deepEqual(E.quitarObjetivo(st, E.I_ESTUDIO, HOY), {});
+  st = E.completar({...st, ...E.anadirObjetivo(st, "Leer 10 páginas", "📖", HOY)});
+  const l = E.listaObjetivos(st);
+  assert.equal(l.length, 9); assert.equal(l[8].desde, HOY); assert.equal(l[6].hasta, HOY);
+  // Ayer siguen contando los 8 de entonces; hoy cuentan 8 (7 de antes + el nuevo).
+  assert.deepEqual(E.objetivosDelDia(ayer, st), [0, 1, 2, 3, 4, 5, 6, 7]);
+  const d = E.dia(st, HOY, HOY);
+  assert.deepEqual(E.objetivosDelDia(d, st), [0, 1, 2, 3, 4, 5, 7, 8]);
+  assert.equal(E.puntosDia(ayer, st.dias["2026-11-02"], st), 1);
+  const c = l.map(() => true); c[6] = false;
+  assert.equal(E.puntosDia(d, {c}, st), 1);
+  c[8] = false;
+  assert.equal(E.puntosDia(d, {c}, st), 0);
+  assert.equal(E.marcar(st, HOY, HOY, 8, true).dias[HOY].c.length, 9);
+});

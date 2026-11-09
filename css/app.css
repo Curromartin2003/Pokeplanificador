@@ -64,7 +64,7 @@ main { max-width: 640px; margin: 0 auto; padding: 14px 16px 24px; }
 .btn.grande { width: 100%; padding: 14px; font-size: 17px; margin-top: 8px; }
 .enlace { border: 0; background: none; color: var(--acc); font: inherit; font-size: 14px; padding: 6px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .enlace.peque { font-size: 13px; padding: 2px 0; }
-input[type=date], input[type=url], input[type=email], input[type=password] {
+input[type=text], input[type=date], input[type=url], input[type=email], input[type=password] {
   width: 100%; font: inherit; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink);
 }
 .campo { display: block; margin-bottom: 12px; } .campo span { display: block; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
@@ -444,3 +444,13 @@ body.p3d-completa { overflow: hidden; }
 
 .foco-pregunta { background: rgba(255,255,255,.14); border-radius: 16px; padding: 14px; margin: 10px 0 16px; }
 .foco-pregunta .foco-btns { margin-top: 10px; flex-wrap: wrap; }
+
+/* Objetivos editables */
+.obj .lapiz { flex: none; width: 32px; height: 32px; border-radius: 50%; border: none; background: transparent; color: var(--muted); font-size: 16px; cursor: pointer; opacity: .7; }
+.obj .lapiz:hover, .obj .lapiz:focus-visible { background: var(--accbg); color: var(--acc); opacity: 1; }
+.obj.nuevo { background: transparent; box-shadow: none; border: 1px dashed var(--line); justify-content: center; padding: 10px; }
+.obj.nuevo .enlace { font-weight: 600; }
+.iconos-obj { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; margin-top: 6px; }
+.iconos-obj button { height: 40px; border-radius: 10px; border: 2px solid var(--line); background: var(--bg); font-size: 20px; cursor: pointer; }
+.iconos-obj button.on { border-color: var(--acc); background: var(--accbg); }
+.btn.peligro { background: color-mix(in srgb, #d33 14%, var(--card)); color: #c62828; }

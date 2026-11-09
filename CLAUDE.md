@@ -10,7 +10,10 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   `match /data/users/{uid}/{documento}`). Se escribe con `setDoc(..., {merge: true})` y parches parciales.
   Forma: `{inicio, ritmo, examen, semanas: {lunesISO: {libre: 5|6, luis: [dow]}}, dias: {fecha: {c: [8 bool], h?: minutos,
   s: {t, m, x, items: [[idTrozo, fracción]]} | null}}, manual: {idTrozo: ajuste}, materiales: {"esp16": [{id, doc, wpm, pal, t}]},
-  titulos, callejeroUrl, base, cambios: [...], leidos, etaVista, semilla}`. Días: lunes = 0.
+  titulos, callejeroUrl, base, cambios: [...], leidos, etaVista, semilla, objetivos}`. Días: lunes = 0.
+- Objetivos editables (✎ en cada uno en Hoy, «➕ Añadir objetivo»): `objetivos: [{t, ic, desde?, hasta?}]`, la posición es la
+  de `dias[f].c` para siempre; quitar = `hasta` (deja de contar ese día), añadir = `desde`; estudio (3) y callejero (4) no se
+  quitan. `listaObjetivos`, `objetivosDelDia(d, st)`, `puntosDia(d, rec, st)`.
 - Modelo: cada tema se divide en trozos con id estable (hash de tema + vuelta + clave de la parte). Lo hecho es una
   fracción por trozo: ajustes a mano (`manual`, «Empezar aquí», «Marcar como visto») + lo que guarda cada día marcado
   (`s.items`). El plan no se guarda: se recalcula recorriendo los días desde `inicio`; primero los temas empezados.

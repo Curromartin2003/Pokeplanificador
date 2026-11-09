@@ -14,6 +14,36 @@ export const OBJETIVOS = [
   "Móvil fuera a la 1:00 y a dormir",
 ];
 export const I_ESTUDIO = 3;
+export const I_CALLE = 4;
+
+/* ---------- objetivos (se pueden cambiar, quitar y añadir) ---------- */
+// st.objetivos = [{t, ic, desde?, hasta?}]: cada posición es la misma para siempre (dias[f].c[i]). Quitar uno solo lo
+// quita desde ese día (hasta = día) y uno nuevo cuenta desde el día en que se añade (desde): los días pasados se
+// puntúan como estaban. El estudio y el callejero forman parte del plan y no se quitan.
+export function listaObjetivos(st) {
+  const base = OBJETIVOS.map((t, i) => ({t, ic: ICONOS[i]}));
+  const l = st && Array.isArray(st.objetivos) && st.objetivos.length ? st.objetivos : base;
+  return l.map((o, i) => ({...(base[i] || {}), ...o, i}));
+}
+export const activoEn = (o, f) => (!o.desde || !f || o.desde <= f) && (!o.hasta || !f || f < o.hasta);
+const guardables = st => listaObjetivos(st).map(({i, ...o}) => Object.fromEntries(Object.entries(o).filter(([, v]) => v != null)));
+export function editarObjetivo(st, i, t, ic) {
+  const l = guardables(st);
+  l[i] = {...l[i], t: String(t).trim() || l[i].t, ic: ic || l[i].ic};
+  return {objetivos: l};
+}
+export function quitarObjetivo(st, i, hoy) {
+  if (i === I_ESTUDIO || i === I_CALLE) return {};
+  const l = guardables(st);
+  l[i] = {...l[i], hasta: hoy};
+  return {objetivos: l};
+}
+export function anadirObjetivo(st, t, ic, hoy) {
+  const l = guardables(st);
+  if (!String(t).trim()) return {};
+  l.push({t: String(t).trim(), ic: ic || "✅", desde: hoy});
+  return {objetivos: l};
+}
 export const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 export const DIAS_CORTO = ["L", "M", "X", "J", "V", "S", "D"];
 // Minutos disponibles cada día de la semana (lunes = 0). El sábado y el domingo valen 3 h: uno de los dos es libre.
@@ -333,10 +363,11 @@ export function comparaRitmos(st, hoy) {
 
 /* ---------- puntos ---------- */
 // Objetivos que cuentan ese día: con 0 h de estudio no cuentan ni el estudio (o la clase) ni el callejero.
-export const objetivosDelDia = d => OBJETIVOS.map((_, i) => i).filter(i => !(d.sinEstudio && (i === I_ESTUDIO || i === 4)));
-export function puntosDia(d, rec) {
+export const objetivosDelDia = (d, st) => listaObjetivos(st).filter(o => activoEn(o, d.fecha)).map(o => o.i)
+  .filter(i => !(d.sinEstudio && (i === I_ESTUDIO || i === I_CALLE)));
+export function puntosDia(d, rec, st) {
   if (d.tipo === "libre") return null;
-  const cuentan = objetivosDelDia(d);
+  const cuentan = objetivosDelDia(d, st);
   const hechos = cuentan.filter(i => rec && rec.c && rec.c[i]).length;
   const fallos = cuentan.length - hechos;
   return fallos === 0 ? 1 : fallos === 1 ? 0 : -1;
@@ -345,15 +376,20 @@ export function puntosDia(d, rec) {
 export function resumen(st, hoy) {
   const hist = [];
   let total = 0;
-  const cumple = OBJETIVOS.map(() => 0);
+  const lista = listaObjetivos(st), cumple = lista.map(() => 0), dias = lista.map(() => 0);
   let nDias = 0;
   for (let f = st.inicio; f < hoy; f = sumaDias(f, 1)) {
     const d = infoDia(st, f), rec = st.dias[f];
-    const p = puntosDia(d, rec);
+    const p = puntosDia(d, rec, st);
     hist.push({fecha: f, p, tipo: d.tipo, acum: total + (p || 0)});
     if (p === null) continue;
     total += p; nDias++;
-    OBJETIVOS.forEach((_, i) => { if ((rec && rec.c && rec.c[i]) || !objetivosDelDia(d).includes(i)) cumple[i]++; });
+    const cuentan = objetivosDelDia(d, st);
+    lista.forEach((o, i) => {
+      if (!activoEn(o, f)) return;
+      dias[i]++;
+      if ((rec && rec.c && rec.c[i]) || !cuentan.includes(i)) cumple[i]++;
+    });
   }
   let racha = 0;
   for (let i = hist.length - 1; i >= 0; i--) { if (hist[i].p === null) continue; if (hist[i].p === 1) racha++; else break; }
@@ -362,15 +398,15 @@ export function resumen(st, hoy) {
   const dHoy = infoDia(st, hoy);
   const ini = st.puntosIniciales || 0;
   for (const h of hist) h.acum += ini;
-  return {total: total + ini, inicial: ini, racha, mejor, hist, nDias, cumple: cumple.map(c => (nDias ? c / nDias : 0)),
-    hoy: puntosDia(dHoy, st.dias[hoy]), hoyLibre: dHoy.tipo === "libre"};
+  return {total: total + ini, inicial: ini, racha, mejor, hist, nDias, cumple: cumple.map((c, i) => (dias[i] ? c / dias[i] : 0)),
+    hoy: puntosDia(dHoy, st.dias[hoy], st), hoyLibre: dHoy.tipo === "libre"};
 }
 
 /* ---------- cambios (devuelven el parche que hay que guardar) ---------- */
 export function marcar(st, hoy, fecha, i, valor) {
   const d = dia(st, hoy, fecha);
   const rec = st.dias[fecha] || {};
-  const c = OBJETIVOS.map((_, k) => !!(rec.c && rec.c[k]));
+  const c = listaObjetivos(st).map((_, k) => !!(rec.c && rec.c[k]));
   c[i] = valor;
   let s = rec.s || null;
   if (i === I_ESTUDIO && d.tipo === "estudio" && rec.hastaAqui) {
