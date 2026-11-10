@@ -454,3 +454,4 @@ body.p3d-completa { overflow: hidden; }
 .iconos-obj button { height: 40px; border-radius: 10px; border: 2px solid var(--line); background: var(--bg); font-size: 20px; cursor: pointer; }
 .iconos-obj button.on { border-color: var(--acc); background: var(--accbg); }
 .btn.peligro { background: color-mix(in srgb, #d33 14%, var(--card)); color: #c62828; }
+.guardia h3 small { font-weight: 500; color: var(--muted); font-size: 13px; }

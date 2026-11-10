@@ -294,6 +294,196 @@ function sitioPorDefecto(p, zona, ocupadas, abiertas) {
 }
 const dentro = (x, z, zonas) => [...zonas, "parque", "explanada"].some(id => { const [x0, x1, z0, z1] = AREAS[id]; return x > x0 + 0.3 && x < x1 - 0.3 && z > z0 + 0.3 && z < z1 - 0.3; });
 
+/* ---------- vida del parque: bomberos que andan, cogen el material y usan lo que vas consiguiendo ---------- */
+// Cuantas más piezas, más bomberos (de 1 a 8) y más cosas que hacer: cada tipo de pieza trae su acción.
+export const nBomberos = n => Math.min(8, 1 + Math.ceil(n / 4));
+const ACCION = {};
+for (const id of ["extintor", "hacha", "linterna", "guantes", "casco", "cizalla", "cuerdas", "escalera", "era", "separador"]) ACCION[id] = "coger";
+for (const id of ["mando", "sanitaria", "bul", "bup", "autoescala", "brazo", "autoforestal", "lancha", "anfibio"]) ACCION[id] = "lavar";
+for (const id of ["edificio", "vestuarios", "cocina", "dormitorio", "comunicaciones", "humo", "epis", "bloque", "colegio", "hospital", "gasolinera", "hangar", "tunel", "colapso"]) ACCION[id] = "entrar";
+for (const id of ["altura", "torrevig"]) ACCION[id] = "trepar";
+for (const id of ["gym", "patio"]) ACCION[id] = "ejercicio";
+for (const id of ["arbol", "flores", "palmera", "naranjo", "pino", "contenedor", "glp"]) ACCION[id] = "regar";
+for (const id of ["medalla", "placa"]) ACCION[id] = "saludar";
+for (const id of ["cocheexc"]) ACCION[id] = "golpear";
+ACCION.helicoptero = "volar";
+export const ACCIONES_TEXTO = {coger: "coger el material y practicar con él", lavar: "lavar los vehículos", entrar: "entrar y salir de las instalaciones",
+  trepar: "subir a la torre", ejercicio: "entrenar", regar: "echar agua", saludar: "saludar ante los trofeos", golpear: "practicar excarcelación", volar: "salir en helicóptero"};
+export function accionesDe(ids) { return [...new Set(ids.map(id => ACCION[id]).filter(Boolean))]; }
+
+const PIEL = 0xE8B88A, TRAJE = 0x1F2A44;
+function crearBombero(casco) {
+  const g = new THREE.Group(), cuerpo = new THREE.Group();
+  cuerpo.scale.setScalar(1.35); // algo más grandes de lo real para que se vean bien desde lejos
+  g.add(cuerpo);
+  const miembro = (x, y, w, h, c) => { const p = new THREE.Group(); p.position.set(x, y, 0); caja(p, w, h, w, c, 0, -h, 0); cuerpo.add(p); return p; };
+  const pi = miembro(-0.08, 0.3, 0.12, 0.3, TRAJE), pd = miembro(0.08, 0.3, 0.12, 0.3, TRAJE);
+  caja(cuerpo, 0.3, 0.34, 0.18, TRAJE, 0, 0.3, 0);
+  caja(cuerpo, 0.31, 0.05, 0.19, COL.amarillo, 0, 0.36, 0); caja(cuerpo, 0.31, 0.05, 0.19, COL.amarillo, 0, 0.52, 0);
+  const bi = miembro(-0.2, 0.62, 0.09, 0.28, TRAJE), bd = miembro(0.2, 0.62, 0.09, 0.28, TRAJE);
+  esfera(cuerpo, 0.11, PIEL, 0, 0.75, 0, 8);
+  cil(cuerpo, 0.1, 0.13, 0.1, casco, 0, 0.78, 0, 8); caja(cuerpo, 0.2, 0.03, 0.34, casco, 0, 0.78, -0.02);
+  return {g, cuerpo, pi, pd, bi, bd};
+}
+
+// Devuelve {actualizar(piezas, ids, abiertas), paso(dt), parar(on)}; `piezas` = {key: Group}, `ids` = {key: id}.
+function crearVida(scene) {
+  const bomberos = [], gotas = [], libres = [];
+  const geoGota = new THREE.BoxGeometry(0.07, 0.07, 0.07);
+  let piezas = {}, ids = {}, abiertas = ["parque"], quieto = false;
+  const caja3 = new THREE.Box3(), tam = new THREE.Vector3();
+  const azar = (a, b) => a + Math.random() * (b - a);
+  const elige = l => l[Math.floor(Math.random() * l.length)];
+
+  function gota(x, y, z, vx, vy, vz, color, vida = 0.7, cae = true) {
+    if (gotas.length > 140) return;
+    const m = libres.pop() || new THREE.Mesh(geoGota, mat(color));
+    m.material = mat(color); m.position.set(x, y, z); m.visible = true; m.scale.setScalar(1);
+    scene.add(m); gotas.push({m, vx, vy, vz, vida, t: 0, cae});
+  }
+  // Medidas de una pieza y el punto de delante (su lado +z, donde están las puertas) para colocarse.
+  function medidas(p) {
+    caja3.setFromObject(p); caja3.getSize(tam);
+    return [tam.x, tam.y, tam.z];
+  }
+  function delante(p, extra = 0.3) {
+    const [w, , d] = medidas(p), r = p.rotation.y, lado = Math.abs(Math.sin(r)) > 0.7 ? w : d;
+    return [p.position.x + Math.sin(r) * (lado / 2 + extra), p.position.z + Math.cos(r) * (lado / 2 + extra)];
+  }
+  const mirar = (b, x, z) => { b.g.rotation.y = Math.atan2(x - b.g.position.x, z - b.g.position.z); };
+  function pose(b) { for (const k of ["pi", "pd", "bi", "bd"]) b[k].rotation.set(0, 0, 0); b.cuerpo.position.y = 0; b.cuerpo.rotation.x = 0; }
+  function manos(b) { return [b.g.position.x + Math.sin(b.g.rotation.y) * 0.35, b.g.position.y + 0.65, b.g.position.z + Math.cos(b.g.rotation.y) * 0.4]; }
+  function chorro(b, color, fuerza = 2.2, arriba = 1.2) {
+    const [x, y, z] = manos(b), r = b.g.rotation.y + azar(-0.25, 0.25);
+    gota(x, y, z, Math.sin(r) * fuerza, arriba + azar(-0.3, 0.3), Math.cos(r) * fuerza, color);
+  }
+
+  /* --- planes: cada uno es una lista de pasos {ir: () => [x, z]} o {hacer, dur, al?, cada?, fin?} --- */
+  function puntoLibre() {
+    const z = Math.random() < 0.75 ? "parque" : elige(["explanada", ...abiertas]);
+    const [x0, x1, z0, z1] = AREAS[z] || AREAS.parque;
+    return [azar(x0 + 1, x1 - 1), azar(z0 + 1, z1 - 1)];
+  }
+  function pasear() { const p = puntoLibre(); return [{ir: () => p}, {hacer: "esperar", dur: azar(0.6, 2.5)}]; }
+  function soltarCarga(b) { if (b.carga) { b.cuerpo.remove(b.carga); b.carga = null; } }
+  function plan(b, key) {
+    const p = piezas[key], id = ids[key], que = ACCION[id];
+    if (!p || !que) return pasear();
+    p.userData.ocupada = true;
+    const libre = () => { p.userData.ocupada = false; };
+    const frente = {ir: () => delante(p), al: () => mirar(b, p.position.x, p.position.z)};
+    const cara = () => mirar(b, p.position.x, p.position.z);
+    b.deshacer = () => { libre(); p.visible = true; soltarCarga(b); b.g.visible = true; b.g.scale.setScalar(1); b.g.position.y = 0; if (que === "volar") p.position.y = 0; };
+    if (que === "coger") {
+      const donde = Object.keys(piezas).find(k => ids[k] === "patio");
+      const sitio = donde ? [piezas[donde].position.x + azar(-1, 1), piezas[donde].position.z + azar(-0.8, 0.8)] : [azar(1, 6), azar(1, 5)];
+      const usar = id === "extintor" ? "rociar" : ["hacha", "cizalla", "separador"].includes(id) ? "golpear" : id === "linterna" ? "alumbrar" : "practicar";
+      return [frente, {hacer: "agachar", dur: 0.7, al: cara, fin: () => {
+        p.visible = false;
+        b.carga = p.children[0].clone(); b.carga.scale.setScalar(0.36 * (p.userData.s || 1) / 0.6); b.carga.position.set(0, 0.34, 0.2); b.cuerpo.add(b.carga);
+      }}, {ir: () => sitio}, {hacer: usar, dur: azar(3.5, 5.5)}, {ir: () => delante(p)},
+      {hacer: "agachar", dur: 0.7, al: cara, fin: () => { soltarCarga(b); p.visible = true; libre(); }}];
+    }
+    if (que === "entrar" || que === "volar") {
+      const humo = id === "humo", alto = medidas(p)[1];
+      return [frente, {hacer: "entrar", dur: 0.45, al: cara, fin: () => { b.g.visible = false; }},
+        {hacer: "dentro", dur: que === "volar" ? 9 : azar(3, 6), cada: (t, dur) => {
+          if (humo && Math.random() < 0.35) gota(p.position.x + azar(-0.4, 0.4), alto, p.position.z + azar(-0.4, 0.4), azar(-0.2, 0.2), azar(0.6, 1.1), azar(-0.2, 0.2), 0x7C8288, 1.6, false);
+          if (que === "volar") { const k = t / dur; p.position.y = 3.2 * Math.sin(Math.PI * Math.min(1, k)) ** 0.6; p.rotation.y += 0.004; }
+        }, fin: () => { if (que === "volar") p.position.y = 0; b.g.visible = true; }},
+        {hacer: "salir", dur: 0.45, fin: libre}];
+    }
+    if (que === "trepar") {
+      const alto = Math.max(1, medidas(p)[1] - 0.55);
+      return [frente, {hacer: "trepar", dur: 8, al: cara, alto, fin: () => { b.g.position.y = 0; libre(); }}];
+    }
+    if (que === "lavar" || que === "regar") return [frente, {hacer: que, dur: azar(4, 6), al: cara, fin: libre}];
+    if (que === "ejercicio") {
+      const s = [p.position.x + azar(-0.6, 0.6), p.position.z + azar(-0.5, 0.5)];
+      return [{ir: () => (id === "patio" ? s : delante(p, 0.1))}, {hacer: elige(["saltos", "flexiones"]), dur: azar(4, 7), fin: libre}];
+    }
+    return [frente, {hacer: que, dur: que === "saludar" ? 2.2 : 4, al: cara, fin: libre}];
+  }
+  function planear(b) {
+    b.deshacer = null;
+    const libresK = Object.keys(piezas).filter(k => ACCION[ids[k]] && !piezas[k].userData.ocupada && piezas[k].visible);
+    if (quieto || !libresK.length || Math.random() < 0.3) return pasear();
+    // Para que se vea de todo, primero se elige la acción y luego una pieza con esa acción.
+    const que = elige(accionesDe(libresK.map(k => ids[k])));
+    return plan(b, elige(libresK.filter(k => ACCION[ids[k]] === que)));
+  }
+
+  function animar(b, p, dt) {
+    const t = p.t, s = Math.sin(t * 9);
+    switch (p.hacer) {
+      case "agachar": b.cuerpo.rotation.x = 0.7 * Math.sin(Math.PI * t / p.dur); b.bi.rotation.x = b.bd.rotation.x = -1.2; break;
+      case "rociar": b.bi.rotation.x = b.bd.rotation.x = -1.4; if (Math.random() < 0.6) chorro(b, 0xF4F4F2, 2.4, 0.5); break;
+      case "regar": case "lavar": b.bi.rotation.x = b.bd.rotation.x = -1.3 + 0.15 * s; if (Math.random() < 0.5) chorro(b, 0x6EC1F2, 1.8, p.hacer === "lavar" ? 1.6 : 1); break;
+      case "golpear": b.bi.rotation.x = b.bd.rotation.x = -1.6 + 1.1 * Math.abs(Math.sin(t * 5)); b.cuerpo.rotation.x = 0.2 * Math.abs(Math.sin(t * 5)); break;
+      case "alumbrar": b.bd.rotation.x = -1.5; b.g.rotation.y += dt * 0.9; break;
+      case "practicar": b.bi.rotation.x = -1.2 + 0.4 * s; b.bd.rotation.x = -1.2 - 0.4 * s; break;
+      case "saltos": b.cuerpo.position.y = 0.16 * Math.abs(Math.sin(t * 6)); b.bi.rotation.z = -1.3 * Math.abs(Math.sin(t * 6)); b.bd.rotation.z = 1.3 * Math.abs(Math.sin(t * 6)); break;
+      case "flexiones": b.cuerpo.rotation.x = 1.35; b.cuerpo.position.y = -0.12 + 0.07 * Math.sin(t * 5); b.bi.rotation.x = b.bd.rotation.x = -1.35; break;
+      case "saludar": b.bd.rotation.z = 2.4; b.bd.rotation.x = -0.3; break;
+      case "entrar": b.g.scale.setScalar(Math.max(0.05, 1 - t / p.dur)); break;
+      case "salir": b.g.scale.setScalar(Math.min(1, t / p.dur)); break;
+      case "trepar": {
+        const k = t / p.dur, sube = k < 0.4 ? k / 0.4 : k < 0.6 ? 1 : (1 - k) / 0.4;
+        b.g.position.y = p.alto * Math.max(0, sube);
+        if (k >= 0.4 && k < 0.6) { b.bd.rotation.z = 2.4; b.bi.rotation.x = 0; } else { b.bi.rotation.x = -2.2 + 0.5 * s; b.bd.rotation.x = -2.2 - 0.5 * s; b.pi.rotation.x = 0.4 * s; b.pd.rotation.x = -0.4 * s; }
+        break; }
+      default: break;
+    }
+    if (p.cada) p.cada(t, p.dur);
+  }
+  function cancelar(b) { if (b.deshacer) b.deshacer(); b.deshacer = null; b.pasos = []; pose(b); }
+
+  return {
+    actualizar(pz, idDe, ab) {
+      piezas = pz; ids = idDe; abiertas = ab.filter(z => AREAS[z]);
+      const n = nBomberos(Object.keys(piezas).length);
+      const cascos = [COL.amarillo, COL.amarillo, COL.rojo, COL.amarillo, COL.blanco, COL.amarillo, COL.rojo, COL.amarillo];
+      while (bomberos.length < n) {
+        const b = crearBombero(cascos[bomberos.length % cascos.length]);
+        b.g.position.set(azar(-2, 6), 0, azar(2, 8)); b.pasos = []; b.fase = Math.random() * 6; b.vel = azar(1.25, 1.6);
+        scene.add(b.g); bomberos.push(b);
+      }
+    },
+    parar(on) { quieto = on; if (on) bomberos.forEach(cancelar); },
+    paso(dt) {
+      for (const b of bomberos) {
+        const p = b.pasos[0];
+        if (!p) { b.pasos = planear(b); continue; }
+        if (p.ir) {
+          if (!p.dest) p.dest = p.ir();
+          const dx = p.dest[0] - b.g.position.x, dz = p.dest[1] - b.g.position.z, d = Math.hypot(dx, dz);
+          if (d < 0.08) { pose(b); if (p.al) p.al(); b.pasos.shift(); continue; }
+          const a = Math.min(d, b.vel * dt);
+          b.g.position.x += dx / d * a; b.g.position.z += dz / d * a;
+          b.g.rotation.y = Math.atan2(dx, dz);
+          b.fase += dt * 9;
+          const s = Math.sin(b.fase) * 0.6;
+          b.pi.rotation.x = s; b.pd.rotation.x = -s;
+          if (b.carga) b.bi.rotation.x = b.bd.rotation.x = -1.2; else { b.bi.rotation.x = -s; b.bd.rotation.x = s; }
+          b.cuerpo.position.y = 0.02 * Math.abs(Math.cos(b.fase));
+        } else {
+          if (p.t === undefined) { p.t = 0; pose(b); if (p.al) p.al(); }
+          p.t += dt;
+          animar(b, p, dt);
+          if (p.t >= p.dur) { pose(b); if (p.fin) p.fin(); b.pasos.shift(); }
+        }
+      }
+      for (let i = gotas.length - 1; i >= 0; i--) {
+        const g = gotas[i]; g.t += dt;
+        if (g.cae) g.vy -= 5 * dt;
+        g.m.position.x += g.vx * dt; g.m.position.y += g.vy * dt; g.m.position.z += g.vz * dt;
+        if (!g.cae) g.m.scale.setScalar(1 + g.t * 2);
+        if (g.t > g.vida || g.m.position.y < 0) { scene.remove(g.m); libres.push(g.m); gotas.splice(i, 1); }
+      }
+    },
+  };
+}
+
 const ZOOM_GENERAL = 0.5; // la vista general se ve alejada: todo el parque y la ciudad de un vistazo
 let inst = null;
 // Visor de la ciudad (se reutiliza): opciones {piezas: [{key, id}], zonaDe: {id: zona}, pos: {key: [x, z, giro]},
@@ -375,6 +565,8 @@ function crearParque() {
     scene.add(g); fantasmas[id] = g;
   }
   let op = {piezas: [], pos: {}, abiertas: ["parque"], onMover: null}, modoEditar = false;
+  const vida = crearVida(scene), idDe = {};
+  let tAnt = performance.now();
   for (const [id, [x, z, , s]] of Object.entries(SITIO)) parcelas[id] = parcela(scene, x, z, s);
 
   function colocar(p, sitio, animar) {
@@ -448,6 +640,7 @@ function crearParque() {
     requestAnimationFrame(bucle);
     if (!el.isConnected) return;
     const t = performance.now();
+    vida.paso(Math.min(0.05, (t - tAnt) / 1000)); tAnt = t;
     for (let i = anims.length - 1; i >= 0; i--) {
       const a = anims[i], k = Math.min(1, (t - a.t0) / 700);
       const e = k < 1 ? 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2) : 1;
@@ -467,7 +660,7 @@ function crearParque() {
   })();
   return {
     el,
-    editar(on) { modoEditar = on; el.classList.toggle("editando", on); },
+    editar(on) { if (on !== modoEditar) vida.parar(on); modoEditar = on; el.classList.toggle("editando", on); },
     actualizar(o) {
       op = {...op, ...o};
       // Zonas: suelo abierto o bloqueado con el aviso de las horas.
@@ -485,10 +678,12 @@ function crearParque() {
         const zona = (op.zonaDe || {})[p.id] || "parque";
         const esc = SITIO[p.id] ? (p.key.includes("_") ? Math.min(1, SITIO[p.id][3]) : SITIO[p.id][3]) : 1;
         const sitio = op.pos[p.key] ? [...op.pos[p.key], esc] : sitioPorDefecto(p, zona, ocupadas, op.abiertas);
-        colocar(p, sitio, (op.nuevos || []).includes(p.key));
+        if (piezas[p.key] && piezas[p.key].userData.ocupada) { idDe[p.key] = p.id; continue; } // la está usando un bombero
+        colocar(p, sitio, (op.nuevos || []).includes(p.key)); idDe[p.key] = p.id;
         if (parcelas[p.id] && !p.key.includes("_")) parcelas[p.id].visible = false;
         if (fantasmas[p.id] && !p.key.includes("_")) fantasmas[p.id].visible = false;
       }
+      vida.actualizar(piezas, idDe, op.abiertas);
       tamano();
     },
   };

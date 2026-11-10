@@ -54,6 +54,10 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   y visor del temporizador. Sin WebGL se ven iconos. Ciudad: zonas `CIUDAD` (parque, campo de maniobras 40 h, barrio 120 h,
   base forestal 250 h, aeródromo 400 h) con `AREAS` en parque3d.js; `piezasCiudad` da una copia por cada vez conseguida
   (las repetidas van a la explanada); `parque.pos[key] = [x, z, giro]` guarda lo movido a mano («✋ Mover»).
+- Vida del parque (`crearVida` en parque3d.js): bomberos animados (`nBomberos` = 1 + 1 cada 4 piezas, máx. 8) que pasean y
+  hacen la acción de cada pieza (`ACCION[id]`: coger material y usarlo, lavar vehículos, entrar en instalaciones, trepar,
+  entrenar, echar agua, saludar, helicóptero). Planes = listas de pasos `{ir}` / `{hacer, dur, fin}`; al editar («Mover») se
+  cancelan y devuelven lo que llevaban. Una pieza nueva sin entrada en `ACCION` solo se pasea.
 - Los PDF no se suben al repositorio.
 - Probar: `python3 -m http.server` y abrir `/?local&hoy=AAAA-MM-DD`. `node tests/e2e.mjs` (Playwright).
 - Si cambias archivos que se precargan, sube la versión de `CACHE` en `sw.js`. El service worker espera a la red 2,5 s y si no,

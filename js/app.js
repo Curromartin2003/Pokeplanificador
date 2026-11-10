@@ -832,6 +832,13 @@ function vParque(hoy) {
     ${ui.editarParque ? `<div class="aviso">✋ Arrastra cualquier pieza para cambiarla de sitio. Toca dos veces para girarla. Cuando acabes, pulsa «Listo».</div>` : ""}
     <div id="parque3dHost" class="parque3d-host">${fallback}</div>
     ${P3.disponible() ? `<p class="nota centro">Toca un sitio para acercarte · arrastra para girar · pellizca o usa la rueda para el zoom.</p>` : ""}
+    ${P3.disponible() ? (() => {
+      const nb = P3.nBomberos(piezas.length), acc = P3.accionesDe(piezas.map(x => x.id)), todas = Object.keys(P3.ACCIONES_TEXTO).length;
+      const faltan = (nb - 1) * 4 + 1 - piezas.length;
+      return `<div class="tarjeta guardia"><h3>👨‍🚒 ${nb} ${nb === 1 ? "bombero" : "bomberos"} de guardia${nb < 8 ? ` <small>· el siguiente llega con ${faltan} ${faltan === 1 ? "pieza" : "piezas"} más</small>` : ""}</h3>
+        <p class="nota">${acc.length ? `Ya saben ${acc.map(a => P3.ACCIONES_TEXTO[a]).join(", ")}.` : "De momento pasean por el parque: consigue piezas y empezarán a usarlas."}
+        ${acc.length < todas ? ` Les quedan ${todas - acc.length} cosas por aprender: cada tipo de pieza nueva les enseña algo.` : " ¡Lo hacen todo!"}</p></div>`;
+    })() : ""}
     <div class="parque-stats"><div class="grande"><b>${h(e.hoy)}</b><span>hoy</span></div><div><b>${h(e.semana)}</b><span>esta semana</span></div>
       <div><b>${h(e.mes)}</b><span>este mes</span></div><div><b>${h(e.anio)}</b><span>este año</span></div><div><b>${h(e.total)}</b><span>en total</span></div>
       <div class="monedas"><b>🪙 ${e.monedas}</b><span>monedas</span></div></div>
