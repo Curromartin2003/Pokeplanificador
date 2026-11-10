@@ -54,6 +54,10 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   y visor del temporizador. Sin WebGL se ven iconos. Ciudad: zonas `CIUDAD` (parque, campo de maniobras 40 h, barrio 120 h,
   base forestal 250 h, aeródromo 400 h) con `AREAS` en parque3d.js; `piezasCiudad` da una copia por cada vez conseguida
   (las repetidas van a la explanada); `parque.pos[key] = [x, z, giro]` guarda lo movido a mano («✋ Mover»).
+- Acabado del 3D (parque3d.js): `ambiente()` (reflejos con RoomEnvironment + ACES), `ACABADO` por color (pintura con barniz,
+  metal, cristal), `caja` con cantos redondeados (RoundedBoxGeometry), texturas dibujadas en lienzo (`TEX`: hierba, grano,
+  ladrillo, persiana, portón, chevron, rótulos) con `matTex`/`panel`, piezas base `camion`, `cabina`, `rueda`, `edificio`,
+  `ventana`, `copa`, `tronco`, y luces azules que destellan (`destello`). Si los extras no cargan, se ve sin redondeos ni reflejos.
 - Vida del parque (`crearVida` en parque3d.js): bomberos animados (`nBomberos` = 1 + 1 cada 4 piezas, máx. 8) que pasean y
   hacen la acción de cada pieza (`ACCION[id]`: coger material y usarlo, lavar vehículos, entrar en instalaciones, trepar,
   entrenar, echar agua, saludar, helicóptero). Planes = listas de pasos `{ir}` / `{hacer, dur, fin}`; al editar («Mover») se
