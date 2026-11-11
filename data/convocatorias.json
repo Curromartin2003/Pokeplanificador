@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-11-10T07:49+00:00",
+ "actualizado": "2026-11-11T07:52+00:00",
  "fuente": "BOE, sección II.B (datos abiertos)",
  "mias": [
   {
@@ -58,14 +58,14 @@
     {
      "nombre": "Portal de empleo de Aena",
      "url": "https://empleo.aena.es/",
-     "revisada": "2026-11-10",
+     "revisada": "2026-11-11",
      "hash": "1a82e3440c2325c2",
      "pdfs": []
     },
     {
      "nombre": "Programa IC10 (PDF)",
      "url": "https://empleo.aena.es/ocupaciones/Lists/Ocupaciones/Attachments/40/3.Programa_IC10.pdf",
-     "revisada": "2026-11-10",
+     "revisada": "2026-11-11",
      "hash": "8b0d482f844d991d",
      "pdfs": []
     }
@@ -166,7 +166,7 @@
       "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2026/BOP_Lista_prov_Cazorla.pdf"
      ],
      "hash": "a415bee941b58bab",
-     "revisada": "2026-11-10"
+     "revisada": "2026-11-11"
     },
     {
      "nombre": "Ficha del proceso de Segura",
@@ -176,7 +176,7 @@
       "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2026/BOP_Lista_Prov_Segura_OL.pdf"
      ],
      "hash": "97a5efa42cbb684d",
-     "revisada": "2026-11-10"
+     "revisada": "2026-11-11"
     },
     {
      "nombre": "Ofertas de empleo de los consorcios (Diputación de Jaén)",
@@ -191,7 +191,7 @@
       "https://www.dipujaen.es/export/sites/default/galerias/galeriaDescargas/diputacion/dipujaen/RR.HH/convoc-2025/BOP_Bases_Segura_OL.pdf"
      ],
      "hash": "c579f5e0202fcade",
-     "revisada": "2026-11-10"
+     "revisada": "2026-11-11"
     }
    ],
    "aviso": "Las listas, el tribunal y la fecha de examen salen en el BOP de Jaén y en la ficha de cada proceso de la Diputación. La app revisa las dos fichas cada mañana y te pone el enlace directo de cada documento nuevo.",
@@ -558,7 +558,7 @@
    "fase": "plazo"
   }
  ],
- "boja_ultimo": 217,
+ "boja_ultimo": 218,
  "sevilla": [
   {
    "fecha": "2026-10-20",
