@@ -556,11 +556,22 @@ function vConvocatorias(hoy) {
 }
 
 /* ---------- Ajustes ---------- */
+// Tema claro / oscuro / automático (solo este dispositivo: cada móvil puede tener el suyo).
+function temaActual() { try { return localStorage.getItem("pp.tema") || "auto"; } catch (e) { return "auto"; } }
+function ponerTema(t) {
+  try { if (t === "auto") localStorage.removeItem("pp.tema"); else localStorage.setItem("pp.tema", t); } catch (e) {}
+  const r = document.documentElement;
+  if (t === "claro") r.dataset.theme = "light"; else if (t === "oscuro") r.dataset.theme = "dark"; else delete r.dataset.theme;
+}
+
 function vAjustes(hoy) {
   const comp = E.comparaRitmos(st, hoy);
   const ritmos = comp.map(r => `<label class="opcion ${st.ritmo === r.ritmo ? "on" : ""}"><input type="radio" name="ritmo" value="${r.ritmo}" ${st.ritmo === r.ritmo ? "checked" : ""}>
     <span><b>${r.nombre}</b> · ${r.txt}<br><small>1.ª vuelta: ${r.fechas[0] ? E.fechaLarga(r.fechas[0]) : "—"}${r.vueltasAntesExamen !== null ? ` · ${r.vueltasAntesExamen} vueltas antes del examen` : ""}</small></span></label>`).join("");
   return `<h1>Ajustes</h1>
+    <div class="tarjeta"><h3>Apariencia</h3><div class="segm tres">${[["auto", "📱 Automático"], ["claro", "☀️ Claro"], ["oscuro", "🌙 Oscuro"]]
+      .map(([v, t]) => `<button class="${temaActual() === v ? "on" : ""}" data-tema="${v}">${t}</button>`).join("")}</div>
+      <p class="nota">Automático sigue el modo claro u oscuro de tu móvil. Se guarda en este dispositivo.</p></div>
     <div class="tarjeta"><h3>Ritmo</h3>${ritmos}</div>
     <div class="tarjeta"><h3>Fecha del examen</h3><input type="date" id="examen" value="${st.examen || ""}"><p class="nota">Con ella se calcula con cuántas vueltas llegas.</p></div>
     <div class="tarjeta"><h3>Enlace a Pokecallejero</h3><input type="url" id="calleUrl" placeholder="https://….netlify.app" value="${esc(st.callejeroUrl)}"><p class="nota">Aparece en el objetivo «Callejero» para abrirlo con un toque.</p></div>
@@ -1086,6 +1097,7 @@ function enlazar() {
     else if (a === "base") guardar(E.fijarBase(st, hoy));
     else if (a === "salir") store.salir();
   });
+  document.querySelectorAll("[data-tema]").forEach(b => b.onclick = () => { ponerTema(b.dataset.tema); pintar(); });
   document.querySelectorAll("input[name=ritmo]").forEach(r => r.onchange = () => guardar({ritmo: r.value}));
   const ex = $("#examen"); if (ex) ex.onchange = () => guardar({examen: ex.value || null});
   const cu = $("#calleUrl"); if (cu) cu.onchange = () => guardar({callejeroUrl: cu.value.trim()});

@@ -14,6 +14,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+<script>
+  // Tema elegido en Ajustes (este dispositivo): "claro", "oscuro" o automático (el del sistema). Antes de pintar nada.
+  (function () { var t = null; try { t = localStorage.getItem("pp.tema"); } catch (e) {}
+    if (t === "claro") document.documentElement.dataset.theme = "light"; else if (t === "oscuro") document.documentElement.dataset.theme = "dark"; })();
+</script>
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/glass.css">
 <script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>

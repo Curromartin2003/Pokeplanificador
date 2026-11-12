@@ -16,6 +16,15 @@
     --sombra: none; color-scheme: dark;
   }
 }
+/* Oscuro elegido en Ajustes */
+:root[data-theme="dark"] {
+    --bg: #121012; --card: #1E1B1D; --ink: #F3EFEC; --muted: #A79F9A; --line: #322D30;
+    --acc: #FF4D57; --acc2: #FF6B72; --accbg: #3A1A1D; --oro: #FFC933; --orobg: #3A3016;
+    --ok: #4CC97F; --okbg: #183325; --bad: #FF6B72; --badbg: #3E1C1F; --mid: #E8B44A; --midbg: #3A2F17;
+    --leg: #7FB1F0; --legbg: #1A2A3D; --esp: #FF6B72; --espbg: #3A1A1D; --luis: #B79BE6; --luisbg: #2C2340;
+    --sombra: none; color-scheme: dark;
+  }
+
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
@@ -455,3 +464,4 @@ body.p3d-completa { overflow: hidden; }
 .iconos-obj button.on { border-color: var(--acc); background: var(--accbg); }
 .btn.peligro { background: color-mix(in srgb, #d33 14%, var(--card)); color: #c62828; }
 .guardia h3 small { font-weight: 500; color: var(--muted); font-size: 13px; }
+.segm.tres { grid-template-columns: repeat(3, 1fr); } .segm.tres button { padding: 10px 4px; font-size: 14px; }
