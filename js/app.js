@@ -15,7 +15,13 @@ const ui = {vista: "hoy", fecha: null, semana: null, abierto: {}, modalSemana: n
 
 /* ---------- arranque ---------- */
 async function main() {
-  if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    // Cuando llega una versión nueva de la app, se recarga sola una vez para enseñarla (el temporizador sigue: está guardado).
+    const habia = !!navigator.serviceWorker.controller;
+    let recargada = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (habia && !recargada) { recargada = true; location.reload(); } });
+    navigator.serviceWorker.register("sw.js").then(r => r.update()).catch(() => {});
+  }
   try {
     store = await abrir({onEstado, onUsuario});
   } catch (e) {

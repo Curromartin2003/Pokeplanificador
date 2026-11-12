@@ -71,6 +71,8 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
 - Probar: `python3 -m http.server` y abrir `/?local&hoy=AAAA-MM-DD`. `node tests/e2e.mjs` (Playwright).
 - Si cambias archivos que se precargan, sube la versión de `CACHE` en `sw.js`. El service worker espera a la red 2,5 s y si no,
   usa la caché: los bloqueos de LaLiga a Cloudflare (días de partido) dejaban la app en blanco.
+  Pide los archivos sin la caché HTTP (`cache: "no-cache"`/`"reload"`; Firebase los servía con max-age=3600 y salían versiones
+  viejas) y la app se recarga sola una vez cuando se activa un service worker nuevo (`controllerchange`).
 - Publicación: Cloudflare Pages (pokeplanificador.pages.dev, desde `main`) y Firebase Hosting (pokeplanificador.web.app,
   `firebase.json` + `.github/workflows/hosting.yml`, tras cada push y cada revisión de convocatorias; necesita el secreto
   `FIREBASE_SERVICE_ACCOUNT`). Firebase no sufre los bloqueos de LaLiga a Cloudflare.
