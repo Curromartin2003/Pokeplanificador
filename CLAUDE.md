@@ -67,6 +67,8 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
 - Tema: Ajustes → Apariencia (Automático / Claro / Oscuro), en localStorage `pp.tema` (por dispositivo); un script en el
   `<head>` pone `data-theme` antes de pintar. Cada regla oscura va dos veces: en `@media (prefers-color-scheme: dark)` con
   `:root:not([data-theme="light"])` y copiada con `:root[data-theme="dark"]`.
+- Icono: cruz de bombero dorada con un check sobre rojo (`icons/icono.svg`); todos los PNG se generan con
+  `node scripts/icono.cjs` (Playwright + PIL).
 - Los PDF no se suben al repositorio.
 - Probar: `python3 -m http.server` y abrir `/?local&hoy=AAAA-MM-DD`. `node tests/e2e.mjs` (Playwright).
 - Si cambias archivos que se precargan, sube la versión de `CACHE` en `sw.js`. El service worker espera a la red 2,5 s y si no,

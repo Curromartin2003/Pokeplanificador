@@ -2,9 +2,9 @@
 // conexión o la red no contesta en 2,5 s (los bloqueos de LaLiga a Cloudflare en días de partido dejan las peticiones
 // colgadas y la app se quedaba en blanco), caché, y la respuesta de la red, si llega, se guarda para la próxima vez. Las librerías de Firebase (gstatic) no cambian de versión: primero caché.
 // Los datos no pasan por aquí: los guarda y sincroniza Firestore con su propia caché.
-const CACHE = "pokeplanificador-v43";
+const CACHE = "pokeplanificador-v44";
 const CORE = ["./", "index.html", "css/app.css", "css/glass.css", "js/app.js", "js/engine.js", "js/store.js", "js/temario.js", "js/docs_esp.js", "js/parque3d.js",
-  "firebase-config.js", "manifest.webmanifest", "icons/icon-192.png"];
+  "firebase-config.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE.map(u => new Request(u, {cache: "reload"})))).then(() => self.skipWaiting()));
