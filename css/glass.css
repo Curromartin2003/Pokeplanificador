@@ -1,0 +1,196 @@
+/* ---------- Liquid glass: cristal translúcido sobre un fondo de color vivo ----------
+   Capa encima de app.css: solo cambia el aspecto (colores, transparencias, desenfoque, brillos), no la estructura. */
+:root {
+  --bg: #FBF3EE;
+  --card: rgba(255, 255, 255, .52);
+  --cristal: rgba(255, 255, 255, .52);
+  --cristal-fuerte: rgba(255, 255, 255, .72);
+  --borde: rgba(255, 255, 255, .75);
+  --brillo: rgba(255, 255, 255, .95);
+  --line: rgba(120, 60, 50, .14);
+  --muted: #6B5F5B;
+  --accbg: rgba(229, 56, 59, .12);
+  --okbg: rgba(31, 138, 76, .14); --orobg: rgba(242, 183, 5, .18); --legbg: rgba(31, 95, 168, .12);
+  --luisbg: rgba(107, 76, 154, .13); --midbg: rgba(242, 183, 5, .2); --badbg: rgba(193, 18, 31, .12); --espbg: rgba(193, 18, 31, .1);
+  --sombra: 0 10px 30px -8px rgba(140, 30, 30, .16), 0 2px 6px rgba(80, 20, 20, .05);
+  --vidrio: blur(22px) saturate(185%);
+  --radio: 22px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E0A0C;
+    --card: rgba(255, 255, 255, .07);
+    --cristal: rgba(255, 255, 255, .07);
+    --cristal-fuerte: rgba(36, 28, 32, .78);
+    --borde: rgba(255, 255, 255, .16);
+    --brillo: rgba(255, 255, 255, .28);
+    --line: rgba(255, 255, 255, .1);
+    --accbg: rgba(255, 77, 87, .16); --okbg: rgba(76, 201, 127, .15); --orobg: rgba(255, 201, 51, .14); --legbg: rgba(127, 177, 240, .14);
+    --luisbg: rgba(183, 155, 230, .15); --midbg: rgba(232, 180, 74, .15); --badbg: rgba(255, 107, 114, .14); --espbg: rgba(255, 107, 114, .12);
+    --sombra: 0 12px 34px -10px rgba(0, 0, 0, .6);
+  }
+}
+
+/* Fondo: manchas de color difuminadas (rojo, ámbar, oro y un toque azul) que el cristal deja ver. */
+body { background: var(--bg); }
+body::before {
+  content: ""; position: fixed; inset: -20vmax; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(40vmax 40vmax at 10% 6%, rgba(229, 40, 50, .75), transparent 70%),
+    radial-gradient(36vmax 36vmax at 95% 20%, rgba(255, 150, 30, .7), transparent 70%),
+    radial-gradient(42vmax 42vmax at 80% 85%, rgba(245, 190, 10, .55), transparent 70%),
+    radial-gradient(38vmax 38vmax at 5% 75%, rgba(46, 111, 216, .42), transparent 70%),
+    radial-gradient(32vmax 32vmax at 50% 48%, rgba(255, 100, 80, .3), transparent 70%);
+  filter: blur(30px);
+  animation: deriva 28s ease-in-out infinite alternate;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body::before {
+    background:
+      radial-gradient(38vmax 38vmax at 12% 8%, rgba(229, 56, 59, .45), transparent 70%),
+      radial-gradient(34vmax 34vmax at 92% 18%, rgba(255, 140, 30, .3), transparent 70%),
+      radial-gradient(40vmax 40vmax at 78% 82%, rgba(242, 183, 5, .18), transparent 70%),
+      radial-gradient(36vmax 36vmax at 8% 78%, rgba(46, 111, 216, .25), transparent 70%);
+  }
+}
+@keyframes deriva { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(-3vmax, 2vmax, 0) scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { body::before { animation: none; } }
+
+/* Cristal: superficie translúcida con desenfoque, borde de luz y un reflejo en diagonal. */
+.top, .tabs, .tarjeta, .obj, .marcador, .dia, .libre, .conv, .tema, .login form, .avisoconv, .avisopremio, .aviso, .cambios,
+.hoja, .puntos, .p3d-barra button, .p3d-et, .filtros button, .segm button, .chips button, .btn.sec, .iconos-obj button, .tick {
+  -webkit-backdrop-filter: var(--vidrio); backdrop-filter: var(--vidrio);
+}
+.tarjeta, .obj, .marcador, .dia, .libre, .conv, .tema, .login form, .avisoconv, .avisopremio, .aviso, .cambios {
+  background-color: var(--cristal);
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, .5) 0%, rgba(255, 255, 255, .12) 38%, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, .1) 100%);
+  border: 1px solid var(--borde);
+  box-shadow: var(--sombra), inset 0 1px 0 var(--brillo), inset 0 -1px 0 rgba(255, 255, 255, .15);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) :is(.tarjeta, .obj, .marcador, .dia, .libre, .conv, .tema, .login form, .avisoconv, .avisopremio, .aviso, .cambios) {
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, .1) 0%, rgba(255, 255, 255, .02) 40%, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, .04) 100%);
+  }
+}
+/* Avisos con un tinte de color dentro del cristal. */
+.avisoconv, .avisopremio, .aviso { background-color: color-mix(in srgb, #FFC933 18%, var(--cristal)); }
+.cambios { background-color: color-mix(in srgb, #2E6FD8 10%, var(--cristal)); }
+.obj.ok { background-color: color-mix(in srgb, #1F8A4C 13%, var(--cristal)); border-color: color-mix(in srgb, #4CC97F 45%, var(--borde)); }
+.marcador.pos { background-color: color-mix(in srgb, #1F8A4C 12%, var(--cristal)); }
+.marcador.neg { background-color: color-mix(in srgb, #C1121F 9%, var(--cristal)); }
+.obj.nocuenta, .obj.nuevo { background: transparent; box-shadow: none; border: 1px dashed var(--line); -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* Cabecera de cristal que deja ver el contenido al desplazar. */
+.top {
+  background: color-mix(in srgb, var(--bg) 35%, transparent); border-bottom: 1px solid var(--borde);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .4) inset, 0 8px 24px -14px rgba(120, 30, 30, .25);
+}
+.marca img { box-shadow: 0 4px 12px rgba(193, 18, 31, .35); }
+.puntos {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .7), rgba(255, 255, 255, .25)); border: 1px solid var(--borde); border-radius: 16px;
+  box-shadow: inset 0 1px 0 var(--brillo), 0 6px 16px -6px rgba(193, 18, 31, .35);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .puntos { background: linear-gradient(160deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .04)); } }
+.ico { border-radius: 50%; }
+.ico:hover { background: var(--cristal); }
+
+/* Barra de pestañas flotante tipo cápsula, con la pestaña activa en una gota de cristal. */
+body { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+.tabs {
+  left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); padding: 6px; gap: 2px; max-width: 620px;
+  border-radius: 30px; border: 1px solid var(--borde);
+  background: color-mix(in srgb, var(--bg) 40%, transparent);
+  box-shadow: 0 18px 40px -12px rgba(120, 25, 25, .35), inset 0 1px 0 var(--brillo), inset 0 -1px 0 rgba(255, 255, 255, .2);
+}
+.tabs button { border-radius: 24px; padding: 7px 2px 6px; transition: background .25s, color .25s, transform .2s; }
+.tabs button:active { transform: scale(.94); }
+.tabs button.on {
+  color: var(--acc);
+  background: linear-gradient(170deg, rgba(255, 255, 255, .9), rgba(255, 255, 255, .45));
+  box-shadow: inset 0 1px 0 #fff, 0 4px 14px -4px rgba(193, 18, 31, .35);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tabs button.on { background: linear-gradient(170deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .06)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); }
+}
+
+/* Botones: el principal, rojo brillante con reflejo de cristal; los secundarios, cristal. */
+.btn {
+  background: linear-gradient(180deg, #F0484C 0%, #C1121F 55%, #A50E1A 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), inset 0 -2px 6px rgba(90, 0, 10, .25), 0 8px 18px -8px rgba(193, 18, 31, .7);
+  text-shadow: 0 1px 1px rgba(90, 0, 10, .3); transition: transform .15s, box-shadow .2s;
+}
+.btn:active { transform: scale(.97); }
+.btn.sec, .foco .btn.sec {
+  background: linear-gradient(170deg, rgba(255, 255, 255, .7), rgba(255, 255, 255, .3)); color: var(--acc); text-shadow: none;
+  border: 1px solid var(--borde); box-shadow: inset 0 1px 0 var(--brillo), 0 4px 12px -6px rgba(120, 30, 30, .3);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.sec { background: linear-gradient(170deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .05)); } }
+.btn.temp { background: linear-gradient(180deg, #2E8A55 0%, #17633A 60%, #0F4A2B 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 8px 18px -8px rgba(20, 90, 50, .7); }
+.btn.peligro { background: linear-gradient(170deg, rgba(255, 220, 220, .8), rgba(255, 200, 200, .4)); color: #B71C1C; text-shadow: none; }
+
+/* Casillas de los objetivos: burbuja de cristal que se llena de verde al marcar. */
+.tick {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, .3)); border: 1px solid var(--borde);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(120, 60, 50, .08), 0 3px 8px -3px rgba(120, 30, 30, .25);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tick { background: linear-gradient(160deg, rgba(255, 255, 255, .18), rgba(255, 255, 255, .04)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); } }
+.obj.ok .tick {
+  background: radial-gradient(circle at 35% 25%, #8BE3AE 0%, #2EAD63 45%, #1A7A43 100%); border-color: rgba(255, 255, 255, .7);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .8), 0 0 0 5px rgba(46, 173, 99, .16), 0 6px 14px -4px rgba(26, 122, 67, .6);
+}
+
+/* Tarjeta «De aquí a tu plaza»: cristal rojo intenso con reflejo. */
+.camino {
+  background: radial-gradient(120% 140% at 100% 0%, rgba(240, 72, 76, .92) 0%, rgba(181, 18, 27, .92) 45%, rgba(92, 10, 16, .94) 100%);
+  border: 1px solid rgba(255, 255, 255, .35);
+  box-shadow: 0 18px 40px -14px rgba(150, 15, 25, .6), inset 0 1px 0 rgba(255, 255, 255, .45);
+  -webkit-backdrop-filter: var(--vidrio); backdrop-filter: var(--vidrio);
+}
+.camino::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(120deg, rgba(255, 255, 255, .28) 0%, rgba(255, 255, 255, 0) 32%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, .08) 100%);
+}
+.racha { background: rgba(255, 255, 255, .2); border: 1px solid rgba(255, 255, 255, .3); }
+
+/* Hojas (ventanas que suben) de cristal esmerilado. */
+.modal { background: rgba(30, 10, 12, .28); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.hoja { background: var(--cristal-fuerte); border: 1px solid var(--borde); border-bottom: 0; box-shadow: 0 -10px 40px -10px rgba(80, 10, 10, .35), inset 0 1px 0 var(--brillo); border-radius: 28px 28px 0 0; }
+.hoja-cab.sticky { background: transparent; -webkit-backdrop-filter: var(--vidrio); backdrop-filter: var(--vidrio); }
+
+/* Botones de elegir (segmentos, chips, filtros, iconos) como pastillas de cristal. */
+.segm button, .chips button, .filtros button, .iconos-obj button {
+  background: linear-gradient(170deg, rgba(255, 255, 255, .6), rgba(255, 255, 255, .22)); border: 1px solid var(--borde);
+  box-shadow: inset 0 1px 0 var(--brillo);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.segm button, .chips button, .filtros button, .iconos-obj button) { background: linear-gradient(170deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, .03)); } }
+.segm button.on, .filtros button.on, .chips.distritos button.on { background: linear-gradient(180deg, #F0484C, #B5121B); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 6px 14px -6px rgba(193, 18, 31, .7); }
+.chips button.on { background: linear-gradient(180deg, #8A6BC2, #5E3F8F); color: #fff; }
+.chips.objetos button.on { background: linear-gradient(180deg, #34B56A, #1A7A43); color: #fff; }
+.iconos-obj button.on { background: linear-gradient(170deg, rgba(255, 255, 255, .95), rgba(255, 220, 220, .6)); border-color: var(--acc); }
+input[type=text], input[type=date], input[type=url], input[type=email], input[type=password], input[type=number], select, textarea {
+  background: rgba(255, 255, 255, .55) !important; border: 1px solid var(--borde) !important; border-radius: 14px !important;
+  box-shadow: inset 0 1px 3px rgba(80, 20, 20, .08);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(input, select, textarea) { background: rgba(255, 255, 255, .08) !important; } }
+
+/* Chips de materia y barras de progreso con un poco de relieve. */
+.chip { border: 1px solid rgba(255, 255, 255, .5); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6); }
+.barra { background: rgba(120, 60, 50, .1); box-shadow: inset 0 1px 2px rgba(80, 20, 20, .12); }
+.barra i { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5); }
+
+/* Mapa 3D con marco de cristal. */
+.parque3d { border: 1px solid var(--borde); box-shadow: var(--sombra), inset 0 1px 0 var(--brillo); }
+.p3d-barra button { background: rgba(255, 255, 255, .6); border: 1px solid var(--borde); box-shadow: inset 0 1px 0 #fff, 0 4px 12px -4px rgba(0, 0, 0, .25); }
+.p3d-et { background: rgba(255, 255, 255, .62); border: 1px solid rgba(255, 255, 255, .8); }
+
+/* Días de la semana: la franja de color pasa a ser un punto luminoso. */
+.dia, .dia.estudio, .dia.luis { border-left: 1px solid var(--borde); position: relative; padding-left: 18px; }
+.dia::before { content: ""; position: absolute; left: 7px; top: 14px; bottom: 14px; width: 4px; border-radius: 4px; background: var(--line); }
+.dia.estudio::before { background: linear-gradient(180deg, #F0484C, #B5121B); box-shadow: 0 0 8px rgba(229, 56, 59, .6); }
+.dia.luis::before { background: linear-gradient(180deg, #A58BDA, #6B4C9A); box-shadow: 0 0 8px rgba(107, 76, 154, .5); }
+.dia.hoy { outline: 2px solid color-mix(in srgb, var(--acc) 60%, transparent); outline-offset: 1px; }
+
+/* Navegadores sin desenfoque: el cristal se hace más opaco para que se lea bien. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root { --cristal: rgba(255, 255, 255, .86); --cristal-fuerte: rgba(255, 255, 255, .96); }
+}
