@@ -62,6 +62,8 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   hacen la acción de cada pieza (`ACCION[id]`: coger material y usarlo, lavar vehículos, entrar en instalaciones, trepar,
   entrenar, echar agua, saludar, helicóptero). Planes = listas de pasos `{ir}` / `{hacer, dur, fin}`; al editar («Mover») se
   cancelan y devuelven lo que llevaban. Una pieza nueva sin entrada en `ACCION` solo se pasea.
+- Estilo liquid glass: `css/glass.css`, capa encima de `app.css` (fondo de manchas de color animadas, cristal con
+  `backdrop-filter`, barra de pestañas flotante, botones con brillo; modo oscuro ahumado). Sin desenfoque, cristal casi opaco.
 - Los PDF no se suben al repositorio.
 - Probar: `python3 -m http.server` y abrir `/?local&hoy=AAAA-MM-DD`. `node tests/e2e.mjs` (Playwright).
 - Si cambias archivos que se precargan, sube la versión de `CACHE` en `sw.js`. El service worker espera a la red 2,5 s y si no,
