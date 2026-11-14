@@ -47,6 +47,10 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   sesión en `dias[f].ses` [{tipo: estudio|callejero, ini, est, desc, obj, ok}]; con ≥ `MIN_SESION` min (y sin salir de la
   app más de 20 s) la pieza elegida va al parque. «📍 Hasta aquí» (`hastaAqui`) fija el avance del día y marca
   `dias[f].hastaAqui` para que marcar el estudio no vuelva a sumar temario.
+- Temporizador libre («⏱ Temporizador libre» junto a «➕ Apuntar tiempo olvidado» en Mi parque): cuando quieras, estudio o
+  callejero (`foco.libre`); el tiempo cuenta como cualquier sesión. Al acabar un estudio libre, `abrirEstudiado` pregunta tema,
+  partes terminadas y dónde te quedaste: `E.estudiado` (solo esas partes, nunca hace retroceder) + `partesTema`; se guarda en
+  `dias[f].sesiones[id].estudiado` y en `marcas`.
 - Mi parque: `estadisticas` (horas hoy/semana/mes/año/total; 1 min = 1 moneda), `TIENDA` por `ZONAS` (parque de bomberos: cocheras, instalaciones, material, exterior con pocas plantas, trofeos),
   `parque: {compras: {id: fecha}, sel}`.
 - Parque 3D: `js/parque3d.js` (three.js 0.160 por import map desde jsDelivr): modelos de baja poligonización propios

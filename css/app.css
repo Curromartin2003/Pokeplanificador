@@ -465,3 +465,10 @@ body.p3d-completa { overflow: hidden; }
 .btn.peligro { background: color-mix(in srgb, #d33 14%, var(--card)); color: #c62828; }
 .guardia h3 small { font-weight: 500; color: var(--muted); font-size: 13px; }
 .segm.tres { grid-template-columns: repeat(3, 1fr); } .segm.tres button { padding: 10px 4px; font-size: 14px; }
+.botones-tiempo { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.partes-e { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 6px; }
+.partes-e li label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-weight: 500; }
+.partes-e li.on label { border-color: color-mix(in srgb, var(--ok) 50%, transparent); background: color-mix(in srgb, var(--okbg) 70%, var(--card)); }
+.partes-e li.ya label { opacity: .65; cursor: default; }
+.partes-e input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--ok); flex: none; }
+.partes-e small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }

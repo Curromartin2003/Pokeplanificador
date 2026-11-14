@@ -458,6 +458,21 @@ export function meQuede(st, hoy, t, id, frac) {
   des[id] = Math.max(0, Math.min(1, frac));
   return ajustar(st, hoy, des);
 }
+// Temporizador libre: partes de un tema en la vuelta por la que va (la primera con algo pendiente), con lo hecho de cada una.
+export function partesTema(st, hoy, t, n) {
+  const h = hecho(st, hoy), its = cola(st, t).items.filter(c => c.n === n);
+  if (!its.length) return {v: 1, partes: []};
+  const v = (its.find(c => hechoDe(h, c.id) < 1 - EPS) || its[its.length - 1]).v;
+  return {v, partes: its.filter(c => c.v === v).map(c => ({...c, hecho: hechoDe(h, c.id)}))};
+}
+// Lo estudiado con el temporizador libre: las partes completas quedan hechas y la parte a medias, en su fracción (si
+// ya iba más avanzada, no se toca). No da por hecho nada más del temario.
+export function estudiado(st, hoy, completas, medias) {
+  const h = hecho(st, hoy), des = {};
+  for (const id of completas) des[id] = 1;
+  if (medias && !completas.includes(medias.id)) des[medias.id] = Math.max(hechoDe(h, medias.id), Math.max(0, Math.min(1, medias.frac)));
+  return ajustar(st, hoy, des);
+}
 // Rango de páginas y de artículos de un trozo (para poder decir «me quedé en la pág. 14» o «en el art. 41»).
 export function rangos(c) {
   const p = (c.ref || "").match(/p[aá]gs\. (\d+)-(\d+)/), a = (c.nombre || "").match(/arts?\. (\d+)(?: bis)?-(\d+)/);

@@ -288,3 +288,18 @@ test("objetivos: cambiar, quitar y añadir sin tocar los días pasados", () => {
   assert.equal(E.puntosDia(d, {c}, st), 0);
   assert.equal(E.marcar(st, HOY, HOY, 8, true).dias[HOY].c.length, 9);
 });
+
+test("temporizador libre: apunta solo las partes que dices", () => {
+  const st = base();
+  const {v, partes} = E.partesTema(st, HOY, "leg", 1);
+  assert.equal(v, 1); assert.ok(partes.length >= 3);
+  const p = E.estudiado(st, HOY, [partes[1].id], {id: partes[2].id, frac: 0.5});
+  const s2 = aplicar(st, p);
+  const h = E.hecho(s2, HOY);
+  assert.equal(Math.round((h[partes[0].id] || 0) * 100), 0, "la parte de antes sigue sin hacer");
+  assert.equal(Math.round(h[partes[1].id] * 100), 100);
+  assert.equal(Math.round(h[partes[2].id] * 100), 50);
+  // Si ya iba más avanzada, decir menos no la hace retroceder.
+  const s3 = aplicar(s2, E.estudiado(s2, HOY, [], {id: partes[2].id, frac: 0.2}));
+  assert.equal(Math.round(E.hecho(s3, HOY)[partes[2].id] * 100), 50);
+});

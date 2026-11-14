@@ -675,25 +675,28 @@ const msEst = f => f.est + (f.estado === "run" ? ahora() - f.desde : 0);
 const msDesc = f => f.desc + (f.estado === "pause" ? ahora() - f.desde : 0);
 const mmss = ms => { const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
 
-function elegirYEmpezar(tipo, item) {
+function elegirYEmpezar(tipo, item, libre = false) {
   if (leerFoco()) { foco = leerFoco(); pintarFoco(); return; }
   const box = $("#modal");
   const disp = E.TIENDA.filter(x => E.tengo(st, x.id));
   let sel = (st.parque && st.parque.sel && E.tengo(st, st.parque.sel)) ? st.parque.sel : "extintor";
   const pintarE = () => {
     box.hidden = false;
-    box.querySelector(".hoja").innerHTML = `<h2>⏱ ${tipo === "callejero" ? "Callejero" : "Estudio"}: ¿qué consigues para tu parque de bomberos?</h2>
+    box.querySelector(".hoja").innerHTML = `${libre ? `<h2>⏱ Temporizador libre</h2><p class="nota">Úsalo cuando quieras. ¿Qué vas a hacer?</p>
+      <div class="segm"><button class="${tipo === "estudio" ? "on" : ""}" data-tipo="estudio">📚 Estudio</button><button class="${tipo === "callejero" ? "on" : ""}" data-tipo="callejero">🗺️ Callejero</button></div>
+      <h3>¿Qué consigues para tu parque de bomberos?</h3>` : `<h2>⏱ ${tipo === "callejero" ? "Callejero" : "Estudio"}: ¿qué consigues para tu parque de bomberos?</h2>`}
       <p class="nota">Mientras estudias se va fabricando o construyendo. Con al menos ${E.MIN_SESION} min sale adelante y va a tu parque. Si sales de la app más de 20 segundos con el temporizador en marcha, se pierde (el tiempo sí cuenta). Para descansar, usa «Parar».</p>
       <div class="chips objetos">${disp.map(x => `<button class="${x.id === sel ? "on" : ""}" data-o="${x.id}">${iconoPieza(x, "mini3d chico")}${esc(x.nombre)}</button>`).join("")}</div>
       <p class="nota">Desbloquea más en la tienda de «Mi parque».</p>
       <div class="acciones"><button class="btn sec" data-m="cancelar">Cancelar</button><button class="btn" data-m="ok">Empezar</button></div>`;
     box.querySelectorAll("[data-o]").forEach(b => b.onclick = () => { sel = b.dataset.o; pintarE(); });
+    box.querySelectorAll("[data-tipo]").forEach(b => b.onclick = () => { tipo = b.dataset.tipo; pintarE(); });
     box.querySelector("[data-m=cancelar]").onclick = () => { box.hidden = true; };
     box.querySelector("[data-m=ok]").onclick = () => {
       box.hidden = true;
       const parte = item ? (E.dia(st, HOY(), HOY()).plan || []).find(x => x.id === item) : null;
-      const que = parte ? `Tema ${parte.n} · ${parte.nombre}` : tipo === "callejero" ? (((st.calle && st.calle.sel) || []).join(" · ") || "Callejero") : "";
-      foco = {tipo, obj: sel, item: item || null, que, fecha: HOY(), ini: new Date().toISOString(), estado: "run", desde: ahora(), est: 0, desc: 0, seco: false};
+      const que = parte ? `Tema ${parte.n} · ${parte.nombre}` : tipo === "callejero" ? (((st.calle && st.calle.sel) || []).join(" · ") || "Callejero") : libre ? "Temporizador libre" : "";
+      foco = {tipo, obj: sel, item: item || null, que, libre, fecha: HOY(), ini: new Date().toISOString(), estado: "run", desde: ahora(), est: 0, desc: 0, seco: false};
       guardarFoco();
       if (!st.parque || st.parque.sel !== sel) guardar({parque: {sel}});
       pintarFoco();
@@ -746,14 +749,14 @@ async function accionFoco(a) {
     const ok = !f.seco && est >= E.MIN_SESION;
     const rec = st.dias[f.fecha] || {};
     const id = "s" + Date.parse(f.ini).toString(36);
-    await guardar({dias: {[f.fecha]: {sesiones: {[id]: {tipo: f.tipo, ini: f.ini, est, desc, obj: f.obj, ok, item: f.item || null}}}}});
-    finFoco(f, est, desc, ok);
+    await guardar({dias: {[f.fecha]: {sesiones: {[id]: {tipo: f.tipo, ini: f.ini, est, desc, obj: f.obj, ok, item: f.item || null, libre: !!f.libre}}}}});
+    finFoco(f, est, desc, ok, id);
     return;
   }
   guardarFoco(); pintarFoco();
 }
 
-function finFoco(f, est, desc, ok) {
+function finFoco(f, est, desc, ok, sid) {
   const box = $("#modal"), obj = E.TIENDA.find(x => x.id === f.obj) || E.TIENDA[0];
   const hoy = HOY(), d = E.dia(st, hoy, f.fecha), rec = st.dias[f.fecha] || {};
   const i = f.tipo === "callejero" ? 4 : E.I_ESTUDIO;
@@ -764,8 +767,11 @@ function finFoco(f, est, desc, ok) {
     <h2>${ok ? `¡${esc(obj.nombre)} ya está en tu parque!` : f.seco ? "Se perdió por salir de la app" : `Menos de ${E.MIN_SESION} min: no ha salido adelante`}</h2>
     <p>Estudio: <b>${E.textoMin(est)}</b> · Descanso: <b>${E.textoMin(desc)}</b> · +${est} monedas</p>
     <p class="nota">Hoy llevas ${E.textoMin(totalHoy)} de ${f.tipo === "callejero" ? "callejero" : "estudio"}.</p></div>
-    <div class="acciones">${!yaHecho && d.tipo !== "libre" ? `<button class="btn sec" data-m="no">Aún no he acabado</button><button class="btn" data-m="marcar">Marcar ${f.tipo === "callejero" ? "el callejero" : "el estudio"} como hecho</button>` : `<button class="btn" data-m="no">Vale</button>`}</div>`;
+    <div class="acciones">${f.libre && f.tipo === "estudio" && est > 0 ? `<button class="btn sec" data-m="no">Ahora no</button><button class="btn" data-m="estudiado">📝 Apuntar qué he estudiado</button>`
+      : !yaHecho && d.tipo !== "libre" ? `<button class="btn sec" data-m="no">Aún no he acabado</button><button class="btn" data-m="marcar">Marcar ${f.tipo === "callejero" ? "el callejero" : "el estudio"} como hecho</button>` : `<button class="btn" data-m="no">Vale</button>`}</div>`;
   box.querySelector("[data-m=no]").onclick = () => { box.hidden = true; };
+  const eb = box.querySelector("[data-m=estudiado]");
+  if (eb) eb.onclick = () => abrirEstudiado(f.fecha, sid, est);
   const mb = box.querySelector("[data-m=marcar]");
   if (mb) mb.onclick = async () => {
     box.hidden = true;
@@ -774,6 +780,61 @@ function finFoco(f, est, desc, ok) {
     if (i === E.I_ESTUDIO && parche.dias[f.fecha].s) parche.dias[f.fecha].s.real = totalHoy;
     await guardar(parche);
   };
+}
+
+// Después del temporizador libre: qué has estudiado exactamente (tema, partes terminadas y dónde te quedaste).
+// Solo se apunta eso: no da por hecho nada más del temario. El tiempo ya cuenta como estudio.
+function abrirEstudiado(fecha, sid, min) {
+  const box = $("#modal"), hoy = HOY();
+  const primeroPendiente = t => { const h = E.hecho(st, hoy), c = E.cola(st, t).items.find(x => (h[x.id] || 0) < 1 - 1e-6); return c ? c.n : (E.temas(st, t)[0] || {}).n; };
+  const plan = E.dia(st, hoy, fecha);
+  let t = plan.materia === "esp" ? "esp" : "leg", n = primeroPendiente(t), hechas = new Set(), medias = "", tipo = "pct", valor = 50, nota = "";
+  box.hidden = false; box.dataset.cerrable = "1";
+  const pintarS = () => {
+    const temasT = E.temas(st, t), {v, partes} = E.partesTema(st, hoy, t, n);
+    const pm = partes.find(p => p.id === medias), r = pm ? E.rangos(pm) : {};
+    if (pm && tipo !== "pct" && !r[tipo]) tipo = "pct";
+    const opciones = pm ? [r.pags && ["pags", "Página"], r.arts && ["arts", "Artículo"], ["pct", "Porcentaje"]].filter(Boolean) : [];
+    box.querySelector(".hoja").innerHTML = `<div class="hoja-cab"><h2>📝 ¿Qué has estudiado?</h2><button class="ico cerrar" data-m="cerrar" aria-label="Cerrar">✕</button></div>
+      <p class="nota">${E.textoMin(min)} de estudio ya sumados a hoy. Dime qué has hecho exactamente y lo apunto en tu temario.</p>
+      <div class="segm"><button class="${t === "leg" ? "on" : ""}" data-mat="leg">Legislación</button><button class="${t === "esp" ? "on" : ""}" data-mat="esp">Específico</button></div>
+      <label class="campo"><span>Tema</span><select id="temaE">${temasT.map(x => `<option value="${x.n}" ${x.n === n ? "selected" : ""}>Tema ${x.n} · ${esc(x.titulo)}</option>`).join("")}</select></label>
+      <div class="campo"><span>Partes que has terminado${v > 1 ? ` (${v}.ª vuelta)` : ""}</span>
+        <ul class="partes-e">${partes.map(p => {
+          const ya = p.hecho >= 1 - 1e-6, on = ya || hechas.has(p.id);
+          return `<li class="${on ? "on" : ""} ${ya ? "ya" : ""}"><label><input type="checkbox" data-p="${p.id}" ${on ? "checked" : ""} ${ya ? "disabled" : ""}>
+            <span>${p.partes > 1 ? `Parte ${p.parte}/${p.partes}: ` : ""}${esc(p.nombre)}${p.ref ? `<small>📄 ${esc(p.ref)}</small>` : ""}
+            <small>${ya ? "✓ ya estaba hecha" : p.hecho > 0 ? `llevabas un ${Math.round(p.hecho * 100)} %` : E.textoMin(p.min)}</small></span></label></li>`; }).join("")}</ul></div>
+      <label class="campo"><span>¿Te quedaste a medias en alguna?</span><select id="mediasE"><option value="">No, en ninguna</option>${partes.filter(p => p.hecho < 1 - 1e-6 && !hechas.has(p.id))
+        .map(p => `<option value="${p.id}" ${p.id === medias ? "selected" : ""}>${p.partes > 1 ? `Parte ${p.parte}/${p.partes}: ` : ""}${esc(p.nombre)}</option>`).join("")}</select></label>
+      ${pm ? `<div class="segm ${opciones.length === 3 ? "tres" : ""}">${opciones.map(([k, x]) => `<button class="${tipo === k ? "on" : ""}" data-tipo="${k}">${x}</button>`).join("")}</div>
+        <div class="hasta">${tipo === "pct" ? `<input type="range" id="valE" min="0" max="100" step="5" value="${valor}">`
+          : `<label>${tipo === "pags" ? "Me he quedado en la página" : "Me he quedado en el artículo"} <input type="number" id="valE" inputmode="numeric" min="${r[tipo][0]}" max="${r[tipo][1]}" value="${valor}"></label><small>De ${tipo === "pags" ? "la pág." : "el art."} ${r[tipo][0]} a ${r[tipo][1]}</small>`}
+          <b id="fracE">≈ ${Math.round(frac() * 100)} % de esa parte</b></div>` : ""}
+      <label class="campo"><span>Nota (opcional)</span><input type="text" id="notaE" maxlength="100" placeholder="Ej.: repaso de los arts. 14 a 29 con esquema" value="${esc(nota)}"></label>
+      <div class="acciones"><button class="btn sec" data-m="cerrar">Solo el tiempo</button><button class="btn" data-m="ok">Guardar</button></div>`;
+    function frac() { if (!pm) return 0; return tipo === "pct" ? valor / 100 : E.fraccionDe(r, tipo, valor); }
+    box.querySelectorAll("[data-mat]").forEach(b => b.onclick = () => { t = b.dataset.mat; n = primeroPendiente(t); hechas = new Set(); medias = ""; pintarS(); });
+    box.querySelector("#temaE").onchange = e => { n = +e.target.value; hechas = new Set(); medias = ""; pintarS(); };
+    box.querySelectorAll("[data-p]").forEach(c => c.onchange = () => { c.checked ? hechas.add(c.dataset.p) : hechas.delete(c.dataset.p); if (hechas.has(medias)) medias = ""; pintarS(); });
+    box.querySelector("#mediasE").onchange = e => { medias = e.target.value; const p = partes.find(x => x.id === medias), rr = p ? E.rangos(p) : {}; tipo = rr.pags ? "pags" : rr.arts ? "arts" : "pct"; valor = tipo === "pct" ? 50 : rr[tipo][0]; pintarS(); };
+    box.querySelectorAll("[data-tipo]").forEach(b => b.onclick = () => { tipo = b.dataset.tipo; valor = tipo === "pct" ? 50 : r[tipo][0]; pintarS(); });
+    const vE = box.querySelector("#valE");
+    if (vE) vE.oninput = () => { valor = +vE.value || 0; box.querySelector("#fracE").textContent = `≈ ${Math.round(frac() * 100)} % de esa parte`; };
+    box.querySelector("#notaE").oninput = e => { nota = e.target.value; };
+    box.querySelectorAll("[data-m=cerrar]").forEach(b => b.onclick = () => { box.hidden = true; });
+    box.querySelector("[data-m=ok]").onclick = () => {
+      const ids = [...hechas], m = pm ? {id: pm.id, frac: frac()} : null;
+      if (!ids.length && !m) { if (!confirm("No has marcado ninguna parte. ¿Guardar solo el tiempo?")) return; box.hidden = true; return; }
+      box.hidden = true;
+      const parche = E.estudiado(st, hoy, ids, m);
+      const etiqueta = pm ? (tipo === "pags" ? `pág. ${valor}` : tipo === "arts" ? `art. ${valor}` : `${valor} %`) : "";
+      if (pm) parche.marcas = {[pm.id]: {n: valor, tipo, txt: nota.trim(), et: etiqueta, fecha: hoy}};
+      parche.dias = {[fecha]: {sesiones: {[sid]: {estudiado: {t, n, ids, medias: m ? {...m, et: etiqueta} : null, txt: nota.trim()}}}}};
+      guardar(parche);
+    };
+  };
+  pintarS();
 }
 
 // Si sales de la app con el temporizador en marcha más de 20 s, lo que crece se seca (el tiempo sigue contando).
@@ -869,7 +930,8 @@ function vParque(hoy) {
         : `<p class="nota">Aún no tienes piezas. Usa el temporizador junto a lo que estudias en «Hoy» y elige qué quieres crear: con al menos ${E.MIN_SESION} min aparece en tu parque. Cada repetición es otra copia en el mapa.</p>`}
       ${perdidos ? `<p class="nota">💥 ${perdidos} ${perdidos === 1 ? "se perdió" : "se perdieron"} por salir de la app o por no llegar a ${E.MIN_SESION} min.</p>` : ""}</div>
     <p class="nota">Estudio ${h(e.est)} · Callejero ${h(e.cal)} · Descanso ${h(e.desc)} · ${e.sesiones} sesiones con temporizador. 1 minuto estudiado = 1 moneda.</p>
-    <button class="btn sec" data-a="olvidado">➕ Apuntar tiempo olvidado</button>`;
+    <div class="botones-tiempo"><button class="btn temp" data-a="focoLibre">⏱ Temporizador libre</button><button class="btn sec" data-a="olvidado">➕ Apuntar tiempo olvidado</button></div>
+    <p class="nota">El temporizador libre lo puedes usar cuando quieras, aunque no toque: el tiempo se suma a tu estudio o a tu callejero y al terminar apuntas qué has estudiado.</p>`;
 }
 
 // Apuntar a mano una sesión que no se registró (o que se perdió): cuenta como tiempo, monedas y pieza.
@@ -1067,6 +1129,8 @@ function enlazar() {
       abrirHastaAqui(b.dataset.f || null, b.dataset.id, b.dataset.t);
     } else if (a === "reintentar3d") {
       location.reload();
+    } else if (a === "focoLibre") {
+      elegirYEmpezar("estudio", null, true);
     } else if (a === "olvidado") {
       abrirOlvidado();
     } else if (a === "editarParque") {
