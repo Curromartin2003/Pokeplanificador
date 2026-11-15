@@ -141,6 +141,7 @@ function pintar() {
 }
 
 /* ---------- Hoy ---------- */
+const botonLibre = fecha => fecha === HOY() ? `<div class="botones-tiempo centro-btns"><button class="btn temp" data-a="focoLibre">⏱ Temporizador libre</button></div><p class="nota centro">Para estudiar, callejero o clase de Luis cuando quieras: todo suma.</p>` : "";
 function vHoy(hoy) {
   const fecha = ui.fecha || hoy;
   const d = E.dia(st, hoy, fecha);
@@ -157,7 +158,7 @@ function vHoy(hoy) {
     aviso = `<div class="aviso">Mañana empieza semana. <button class="btn peque" data-a="semanaSig">Elegir día libre y clases de Luis</button></div>`;
   if (fecha === hoy) aviso = avisoCambios(hoy) + avisoPremio(hoy) + avisoConv() + aviso + camino(hoy);
   if (antes) return nav + `<div class="vacio"><p>El plan empieza el ${E.fechaLarga(st.inicio)}.</p></div>`;
-  if (d.tipo === "libre") return nav + aviso + `<div class="libre"><div class="big">🌴</div><h2>Día libre</h2><p>Hoy no hay objetivos ni estudio: descansa de verdad. La puntuación no cambia.</p></div>` + manana(hoy, fecha);
+  if (d.tipo === "libre") return nav + aviso + `<div class="libre"><div class="big">🌴</div><h2>Día libre</h2><p>Hoy no hay objetivos ni estudio: descansa de verdad. La puntuación no cambia.</p></div>` + botonLibre(fecha) + manana(hoy, fecha);
 
   const lista = E.listaObjetivos(st);
   const c = lista.map((_, i) => !!(rec.c && rec.c[i]));
@@ -212,7 +213,7 @@ function vHoy(hoy) {
     <select id="tiempoDia">${[["", `Normal (${E.textoMin(d.horasNormales)})`], ["0", "0 h (sin estudio)"], ["60", "1 h"], ["120", "2 h"], ["180", "3 h"]]
       .map(([v, t]) => `<option value="${v}" ${(d.horasCambiadas ? String(d.total) : "") === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
     ${d.horasCambiadas ? `<span class="nota">Cambiado solo este día.</span>` : ""}</div>`;
-  return nav + aviso + marcador + `<ul class="objs">${items}</ul>` + tiempo + manana(hoy, fecha);
+  return nav + aviso + marcador + `<ul class="objs">${items}</ul>` + botonLibre(fecha) + tiempo + manana(hoy, fecha);
 }
 
 // Recompensas ganadas y aún sin cumplir.
@@ -592,7 +593,8 @@ function vAjustes(hoy) {
     <div class="tarjeta"><h3>Plan de referencia</h3><p class="nota">Sirve para ver si vas por delante o por detrás. ${st.base && st.base.v1 ? `Ahora: 1.ª vuelta el ${E.fechaLarga(st.base.v1)}.` : ""}</p><button class="btn" data-a="base">Fijar el plan de hoy como referencia</button></div>
     <div class="tarjeta"><h3>Cuenta</h3><p>${store.modo === "local" ? "Guardado solo en este dispositivo." : `Sincronizado con <b>${esc(store.email)}</b>.`}</p>
       ${store.modo === "local" ? "" : `<button class="btn sec" data-a="salir">Salir</button>`}</div>
-    <p class="nota centro">Plan empezado el ${E.fechaLarga(st.inicio)}.</p>`;
+    <p class="nota centro">Plan empezado el ${E.fechaLarga(st.inicio)}.</p>
+    <p class="nota centro">Versión de la app: ${esc(window.PP_VERSION || "?")}</p>`;
 }
 
 /* ---------- modal de la semana ---------- */
@@ -930,7 +932,7 @@ function vParque(hoy) {
       <div><b>${h(e.mes)}</b><span>este mes</span></div><div><b>${h(e.anio)}</b><span>este año</span></div><div><b>${h(e.total)}</b><span>en total</span></div>
       <div class="monedas"><b>🪙 ${e.monedas}</b><span>monedas</span></div></div>
     ${(() => { const r = E.repartoMinutos(st, hoy), cel = (ic, nom, k, cls) => `<div class="${cls}"><span class="rp-ic">${ic}</span><b>${h(r.total[k])}</b><span>${nom}</span><small>esta semana ${h(r.semana[k])}</small></div>`;
-      return `<div class="reparto ${r.total.clase ? "cuatro" : ""}">${cel("📜", "Legislación", "leg", "rp-leg")}${cel("🔥", "Específico", "esp", "rp-esp")}${cel("🗺️", "Callejero", "cal", "rp-cal")}${r.total.clase ? cel("🎓", "Clase de Luis", "clase", "rp-clase") : ""}</div>
+      return `<div class="reparto cuatro">${cel("📜", "Legislación", "leg", "rp-leg")}${cel("🔥", "Específico", "esp", "rp-esp")}${cel("🗺️", "Callejero", "cal", "rp-cal")}${cel("🎓", "Clase de Luis", "clase", "rp-clase")}</div>
         ${r.total.otro ? `<p class="nota">Y ${h(r.total.otro)} de estudio sin materia (con el temporizador libre sin apuntar qué estudiaste).</p>` : ""}`; })()}
     <div class="tarjeta"><h3>Tu ciudad de bomberos</h3><ul class="ciudad">${E.CIUDAD.map(z => {
       const ab = abiertas.includes(z.id), falta = Math.max(0, z.horas * 60 - e.total);

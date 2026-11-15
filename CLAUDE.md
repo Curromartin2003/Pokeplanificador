@@ -53,8 +53,9 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   callejero (`foco.libre`); el tiempo cuenta como cualquier sesión. Al acabar un estudio libre, `abrirEstudiado` pregunta tema,
   partes terminadas y dónde te quedaste: `E.estudiado` (solo esas partes, nunca hace retroceder) + `partesTema`; se guarda en
   `dias[f].sesiones[id].estudiado` y en `marcas`.
+- «⏱ Temporizador libre» también en Hoy (debajo de los objetivos, solo el día de hoy, también en días libres).
 - Clase de Luis: «⏱ Temporizador» en el objetivo de la clase (y «🎓 Clase» en el libre) → sesiones `tipo: "clase"`: cuentan como
-  estudio (`minutosDia().est`) y aparte (`.clase`); en Mi parque, tarjeta «Clase de Luis» en el reparto.
+  estudio (`minutosDia().est`) y aparte (`.clase`); en Mi parque, tarjeta «Clase de Luis» siempre visible en el reparto (2 × 2).
 - Mi parque: `estadisticas` (horas hoy/semana/mes/año/total; 1 min = 1 moneda), `TIENDA` por `ZONAS` (parque de bomberos: cocheras, instalaciones, material, exterior con pocas plantas, trofeos),
   `parque: {compras: {id: fecha}, sel}`.
 - Parque 3D: `js/parque3d.js` (three.js 0.160 por import map desde jsDelivr): modelos de baja poligonización propios
@@ -79,7 +80,8 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   `node scripts/icono.cjs` (Playwright + PIL).
 - Los PDF no se suben al repositorio.
 - Probar: `python3 -m http.server` y abrir `/?local&hoy=AAAA-MM-DD`. `node tests/e2e.mjs` (Playwright).
-- Si cambias archivos que se precargan, sube la versión de `CACHE` en `sw.js`. El service worker espera a la red 2,5 s y si no,
+- Si cambias archivos que se precargan, sube la versión de `CACHE` en `sw.js` y la misma en `window.PP_VERSION` (index.html;
+  se ve en Ajustes para comprobar si el móvil tiene la última). El service worker espera a la red 2,5 s y si no,
   usa la caché: los bloqueos de LaLiga a Cloudflare (días de partido) dejaban la app en blanco.
   Pide los archivos sin la caché HTTP (`cache: "no-cache"`/`"reload"`; Firebase los servía con max-age=3600 y salían versiones
   viejas) y la app se recarga sola una vez cuando se activa un service worker nuevo (`controllerchange`).
