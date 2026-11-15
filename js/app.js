@@ -176,7 +176,11 @@ function vHoy(hoy) {
     let titulo = o.t, det = "";
     const lapiz = i === E.I_ESTUDIO || i === E.I_CALLE ? "" : `<button class="ico lapiz" data-a="editObj" data-i="${i}" aria-label="Cambiar o quitar este objetivo">✎</button>`;
     if (i === E.I_ESTUDIO) {
-      if (d.tipo === "luis") { titulo = "Clase de Luis"; det = `<p class="det">Hoy solo clase y callejero.</p>`; }
+      if (d.tipo === "luis") {
+        titulo = "Clase de Luis";
+        const fc = E.minutosDia(rec).clase;
+        det = `<p class="det">Hoy solo clase y callejero.</p>` + (fecha === hoy ? `<p class="det"><span class="acc-parte"><button class="btn peque temp" data-a="foco" data-t="clase">⏱ Temporizador</button>${fc ? ` <span class="nota">Llevas ${E.textoMin(fc)} de clase.</span>` : ""}</span></p>` : "");
+      }
       else {
         titulo = `Estudio: ${d.partes.map(x => E.MATERIAS[x.t]).join(" y ")} · ${E.textoMin(d.min)}`;
         const real = rec.s && typeof rec.s.real === "number" ? rec.s.real : null;
@@ -678,6 +682,8 @@ const msEst = f => f.est + (f.estado === "run" ? ahora() - f.desde : 0);
 const msDesc = f => f.desc + (f.estado === "pause" ? ahora() - f.desde : 0);
 const mmss = ms => { const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
 
+const NOMBRE_FOCO = {callejero: "Callejero", clase: "Clase de Luis", estudio: "Estudio"};
+const ICONO_FOCO = {callejero: "🗺️", clase: "🎓", estudio: "📚"};
 function elegirYEmpezar(tipo, item, libre = false) {
   if (leerFoco()) { foco = leerFoco(); pintarFoco(); return; }
   const box = $("#modal");
@@ -686,8 +692,8 @@ function elegirYEmpezar(tipo, item, libre = false) {
   const pintarE = () => {
     box.hidden = false;
     box.querySelector(".hoja").innerHTML = `${libre ? `<h2>⏱ Temporizador libre</h2><p class="nota">Úsalo cuando quieras. ¿Qué vas a hacer?</p>
-      <div class="segm"><button class="${tipo === "estudio" ? "on" : ""}" data-tipo="estudio">📚 Estudio</button><button class="${tipo === "callejero" ? "on" : ""}" data-tipo="callejero">🗺️ Callejero</button></div>
-      <h3>¿Qué consigues para tu parque de bomberos?</h3>` : `<h2>⏱ ${tipo === "callejero" ? "Callejero" : "Estudio"}: ¿qué consigues para tu parque de bomberos?</h2>`}
+      <div class="segm tres"><button class="${tipo === "estudio" ? "on" : ""}" data-tipo="estudio">📚 Estudio</button><button class="${tipo === "callejero" ? "on" : ""}" data-tipo="callejero">🗺️ Callejero</button><button class="${tipo === "clase" ? "on" : ""}" data-tipo="clase">🎓 Clase</button></div>
+      <h3>¿Qué consigues para tu parque de bomberos?</h3>` : `<h2>⏱ ${NOMBRE_FOCO[tipo] || "Estudio"}: ¿qué consigues para tu parque de bomberos?</h2>`}
       <p class="nota">Mientras estudias se va fabricando o construyendo. Con al menos ${E.MIN_SESION} min sale adelante y va a tu parque. Si sales de la app más de 20 segundos con el temporizador en marcha, se pierde (el tiempo sí cuenta). Para descansar, usa «Parar».</p>
       <div class="chips objetos">${disp.map(x => `<button class="${x.id === sel ? "on" : ""}" data-o="${x.id}">${iconoPieza(x, "mini3d chico")}${esc(x.nombre)}</button>`).join("")}</div>
       <p class="nota">Desbloquea más en la tienda de «Mi parque».</p>
@@ -698,7 +704,7 @@ function elegirYEmpezar(tipo, item, libre = false) {
     box.querySelector("[data-m=ok]").onclick = () => {
       box.hidden = true;
       const parte = item ? (E.dia(st, HOY(), HOY()).plan || []).find(x => x.id === item) : null;
-      const que = parte ? `Tema ${parte.n} · ${parte.nombre}` : tipo === "callejero" ? (((st.calle && st.calle.sel) || []).join(" · ") || "Callejero") : libre ? "Temporizador libre" : "";
+      const que = parte ? `Tema ${parte.n} · ${parte.nombre}` : tipo === "clase" ? "Clase de Luis" : tipo === "callejero" ? (((st.calle && st.calle.sel) || []).join(" · ") || "Callejero") : libre ? "Temporizador libre" : "";
       foco = {tipo, obj: sel, item: item || null, que, libre, fecha: HOY(), ini: new Date().toISOString(), estado: "run", desde: ahora(), est: 0, desc: 0, seco: false};
       guardarFoco();
       if (!st.parque || st.parque.sel !== sel) guardar({parque: {sel}});
@@ -719,7 +725,7 @@ function pintarFoco() {
   const crece = Math.min(1, min / 25);  // a los 25 min está crecido del todo
   const listo = min >= E.MIN_SESION;
   box.innerHTML = `<div class="foco-in ${foco.estado}">
-    <p class="foco-tipo">${foco.tipo === "callejero" ? "🗺️ Callejero" : "📚 Estudio"} · ${foco.estado === "run" ? "concentrado" : "en descanso"}</p>
+    <p class="foco-tipo">${ICONO_FOCO[foco.tipo] || "📚"} ${NOMBRE_FOCO[foco.tipo] || "Estudio"} · ${foco.estado === "run" ? "concentrado" : "en descanso"}</p>
     ${foco.que ? `<p class="foco-que">${esc(foco.que)}</p>` : ""}
     <div class="foco-arbol" style="--c:${crece}"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" class="pista"/><circle cx="60" cy="60" r="54" class="avance" style="stroke-dashoffset:${339.3 * (1 - Math.min(1, min / 25))}"/></svg>
       ${P3.disponible() ? `<span class="visor3d" id="visorFoco"></span>` : `<span class="obj ${foco.seco ? "seco" : ""}" style="transform:scale(${0.35 + 0.65 * crece})">${foco.seco ? (obj.tipo === "exterior" ? "🥀" : "💥") : listo ? obj.icono : obj.tipo === "exterior" ? "🌱" : "🏗️"}</span>`}</div>
@@ -764,14 +770,14 @@ function finFoco(f, est, desc, ok, sid) {
   const hoy = HOY(), d = E.dia(st, hoy, f.fecha), rec = st.dias[f.fecha] || {};
   const i = f.tipo === "callejero" ? 4 : E.I_ESTUDIO;
   const yaHecho = rec.c && rec.c[i];
-  const totalHoy = f.tipo === "callejero" ? E.minutosDia(st.dias[f.fecha]).cal : E.minutosDia(st.dias[f.fecha]).est;
+  const md = E.minutosDia(st.dias[f.fecha]), totalHoy = f.tipo === "callejero" ? md.cal : f.tipo === "clase" ? md.clase : md.est;
   box.hidden = false;
   box.querySelector(".hoja").innerHTML = `<div class="fin-foco"><div class="big">${ok ? iconoPieza(obj, "mini3d grande") : obj.tipo === "exterior" ? "🥀" : "💥"}</div>
     <h2>${ok ? `¡${esc(obj.nombre)} ya está en tu parque!` : f.seco ? "Se perdió por salir de la app" : `Menos de ${E.MIN_SESION} min: no ha salido adelante`}</h2>
-    <p>Estudio: <b>${E.textoMin(est)}</b> · Descanso: <b>${E.textoMin(desc)}</b> · +${est} monedas</p>
-    <p class="nota">Hoy llevas ${E.textoMin(totalHoy)} de ${f.tipo === "callejero" ? "callejero" : "estudio"}.</p></div>
+    <p>${f.tipo === "clase" ? "Clase" : f.tipo === "callejero" ? "Callejero" : "Estudio"}: <b>${E.textoMin(est)}</b> · Descanso: <b>${E.textoMin(desc)}</b> · +${est} monedas</p>
+    <p class="nota">Hoy llevas ${E.textoMin(totalHoy)} de ${f.tipo === "callejero" ? "callejero" : f.tipo === "clase" ? "clase de Luis" : "estudio"}.</p></div>
     <div class="acciones">${f.libre && f.tipo === "estudio" && est > 0 ? `<button class="btn sec" data-m="no">Ahora no</button><button class="btn" data-m="estudiado">📝 Apuntar qué he estudiado</button>`
-      : !yaHecho && d.tipo !== "libre" ? `<button class="btn sec" data-m="no">Aún no he acabado</button><button class="btn" data-m="marcar">Marcar ${f.tipo === "callejero" ? "el callejero" : "el estudio"} como hecho</button>` : `<button class="btn" data-m="no">Vale</button>`}</div>`;
+      : !yaHecho && d.tipo !== "libre" ? `<button class="btn sec" data-m="no">Aún no he acabado</button><button class="btn" data-m="marcar">Marcar ${f.tipo === "callejero" ? "el callejero" : f.tipo === "clase" ? "la clase" : "el estudio"} como hecho</button>` : `<button class="btn" data-m="no">Vale</button>`}</div>`;
   box.querySelector("[data-m=no]").onclick = () => { box.hidden = true; };
   const eb = box.querySelector("[data-m=estudiado]");
   if (eb) eb.onclick = () => abrirEstudiado(f.fecha, sid, est);
@@ -924,7 +930,7 @@ function vParque(hoy) {
       <div><b>${h(e.mes)}</b><span>este mes</span></div><div><b>${h(e.anio)}</b><span>este año</span></div><div><b>${h(e.total)}</b><span>en total</span></div>
       <div class="monedas"><b>🪙 ${e.monedas}</b><span>monedas</span></div></div>
     ${(() => { const r = E.repartoMinutos(st, hoy), cel = (ic, nom, k, cls) => `<div class="${cls}"><span class="rp-ic">${ic}</span><b>${h(r.total[k])}</b><span>${nom}</span><small>esta semana ${h(r.semana[k])}</small></div>`;
-      return `<div class="reparto">${cel("📜", "Legislación", "leg", "rp-leg")}${cel("🔥", "Específico", "esp", "rp-esp")}${cel("🗺️", "Callejero", "cal", "rp-cal")}</div>
+      return `<div class="reparto ${r.total.clase ? "cuatro" : ""}">${cel("📜", "Legislación", "leg", "rp-leg")}${cel("🔥", "Específico", "esp", "rp-esp")}${cel("🗺️", "Callejero", "cal", "rp-cal")}${r.total.clase ? cel("🎓", "Clase de Luis", "clase", "rp-clase") : ""}</div>
         ${r.total.otro ? `<p class="nota">Y ${h(r.total.otro)} de estudio sin materia (con el temporizador libre sin apuntar qué estudiaste).</p>` : ""}`; })()}
     <div class="tarjeta"><h3>Tu ciudad de bomberos</h3><ul class="ciudad">${E.CIUDAD.map(z => {
       const ab = abiertas.includes(z.id), falta = Math.max(0, z.horas * 60 - e.total);

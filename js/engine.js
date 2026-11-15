@@ -548,6 +548,7 @@ function atribuirDia(rec, q, materia) {
   let asignado = 0;
   for (const x of ses) {
     if (x.tipo === "callejero" || !x.est) continue;
+    if (x.tipo === "clase") { out.push({t: "clase", k: null, min: x.est}); asignado += x.est; continue; }
     const e = x.estudiado, ids = e ? [...(e.ids || []), ...(e.medias ? [e.medias.id] : [])] : x.item ? [x.item] : [];
     const c = ids.map(de).find(Boolean);
     if (c) { out.push({t: c.t, k: `${c.t}${c.n}|${c.v}`, min: x.est}); asignado += x.est; }
@@ -575,7 +576,7 @@ export function tiemposTema(st, hoy) {
 // (por ejemplo, con el temporizador libre un día de clase sin apuntar qué).
 export function repartoMinutos(st, hoy) {
   const q = {leg: cola(st, "leg"), esp: cola(st, "esp")}, mon = lunes(hoy);
-  const vacio = () => ({leg: 0, esp: 0, cal: 0, otro: 0}), r = {total: vacio(), semana: vacio()};
+  const vacio = () => ({leg: 0, esp: 0, cal: 0, clase: 0, otro: 0}), r = {total: vacio(), semana: vacio()};
   const fechas = Object.keys(st.dias).filter(f => f <= hoy).sort();
   const materia = {};
   if (fechas.length) for (const d of dias(st, hoy, fechas[0] < st.inicio ? st.inicio : fechas[0], hoy)) if (d.tipo === "estudio" && d.partes && d.partes[0]) materia[d.fecha] = d.partes[0].t;
@@ -583,7 +584,7 @@ export function repartoMinutos(st, hoy) {
     const a = atribuirDia(st.dias[f], q, materia[f]);
     for (const dst of f >= mon ? [r.total, r.semana] : [r.total]) {
       dst.cal += a.cal;
-      for (const x of a.trozos) dst[x.t === "leg" || x.t === "esp" ? x.t : "otro"] += x.min;
+      for (const x of a.trozos) dst[x.t === "leg" || x.t === "esp" || x.t === "clase" ? x.t : "otro"] += x.min;
     }
   }
   for (const o of [r.total, r.semana]) for (const k of Object.keys(o)) o[k] = Math.round(o[k]);
@@ -754,10 +755,11 @@ export function sesionesDe(rec) {
 
 export function minutosDia(rec) {
   const ses = sesionesDe(rec);
-  let est = 0, cal = 0, desc = 0;
-  for (const x of ses) { if (x.tipo === "callejero") cal += x.est || 0; else est += x.est || 0; desc += x.desc || 0; }
+  // La clase de Luis cuenta como estudio (est) y además se lleva aparte (clase).
+  let est = 0, cal = 0, desc = 0, clase = 0;
+  for (const x of ses) { if (x.tipo === "callejero") cal += x.est || 0; else { est += x.est || 0; if (x.tipo === "clase") clase += x.est || 0; } desc += x.desc || 0; }
   if (!ses.some(x => x.tipo !== "callejero") && rec && rec.s && typeof rec.s.real === "number") est = rec.s.real;
-  return {est, cal, desc, total: est + cal};
+  return {est, cal, desc, clase, total: est + cal};
 }
 export function estadisticas(st, hoy) {
   const r = {hoy: 0, semana: 0, mes: 0, anio: 0, total: 0, est: 0, cal: 0, desc: 0, plantados: [], sesiones: 0};

@@ -314,8 +314,16 @@ test("reparto del tiempo por materia y tiempo de cada tema con el temporizador",
     "2026-11-04": {sesiones: {c: {tipo: "estudio", est: 30, ini: "3", libre: true, estudiado: {t: "esp", n: 1, ids: [parte.id], medias: null}}}},
   }});
   const r = E.repartoMinutos(st, "2026-11-04");
-  assert.deepEqual(r.total, {leg: 40, esp: 30, cal: 20, otro: 0});
+  assert.deepEqual(r.total, {leg: 40, esp: 30, cal: 20, clase: 0, otro: 0});
   assert.deepEqual(r.semana, r.total);
   const t = E.tiemposTema(st, "2026-11-04");
   assert.equal(Math.round(t[`esp1|${parte.v}`]), 30);
+});
+
+test("temporizador en la clase de Luis: cuenta como estudio y se lleva aparte", () => {
+  const st = base(undefined, {dias: {"2026-11-02": {sesiones: {a: {tipo: "clase", est: 50, ini: "1"}, b: {tipo: "callejero", est: 15, ini: "2"}}}}});
+  const m = E.minutosDia(st.dias["2026-11-02"]);
+  assert.equal(m.est, 50); assert.equal(m.clase, 50); assert.equal(m.total, 65);
+  const r = E.repartoMinutos(st, HOY);
+  assert.deepEqual(r.total, {leg: 0, esp: 0, cal: 15, clase: 50, otro: 0});
 });
