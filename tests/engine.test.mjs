@@ -303,3 +303,19 @@ test("temporizador libre: apunta solo las partes que dices", () => {
   const s3 = aplicar(s2, E.estudiado(s2, HOY, [], {id: partes[2].id, frac: 0.2}));
   assert.equal(Math.round(E.hecho(s3, HOY)[partes[2].id] * 100), 50);
 });
+
+test("reparto del tiempo por materia y tiempo de cada tema con el temporizador", () => {
+  const st0 = base();
+  const parte = E.partesTema(st0, HOY, "esp", 1).partes[0];
+  const st = base(undefined, {dias: {
+    // Martes 3: día de estudio (legislación) con 40 min de temporizador sin parte, 20 de callejero.
+    [HOY]: {sesiones: {a: {tipo: "estudio", est: 40, ini: "1"}, b: {tipo: "callejero", est: 20, ini: "2"}}},
+    // Miércoles 4 (clase de Luis): temporizador libre de 30 min apuntado en el tema 1 de específico.
+    "2026-11-04": {sesiones: {c: {tipo: "estudio", est: 30, ini: "3", libre: true, estudiado: {t: "esp", n: 1, ids: [parte.id], medias: null}}}},
+  }});
+  const r = E.repartoMinutos(st, "2026-11-04");
+  assert.deepEqual(r.total, {leg: 40, esp: 30, cal: 20, otro: 0});
+  assert.deepEqual(r.semana, r.total);
+  const t = E.tiemposTema(st, "2026-11-04");
+  assert.equal(Math.round(t[`esp1|${parte.v}`]), 30);
+});

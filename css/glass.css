@@ -240,3 +240,12 @@ input[type=text], input[type=date], input[type=url], input[type=email], input[ty
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root { --cristal: rgba(255, 255, 255, .86); --cristal-fuerte: rgba(255, 255, 255, .96); }
 }
+
+/* Cifras de «Mi parque» y reparto por materia, también de cristal. */
+.parque-stats div:not(.grande), .reparto div {
+  background-color: var(--cristal); border: 1px solid var(--borde);
+  -webkit-backdrop-filter: var(--vidrio); backdrop-filter: var(--vidrio);
+  box-shadow: var(--sombra), inset 0 1px 0 var(--brillo);
+}
+.parque-stats .monedas { background-color: color-mix(in srgb, #FFC933 20%, var(--cristal)); }
+.parque-stats .grande { border: 1px solid rgba(255, 255, 255, .3); box-shadow: 0 12px 28px -12px rgba(150, 15, 25, .6), inset 0 1px 0 rgba(255, 255, 255, .4); }

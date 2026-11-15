@@ -539,19 +539,55 @@ export function semilla(st, hoy) {
 
 // Lo que has tardado en cada tema (por vuelta): el tiempo real apuntado cada día (o el previsto si no lo apuntaste),
 // repartido entre los trozos que se estudiaron ese día. Clave: "leg1|1" (materia, tema, vuelta).
+// A qué se dedicó cada minuto de estudio de un día: primero lo que dice cada sesión (la parte del temporizador o lo apuntado
+// con el temporizador libre); el resto se reparte entre las partes marcadas ese día (s.items) o, si no hay, va a la
+// materia que tocaba. Devuelve trozos {t, k (tema|vuelta) o null, min} y los minutos de callejero.
+function atribuirDia(rec, q, materia) {
+  const out = [], ses = sesionesDe(rec), m = minutosDia(rec);
+  const de = id => q.leg.porId.get(id) || q.esp.porId.get(id);
+  let asignado = 0;
+  for (const x of ses) {
+    if (x.tipo === "callejero" || !x.est) continue;
+    const e = x.estudiado, ids = e ? [...(e.ids || []), ...(e.medias ? [e.medias.id] : [])] : x.item ? [x.item] : [];
+    const c = ids.map(de).find(Boolean);
+    if (c) { out.push({t: c.t, k: `${c.t}${c.n}|${c.v}`, min: x.est}); asignado += x.est; }
+    else if (e && e.t) { out.push({t: e.t, k: e.n ? `${e.t}${e.n}|1` : null, min: x.est}); asignado += x.est; }
+  }
+  const resto = Math.max(0, m.est - asignado);
+  if (resto > 0) {
+    const trozos = (rec.s && rec.s.items || []).map(([id, fr]) => ({c: de(id), fr})).filter(x => x.c);
+    const prev = trozos.reduce((a, x) => a + x.fr * x.c.min, 0);
+    if (prev > 0) for (const x of trozos) out.push({t: x.c.t, k: `${x.c.t}${x.c.n}|${x.c.v}`, min: resto * x.fr * x.c.min / prev});
+    else out.push({t: materia || null, k: null, min: resto});
+  }
+  return {trozos: out, cal: m.cal};
+}
+// Minutos de estudio de cada tema y vuelta («leg1|1»), con el temporizador y con lo marcado (se muestra en Temario).
 export function tiemposTema(st, hoy) {
   const q = {leg: cola(st, "leg"), esp: cola(st, "esp")}, out = {};
   for (const [f, r] of Object.entries(st.dias)) {
-    if (f < st.inicio || f > hoy || !r || !r.s || !r.s.items) continue;
-    const trozos = r.s.items.map(([id, fr]) => ({c: q.leg.porId.get(id) || q.esp.porId.get(id), fr})).filter(x => x.c);
-    const prev = trozos.reduce((a, x) => a + x.fr * x.c.min, 0);
-    const total = typeof r.s.real === "number" ? r.s.real : (r.s.m || 0) + (r.s.x ? r.s.x.m : 0);
-    for (const x of trozos) {
-      const k = `${x.c.t}${x.c.n}|${x.c.v}`;
-      out[k] = (out[k] || 0) + (prev ? total * x.fr * x.c.min / prev : 0);
-    }
+    if (f > hoy || !r) continue;
+    for (const x of atribuirDia(r, q, null).trozos) if (x.k) out[x.k] = (out[x.k] || 0) + x.min;
   }
   return out;
+}
+// Reparto del tiempo entre legislación, específico y callejero (en total y esta semana). «otro»: estudio sin materia
+// (por ejemplo, con el temporizador libre un día de clase sin apuntar qué).
+export function repartoMinutos(st, hoy) {
+  const q = {leg: cola(st, "leg"), esp: cola(st, "esp")}, mon = lunes(hoy);
+  const vacio = () => ({leg: 0, esp: 0, cal: 0, otro: 0}), r = {total: vacio(), semana: vacio()};
+  const fechas = Object.keys(st.dias).filter(f => f <= hoy).sort();
+  const materia = {};
+  if (fechas.length) for (const d of dias(st, hoy, fechas[0] < st.inicio ? st.inicio : fechas[0], hoy)) if (d.tipo === "estudio" && d.partes && d.partes[0]) materia[d.fecha] = d.partes[0].t;
+  for (const f of fechas) {
+    const a = atribuirDia(st.dias[f], q, materia[f]);
+    for (const dst of f >= mon ? [r.total, r.semana] : [r.total]) {
+      dst.cal += a.cal;
+      for (const x of a.trozos) dst[x.t === "leg" || x.t === "esp" ? x.t : "otro"] += x.min;
+    }
+  }
+  for (const o of [r.total, r.semana]) for (const k of Object.keys(o)) o[k] = Math.round(o[k]);
+  return r;
 }
 
 export function fijarBase(st, hoy) {

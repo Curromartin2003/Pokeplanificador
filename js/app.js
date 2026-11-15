@@ -352,7 +352,10 @@ function vTemario(hoy) {
       return `<li class="tema ${est}"><button class="cab" data-a="abrirTema" data-k="${k}">
         <span class="num">${tm.n > 33 && t === "esp" ? "S" + (tm.n - 33) : tm.n}</span><span class="nom">${esc(tm.titulo)}${tm.material.length ? ` <span class="pdf" title="Con tu material">📄</span>` : ""}${visto && v === 1 ? ` <span class="chip visto">visto</span>` : ""}${(() => {
           const tt = Math.round(tiempos[`${k}|${v}`] || 0);
-          return tt > 0 ? `<span class="tiempo-tema ${est === "hecho" ? "fin" : ""}">⏱ ${est === "hecho" ? "Estudiado en" : "Llevas"} ${E.textoMin(tt)}</span>` : "";
+          // Minutos de estudio de este tema en esta vuelta (temporizador, temporizador libre y días marcados).
+          const mins = n => `${n} min${n >= 60 ? ` (${E.textoMin(n)})` : ""}`;
+          if (est === "hecho") return `<span class="tiempo-tema fin">✓ ${tt > 0 ? `Terminado en ${mins(tt)} de estudio` : "Terminado · sin tiempo apuntado"}</span>`;
+          return tt > 0 ? `<span class="tiempo-tema">⏱ Llevas ${mins(tt)} de estudio</span>` : "";
         })()}</span>
         <span class="barra"><i style="width:${Math.round(pct * 100)}%"></i></span></button>${partes}</li>`;
     }).join("");
@@ -920,6 +923,9 @@ function vParque(hoy) {
     <div class="parque-stats"><div class="grande"><b>${h(e.hoy)}</b><span>hoy</span></div><div><b>${h(e.semana)}</b><span>esta semana</span></div>
       <div><b>${h(e.mes)}</b><span>este mes</span></div><div><b>${h(e.anio)}</b><span>este año</span></div><div><b>${h(e.total)}</b><span>en total</span></div>
       <div class="monedas"><b>🪙 ${e.monedas}</b><span>monedas</span></div></div>
+    ${(() => { const r = E.repartoMinutos(st, hoy), cel = (ic, nom, k, cls) => `<div class="${cls}"><span class="rp-ic">${ic}</span><b>${h(r.total[k])}</b><span>${nom}</span><small>esta semana ${h(r.semana[k])}</small></div>`;
+      return `<div class="reparto">${cel("📜", "Legislación", "leg", "rp-leg")}${cel("🔥", "Específico", "esp", "rp-esp")}${cel("🗺️", "Callejero", "cal", "rp-cal")}</div>
+        ${r.total.otro ? `<p class="nota">Y ${h(r.total.otro)} de estudio sin materia (con el temporizador libre sin apuntar qué estudiaste).</p>` : ""}`; })()}
     <div class="tarjeta"><h3>Tu ciudad de bomberos</h3><ul class="ciudad">${E.CIUDAD.map(z => {
       const ab = abiertas.includes(z.id), falta = Math.max(0, z.horas * 60 - e.total);
       const n = piezas.filter(p => (E.TIENDA.find(t => t.id === p.id) || {}).zona === z.id).length;
