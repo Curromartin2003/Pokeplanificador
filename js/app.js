@@ -248,7 +248,8 @@ function camino(hoy) {
   let cita = null;
   if (st.examen && st.examen >= hoy) cita = {fecha: st.examen, texto: "tu examen"};
   if (conv) for (const c of conv.mias) for (const f of c.fases) {
-    if (!f.hecho && f.fecha && f.fecha >= hoy && (!cita || f.fecha < cita.fecha))
+    // Solo fechas confirmadas: las previstas por academias o sindicatos no cuentan para la cuenta atrás.
+    if (!f.hecho && f.fecha && f.fecha >= hoy && !/aprox|prevista|sin confirmar/i.test(f.texto) && (!cita || f.fecha < cita.fecha))
       cita = {fecha: f.fecha, texto: `${c.nombre.split(" · ")[0]}: ${f.texto.split(":")[0].toLowerCase()}`, aprox: /aprox|prevista|sin confirmar/i.test(f.texto)};
   }
   const q = {leg: E.cola(st, "leg"), esp: E.cola(st, "esp")}, pr = E.progreso(st, hoy);

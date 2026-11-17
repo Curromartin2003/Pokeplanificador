@@ -9,7 +9,7 @@
    "lugar": "Aeropuerto de Gran Canaria (tu elección)",
    "plazas": "Bolsa de empleo (selección externa, nivel D)",
    "sistema": "Prueba general (test) + pruebas físicas y de tolerancias",
-   "estado": "En proceso: pendiente de pruebas físicas y tolerancias",
+   "estado": "En proceso: pendiente de pruebas físicas y tolerancias (sin fecha oficial)",
    "resumen": "Prueba general: 140 preguntas, de 0 a 70 puntos, mínimo 35. Pruebas físicas eliminatorias, de 0 a 36 puntos; hace falta certificado médico con fecha posterior a la convocatoria. Sustituye a la bolsa de 2022, que acaba en 2027.",
    "fases": [
     {
@@ -33,8 +33,8 @@
      "hecho": true
     },
     {
-     "fecha": "2026-11-16",
-     "texto": "Pruebas físicas y de tolerancias: segunda quincena de noviembre (fecha aproximada, sin confirmar)",
+     "fecha": null,
+     "texto": "Pruebas físicas y de tolerancias: sin fecha. Aena no ha publicado citación ni sede; la previsión de la segunda quincena de noviembre de 2026 no se ha cumplido y, según UGT y CCOO, no serán en 2026 (previsiblemente 2027). Sede única prevista en la Comunidad de Madrid",
      "hecho": false
     }
    ],
@@ -70,7 +70,7 @@
      "pdfs": []
     }
    ],
-   "aviso": "Aena no publica en el BOE: las listas, notas y citaciones salen en su portal de empleo. Las fechas marcadas como previstas vienen de academias; confírmalas en el portal.",
+   "aviso": "Aena no publica en el BOE: las listas, notas y citaciones salen en su portal de empleo, que se revisa cada mañana. Las fechas sin confirmar vienen de academias y sindicatos: no se usan para la cuenta atrás.",
    "novedades": []
   },
   {
