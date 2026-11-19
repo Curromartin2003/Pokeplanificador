@@ -80,7 +80,7 @@
    "lugar": "Alcalá de Guadaíra (Sevilla)",
    "plazas": "5 plazas por turno libre (más 1 por movilidad), OEP 2026",
    "sistema": "Oposición, turno libre",
-   "estado": "Lista definitiva publicada (18-11) en el tablón de la sede electrónica: mira en el anuncio la fecha del primer ejercicio",
+   "estado": "Lista definitiva publicada (18-11). Primer ejercicio: 2 de diciembre a las 16:00 en el IES Albero",
    "resumen": "Bases en el BOP de Sevilla n.º 123 (29-06-2026), modificadas el 2-07-2026; extracto en el BOJA n.º 148 (3-08-2026); anuncio en el BOE n.º 193 (8-08-2026). Solicitud solo por vía electrónica. No confundir con la de 25 plazas por promoción interna (BOP n.º 144), que no es la tuya.",
    "fases": [
     {
@@ -116,14 +116,15 @@
     },
     {
      "fecha": "2026-11-18",
-     "texto": "Lista definitiva de admitidos y excluidos, publicada en el tablón de la sede electrónica del Ayuntamiento (expediente 4120/2026). La fecha del primer ejercicio viene en ese anuncio",
+     "texto": "Lista definitiva de admitidos y excluidos (Resolución 5903/2026, de 12 de noviembre), publicada en el tablón de la sede electrónica del Ayuntamiento",
      "hecho": true,
      "url": "https://ciudadalcala.sedelectronica.es/preview-document/45dcb0cd-f577-4d1e-8855-d2931caddcf1"
     },
     {
-     "fecha": null,
-     "texto": "Primer ejercicio: fecha, hora y lugar en el anuncio de la lista definitiva del 18-11 (tablón de la sede electrónica)",
-     "hecho": false
+     "fecha": "2026-12-02",
+     "texto": "Primer ejercicio: miércoles 2 de diciembre de 2026 a las 16:00, en el IES Albero (Av. del Tren de los Panaderos, 13, Alcalá de Guadaíra)",
+     "hecho": false,
+     "url": "https://ciudadalcala.sedelectronica.es/preview-document/45dcb0cd-f577-4d1e-8855-d2931caddcf1"
     }
    ],
    "enlaces": [
