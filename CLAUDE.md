@@ -38,6 +38,11 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   (fichas escritas a mano + novedades automáticas con enlace directo: anuncios del BOE que las nombran, PDF nuevos en las
   páginas vigiladas (`vigilar[].pdfs`), anuncios del BOP de Sevilla (`bop_sevilla`) y cambios de texto en las páginas).
   Las novedades sin ver salen también en Hoy.
+  Revisión dos veces al día (06:41 y 15:37 UTC). `get` reintenta y usa `scripts/certs/intermedios.pem` (intermedios que
+  algunas webs no envían, p. ej. alcaladeguadaira.es). Tablón de sedes Gestiona (`tablon: [{nombre, url, claves, expedientes}]`,
+  `tablon_gestiona`): Alcalá publica ahí listas y fechas (la lista definitiva del 18-11-2026 salió solo ahí). BOP de Sevilla
+  (lunes a viernes): se repasan los días de las 2 últimas semanas que no se pudieron leer (`bop_ok`). Lo que falla va a
+  `fallos` y la app lo enseña en Plazas.
   `data/revisados.json` guarda los anuncios ya mirados. Radar BOP de Sevilla (`sevilla`): todo anuncio de bomberos de
   turno libre de la provincia (bases, listas, tribunal, examen) con enlace directo; si nunca se ha podido leer
   (`sevilla_ok` falso) intenta los últimos 60 días. El título de cada anuncio se elige por parecido con su dirección

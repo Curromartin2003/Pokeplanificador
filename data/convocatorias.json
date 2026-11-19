@@ -80,7 +80,7 @@
    "lugar": "Alcalá de Guadaíra (Sevilla)",
    "plazas": "5 plazas por turno libre (más 1 por movilidad), OEP 2026",
    "sistema": "Oposición, turno libre",
-   "estado": "Lista provisional y tribunal publicados (16-10). Plazo de subsanación terminado el 30-10: pendiente de lista definitiva y fecha de examen",
+   "estado": "Lista definitiva publicada (18-11) en el tablón de la sede electrónica: mira en el anuncio la fecha del primer ejercicio",
    "resumen": "Bases en el BOP de Sevilla n.º 123 (29-06-2026), modificadas el 2-07-2026; extracto en el BOJA n.º 148 (3-08-2026); anuncio en el BOE n.º 193 (8-08-2026). Solicitud solo por vía electrónica. No confundir con la de 25 plazas por promoción interna (BOP n.º 144), que no es la tuya.",
    "fases": [
     {
@@ -115,8 +115,14 @@
      "hecho": true
     },
     {
+     "fecha": "2026-11-18",
+     "texto": "Lista definitiva de admitidos y excluidos, publicada en el tablón de la sede electrónica del Ayuntamiento (expediente 4120/2026). La fecha del primer ejercicio viene en ese anuncio",
+     "hecho": true,
+     "url": "https://ciudadalcala.sedelectronica.es/preview-document/45dcb0cd-f577-4d1e-8855-d2931caddcf1"
+    },
+    {
      "fecha": null,
-     "texto": "Lista definitiva de admitidos y fecha del primer ejercicio (BOP de Sevilla y sede del Ayuntamiento)",
+     "texto": "Primer ejercicio: fecha, hora y lugar en el anuncio de la lista definitiva del 18-11 (tablón de la sede electrónica)",
      "hecho": false
     }
    ],
@@ -157,12 +163,27 @@
      "fecha": "2026-10-16",
      "texto": "Lista provisional de personas admitidas y excluidas y composición del tribunal de las cinco plazas de Bombero por turno libre (BOP de Sevilla n.º 201, BOP-SE-2026-201005). Plazo de subsanación: 10 días hábiles.",
      "url": "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-16-10-2026/"
+    },
+    {
+     "fecha": "2026-11-19",
+     "texto": "Tablón de la sede electrónica de Alcalá (publicado el 18-11): lista definitiva de admitidos y excluidos de las cinco plazas de Bombero, turno libre, con la fecha del primer ejercicio (expediente 4120/2026)",
+     "url": "https://ciudadalcala.sedelectronica.es/preview-document/45dcb0cd-f577-4d1e-8855-d2931caddcf1"
     }
    ],
    "bop_sevilla": {
     "org": "Alcal[aá] de Guada[ií]ra",
     "claves": "bomber"
-   }
+   },
+   "tablon": [
+    {
+     "nombre": "Tablón de la sede electrónica de Alcalá",
+     "url": "https://ciudadalcala.sedelectronica.es/board",
+     "claves": "bomber",
+     "expedientes": [
+      "4120/2026"
+     ]
+    }
+   ]
   }
  ],
  "espana": [

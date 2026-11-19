@@ -9,7 +9,7 @@
 
 Solo usa la biblioteca estándar. Uso: python3 scripts/convocatorias.py [--dias N]
 """
-import hashlib, html, json, os, re, sys, urllib.request
+import hashlib, html, json, os, re, ssl, sys, time, urllib.request
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
@@ -19,7 +19,16 @@ RAIZ = Path(__file__).resolve().parent.parent
 SALIDA = RAIZ / "data" / "convocatorias.json"
 REVISADOS = RAIZ / "data" / "revisados.json"  # anuncios ya mirados (para no volver a descargarlos)
 MIAS = RAIZ / "data" / "mis_convocatorias.json"
-UA = {"User-Agent": "Pokeplanificador/1.0 (convocatorias de bombero)", "Accept": "application/json"}
+UA = {"User-Agent": "Mozilla/5.0 (compatible; Pokeplanificador/1.0; convocatorias de bombero)",
+      "Accept": "application/json, text/html;q=0.9, */*;q=0.8", "Accept-Language": "es-ES,es;q=0.9"}
+# Conexión segura con los certificados del sistema y los intermedios que algunas webs oficiales no envían
+# (p. ej. la del Ayuntamiento de Alcalá de Guadaíra): sin ellos su web «no existe» para la revisión.
+CTX = ssl.create_default_context()
+try:
+    CTX.load_verify_locations(str(Path(__file__).resolve().parent / "certs" / "intermedios.pem"))
+except Exception:
+    pass
+FALLOS = []  # fuentes que no se han podido leer en esta revisión (se muestran en la app y se reintentan)
 NUM = {"una": 1, "un": 1, "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5, "seis": 6, "siete": 7, "ocho": 8, "nueve": 9,
        "diez": 10, "once": 11, "doce": 12, "trece": 13, "catorce": 14, "quince": 15, "dieciséis": 16, "diecisiete": 17,
        "dieciocho": 18, "diecinueve": 19, "veinte": 20, "veintiuna": 21, "veintiuno": 21, "veintidós": 22, "veintitrés": 23, "veinticuatro": 24, "veinticinco": 25, "veintiséis": 26, "veintisiete": 27,
@@ -32,18 +41,35 @@ NO_VALE = re.compile(r"promoci[oó]n interna|movilidad|cabo|sargento|suboficial|
                      r"m[eé]dic|enfermer|psic[oó]log|ingenier|arquitect|t[eé]cnic", re.I)
 
 
-def get(url, binario=False, timeout=30):
-    req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        b = r.read()
-    return b if binario else b.decode("utf-8", "replace")
+def get(url, binario=False, timeout=30, intentos=3):
+    """Descarga con reintentos: los boletines y sedes fallan a ratos (cortes, tiempos de espera)."""
+    ultimo = None
+    for i in range(intentos):
+        try:
+            req = urllib.request.Request(url, headers=UA)
+            with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
+                b = r.read()
+            return b if binario else b.decode("utf-8", "replace")
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 404, 410):
+                raise
+            ultimo = e
+        except Exception as e:
+            ultimo = e
+        time.sleep(3 + 5 * i)
+    raise ultimo
 
 
 def items_2b(fecha):
     """Anuncios de la sección II.B del BOE de un día: [(id, titulo, departamento)]."""
     try:
         d = json.loads(get(f"https://www.boe.es/datosabiertos/api/boe/sumario/{fecha:%Y%m%d}"))
+    except urllib.error.HTTPError as e:
+        if e.code != 404:  # 404: ese día no hay BOE (domingos)
+            FALLOS.append(f"BOE del {fecha:%d/%m}")
+        return []
     except Exception:
+        FALLOS.append(f"BOE del {fecha:%d/%m}")
         return []
     out = []
 
@@ -215,13 +241,13 @@ _BOPSE = {}
 def bop_sevilla_dia(f):
     """Anuncios del BOP de Sevilla de un día: [{url, titulo, org}] (vacío si no hay boletín o no se puede leer)."""
     if f in _BOPSE:
-        return _BOPSE[f]
+        return _BOPSE[f] or []
     u = f"https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-{f:%d-%m-%Y}/"
     out = []
     try:
-        pag = get(u, timeout=40)
+        pag = get(u, timeout=30, intentos=3)
     except Exception:
-        _BOPSE[f] = out
+        _BOPSE[f] = None  # no se ha podido leer: se vuelve a intentar en las próximas revisiones
         return out
     # Cada anuncio tiene uno o varios enlaces; su título se busca en el texto de antes y de después del enlace y se
     # queda el que más se parece a la dirección (que se forma con el propio título). Así no se mezclan anuncios.
@@ -258,6 +284,23 @@ def bop_sevilla_dia(f):
         antes = [x for x in textos(ini, m.start()) if x != mejor and len(x) < 90]
         out.append({"url": url, "titulo": mejor, "org": antes[-1] if antes else ""})
     _BOPSE[f] = out
+    return out
+
+
+def tablon_gestiona(url):
+    """Anuncios del tablón de una sede electrónica de esPublico Gestiona (…sedelectronica.es/board):
+    [{titulo, expediente, fecha (ISO), url}]. Lanza excepción si no se puede leer."""
+    pag = get(url, timeout=40, intentos=4)
+    out = []
+    for fila in re.findall(r"<tr>(.*?)</tr>", pag, re.S):
+        m = re.search(r'href="([^"]*(?:preview|view)-document/[^"]+)"[^>]*title="([^"]*)"', fila)
+        if not m:
+            continue
+        celda = lambda k: html.unescape(re.sub(r"<[^>]+>|\s+", " ", (re.search(rf'data-label="{k}"[^>]*>(.*?)</td>', fila, re.S) or [None, ""])[1])).strip()
+        f = re.search(r"(\d{2})/(\d{2})/(\d{4})", celda("Fecha de Publicaci[oó]n"))
+        out.append({"url": urljoin(url, html.unescape(m.group(1))), "titulo": html.unescape(m.group(2)).strip(),
+                    "expediente": celda("Expediente"), "descripcion": celda("Descripci[oó]n"),
+                    "fecha": f"{f.group(3)}-{f.group(2)}-{f.group(1)}" if f else None})
     return out
 
 
@@ -331,6 +374,7 @@ def main():
         nuevas_boja, boja_ultimo = boja_bases(boja_desde)
     except Exception as e:
         print("BOJA: error", e)
+        FALLOS.append("BOJA")
         nuevas_boja, boja_ultimo = [], boja_desde - 1
     for c in nuevas_boja:
         espana.setdefault(c["id"], c)
@@ -338,8 +382,15 @@ def main():
     print(f"BOJA revisado hasta el n.º {boja_ultimo}")
 
     fechas = [hoy - timedelta(days=i) for i in range(dias)]
+    # BOP de Sevilla: los días de la revisión y, además, cualquier día de las dos últimas semanas (de lunes a viernes, cuando sale)
+    # que aún no se haya podido leer bien. Así un corte de su web no hace perder ningún anuncio.
+    bop_ok = set(datos.get("bop_ok", []))
+    dias_bop = sorted({*fechas, *[hoy - timedelta(days=i) for i in range(15)
+                                  if (hoy - timedelta(days=i)).weekday() < 5 and (hoy - timedelta(days=i)).isoformat() not in bop_ok]})
     with ThreadPoolExecutor(6) as ex:
         sumarios = list(ex.map(items_2b, fechas))
+    with ThreadPoolExecutor(6) as ex:  # el BOP de Sevilla de esos días, en paralelo (con reintentos)
+        list(ex.map(bop_sevilla_dia, dias_bop))
     nuevos = [(i, t, d) for s in sumarios for (i, t, d) in s if i not in revisados]
     print(f"{len(nuevos)} anuncios nuevos de la sección II.B en {dias} días")
 
@@ -375,7 +426,7 @@ def main():
         # admitidos de Alcalá de Guadaíra). Se mira el sumario de cada día y se apunta el enlace directo al anuncio.
         bs = c.get("bop_sevilla")
         if bs:
-            for f in fechas:
+            for f in dias_bop:
                 for an in bop_sevilla_dia(f):
                     url, titulo = an["url"], an["titulo"]
                     if url in hechos or not re.search(bs["claves"], titulo + " " + url, re.I):
@@ -388,11 +439,33 @@ def main():
                                                            "texto": f"BOP de Sevilla: {titulo or 'anuncio nuevo'}"})
                     hechos.add(url)
 
+        # Tablón de la sede electrónica del organismo: muchas listas, fechas de examen y notas salen solo ahí (sin BOP).
+        for tb in c.get("tablon", []):
+            try:
+                filas = tablon_gestiona(tb["url"])
+            except Exception as e:
+                print("  tablón: error", tb["nombre"], e)
+                FALLOS.append(tb["nombre"])
+                continue
+            for fila in filas:
+                texto = f"{fila['titulo']} {fila['descripcion']}"
+                if fila["url"] in hechos:
+                    continue
+                if not (re.search(tb["claves"], texto, re.I) or fila["expediente"] in tb.get("expedientes", [])):
+                    continue
+                if re.search(r"promoci[oó]n interna|movilidad", texto, re.I) and not re.search(r"turno libre", texto, re.I):
+                    continue
+                c.setdefault("novedades", []).append({"fecha": fila["fecha"] or hoy.isoformat(), "auto": True, "url": fila["url"],
+                                                       "texto": f"{tb['nombre']}: {fila['titulo']}"})
+                hechos.add(fila["url"])
+                print("  + tablón", tb["nombre"], "|", fila["titulo"][:90])
+
         # Páginas oficiales que se vigilan: aviso si cambian.
         for v in c.get("vigilar", []):
             try:
                 pag = get(v["url"], timeout=40)
             except Exception:
+                FALLOS.append(v["nombre"])
                 continue
             txt = re.sub(r"<script.*?</script>|<style.*?</style>", " ", pag, flags=re.S)
             # Documentos (PDF) enlazados en la página, con el texto de su enlace: cada uno nuevo es una novedad
@@ -431,7 +504,7 @@ def main():
     rehaciendo = datos.get("sevilla_v", 0) < 3
     if rehaciendo:
         sevilla = []  # se rehace con la lectura corregida
-    dias_se = fechas if datos.get("sevilla_ok") and datos.get("sevilla_v", 0) >= 3 else [hoy - timedelta(days=i) for i in range(60)]
+    dias_se = dias_bop if datos.get("sevilla_ok") and datos.get("sevilla_v", 0) >= 3 else [hoy - timedelta(days=i) for i in range(60)]
     if "--sevilla-dias" in sys.argv:
         dias_se = [hoy - timedelta(days=i) for i in range(int(sys.argv[sys.argv.index("--sevilla-dias") + 1]))]
     with ThreadPoolExecutor(6) as ex:
@@ -440,6 +513,14 @@ def main():
     for x in nuevos_se:
         print("  + BOP Sevilla", x["fecha"], x["org"], "|", x["titulo"][:90])
     leidos_se = sum(1 for f in dias_se if _BOPSE.get(f))
+    # Días del BOP leídos bien (aunque no tuvieran anuncios) y los que no se han podido leer.
+    for f, v in _BOPSE.items():
+        if v is not None:
+            bop_ok.add(f.isoformat())
+    sin_leer = [f for f in dias_bop if f.weekday() < 5 and _BOPSE.get(f, "x") is None]
+    for f in sin_leer:
+        FALLOS.append(f"BOP de Sevilla del {f:%d/%m}")
+    bop_ok = sorted(x for x in bop_ok if x >= (hoy - timedelta(days=30)).isoformat())
     print(f"BOP de Sevilla: {leidos_se} boletines leídos de {len(dias_se)} días, {len(nuevos_se)} anuncios de bomberos nuevos")
     # Sin repetidos (el mismo anuncio puede leerse con direcciones algo distintas): gana el que tiene organismo.
     unicos = {}
@@ -482,6 +563,7 @@ def main():
         "fuente": "BOE, sección II.B (datos abiertos)",
         "mias": mias, "espana": lista, "boja_ultimo": boja_ultimo, "sevilla": sevilla,
         "sevilla_ok": bool(datos.get("sevilla_ok") or leidos_se), "sevilla_v": 3 if leidos_se else datos.get("sevilla_v", 0),
+        "bop_ok": bop_ok, "fallos": sorted(set(FALLOS)),
     }, ensure_ascii=False, indent=1) + "\n")
     REVISADOS.write_text(json.dumps(revisados, separators=(",", ":")) + "\n")
 
