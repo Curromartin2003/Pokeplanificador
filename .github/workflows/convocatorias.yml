@@ -37,6 +37,6 @@ jobs:
           git config user.name "convocatorias-bot"
           git config user.email "convocatorias-bot@users.noreply.github.com"
           git add data/convocatorias.json data/mis_convocatorias.json data/revisados.json
-          git commit -m "Convocatorias: actualización $(date -u +%Y-%m-%d %H:%M)" || exit 0
+          git commit -m "Convocatorias: actualización $(date -u +"%Y-%m-%d %H:%M")" || exit 0
           git pull --rebase -q || true
           git push
