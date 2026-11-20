@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-11-19T10:58+00:00",
+ "actualizado": "2026-11-20T07:53+00:00",
  "fuente": "BOE, sección II.B (datos abiertos)",
  "mias": [
   {
@@ -58,14 +58,14 @@
     {
      "nombre": "Portal de empleo de Aena",
      "url": "https://empleo.aena.es/",
-     "revisada": "2026-11-19",
+     "revisada": "2026-11-20",
      "hash": "1a82e3440c2325c2",
      "pdfs": []
     },
     {
      "nombre": "Programa IC10 (PDF)",
      "url": "https://empleo.aena.es/ocupaciones/Lists/Ocupaciones/Attachments/40/3.Programa_IC10.pdf",
-     "revisada": "2026-11-19",
+     "revisada": "2026-11-20",
      "hash": "8b0d482f844d991d",
      "pdfs": []
     }
@@ -188,6 +188,23 @@
   }
  ],
  "espana": [
+  {
+   "id": "BOJA-2026-225-74",
+   "fecha": "2026-11-20",
+   "titulo": "Anuncio de 6 de octubre de 2026, del Ayuntamiento de Marbella, con la publicación de la modificación de la convocatoria para la cobertura en régimen de personal funcionario de carrera de catorce plazas de Bombero/a del Excmo. Ayuntamiento de Marbella, todo ello en ejecución de las ofertas de empleo público ordinaria de 2024 y artículo 70.1 del TREBEP. (PP. 1980/2026).",
+   "organismo": "Andalucía",
+   "provincia": "Andalucía",
+   "plazas": 14,
+   "sistema": "Oposición libre",
+   "detalle": "Anuncio de 6 de octubre de 2026, del Ayuntamiento de Marbella, con la publicación de la modificación de la convocatoria para la cobertura en régimen de personal funcionario de carrera de catorce plazas de Bombero/a del Excmo. Ayuntamiento de Marbella, todo ello en ejecución de las ofertas de empleo público ordinaria de 2024 y artículo 70.1 del TREBEP. (PP. 1980/2026).",
+   "bases": "BOJA n.º 225",
+   "plazo": null,
+   "fin": null,
+   "fase": "bases",
+   "fuente": "BOJA",
+   "url": "https://www.juntadeandalucia.es/boja/2026/225/74.html",
+   "pdf": "https://www.juntadeandalucia.es/boja/2026/225/BOJA26-225-00001-13679-01_00344909.pdf"
+  },
   {
    "id": "BOJA-2026-217-59",
    "fecha": "2026-11-10",
@@ -433,7 +450,7 @@
    "fase": "plazo"
   }
  ],
- "boja_ultimo": 224,
+ "boja_ultimo": 225,
  "sevilla": [
   {
    "fecha": "2026-10-20",
@@ -477,7 +494,8 @@
   "2026-11-16",
   "2026-11-17",
   "2026-11-18",
-  "2026-11-19"
+  "2026-11-19",
+  "2026-11-20"
  ],
  "fallos": []
 }
