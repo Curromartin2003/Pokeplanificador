@@ -34,7 +34,7 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
 - Convocatorias: `data/convocatorias.json` lo genera `scripts/convocatorias.py` (solo stdlib) cada mañana con
   `.github/workflows/convocatorias.yml`: España = BOJA (bases de entidades locales andaluzas, anuncio a anuncio desde
   `boja_ultimo`) + BOE sección II.B (cuando se abre el plazo), bombero/a turno libre (oposición o concurso-oposición),
-  sin promoción interna ni movilidad, con fin de plazo calculado; Mis convocatorias = `data/mis_convocatorias.json` (Aena IC10 y Alcalá de Guadaíra; Cazorla y Segura quitada a petición del usuario)
+  sin promoción interna ni movilidad, con fin de plazo calculado; Mis convocatorias = `data/mis_convocatorias.json` (Aena IC10, Alcalá de Guadaíra y CPEI Badajoz; Cazorla y Segura quitada a petición del usuario)
   (fichas escritas a mano + novedades automáticas con enlace directo: anuncios del BOE que las nombran, PDF nuevos en las
   páginas vigiladas (`vigilar[].pdfs`), anuncios del BOP de Sevilla (`bop_sevilla`) y cambios de texto en las páginas).
   Las novedades sin ver salen también en Hoy.
@@ -43,6 +43,11 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   `tablon_gestiona`): Alcalá publica ahí listas y fechas (la lista definitiva del 18-11-2026 salió solo ahí). BOP de Sevilla
   (lunes a viernes): se repasan los días de las 2 últimas semanas que no se pudieron leer (`bop_ok`). Lo que falla va a
   `fallos` y la app lo enseña en Plazas.
+  Toda España: `canal_bombero` lee el recopilatorio nacional de canaloposiciones (bombero, turno libre, sin promoción interna
+  ni mandos) para lo que sale en boletines autonómicos/provinciales sin pasar por el BOE; cada ficha enlaza al boletín de
+  origen y calcula el fin si el plazo cuenta desde ese boletín. Ojo: las bases de BOP de fuera de Andalucía (p. ej. Badajoz)
+  no siempre aparecen hasta el extracto del BOE. `plazo_boe: true` en una ficha de Mis convocatorias: al salir el anuncio
+  del BOE se calcula `fin` y se añaden las fases.
   `data/revisados.json` guarda los anuncios ya mirados. Radar BOP de Sevilla (`sevilla`): todo anuncio de bomberos de
   turno libre de la provincia (bases, listas, tribunal, examen) con enlace directo; si nunca se ha podido leer
   (`sevilla_ok` falso) intenta los últimos 60 días. El título de cada anuncio se elige por parecido con su dirección

@@ -304,6 +304,48 @@ def tablon_gestiona(url):
     return out
 
 
+# Recopilatorio nacional de convocatorias de bombero (todas las provincias y boletines autonómicos: DOGC, BOCM, BOTHA,
+# BOP...). Sirve para lo que no pasa por el BOE; cada ficha enlaza siempre al boletín oficial de origen.
+CANAL = "https://www.canaloposiciones.com/ultimas_oposiciones_bombero-pro56ap1.htm"
+CANAL_NO = re.compile(r"promoci[oó]n interna|movilidad|cabo|sargento|suboficial|oficial|inspector|jef[ea]|intendente|mando|"
+                      r"conductor[a]? mec[aá]nic|operador|m[eé]dic|enfermer|forestal|bolsa", re.I)
+
+
+def canal_bombero():
+    """Convocatorias de bombero/a de turno libre de toda España: [{id, fecha, titulo, organismo, ...}]."""
+    pag = get(CANAL, timeout=40)
+    out = []
+    bloques = re.split(r'<div id="(\d+)" class="d-flex text-muted pt-3', pag)
+    for i in range(1, len(bloques) - 1, 2):
+        ident, b = bloques[i], bloques[i + 1][:6000]
+        limpio = lambda x: html.unescape(re.sub(r"<[^>]+>|\s+", " ", x)).strip()
+        campo = lambda k: limpio((re.search(rf"<strong>{k}:\s*</strong>(.*?)</span>", b, re.S) or [None, ""])[1])
+        tit = limpio((re.search(r"<strong[^>]*>(.*?)</strong>", b, re.S) or [None, ""])[1])
+        fpub = re.search(r"Fecha publicaci[oó]n:\s*(\d{2})/(\d{2})/(\d{4})", b)
+        plazo = limpio((re.search(r"Plazo inscripci[oó]n:\s*(.*?)</span>", b, re.S) or [None, ""])[1])
+        origen = re.search(r'<strong>Origen:\s*</strong>\s*<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', b, re.S)
+        if not (tit and fpub and BOMBERO.search(tit)) or CANAL_NO.search(tit):
+            continue
+        url, fuente = (html.unescape(origen.group(1)), limpio(origen.group(2))) if origen else (CANAL, "Recopilatorio")
+        if "boe.es" in url:
+            continue  # lo del BOE ya se revisa directamente
+        fecha = f"{fpub.group(3)}-{fpub.group(2)}-{fpub.group(1)}"
+        boletin = fuente.split()[0] if fuente else ""
+        m = re.search(r"(\w+)\s+d[ií]as\s+(h[aá]biles|naturales)", plazo, re.I)
+        n = (int(m.group(1)) if m.group(1).isdigit() else NUM.get(m.group(1).lower())) if m else None
+        # El plazo solo se calcula si cuenta desde este mismo boletín; si cuenta desde el BOE, son las bases y el
+        # plazo se abrirá con el anuncio del BOE (que la revisión detecta aparte).
+        desde_este = bool(boletin) and boletin.lower() in plazo.lower() and not re.search(r"\bBOE\b|Bolet[ií]n Oficial del Estado", plazo, re.I)
+        fin = fin_plazo(fecha.replace("-", ""), n, "naturales" if m and m.group(2).lower().startswith("n") else "hábiles") if (n and desde_este) else None
+        organismo = campo("Convocante") or tit
+        plazas = re.search(r"(\d+)\s+plazas?", tit)
+        out.append({"id": f"CANAL-{ident}", "fecha": fecha, "titulo": tit, "organismo": organismo,
+                    "provincia": campo("Ámbito") or None, "plazas": int(plazas.group(1)) if plazas else None,
+                    "sistema": campo("Tipo") or "Oposición", "detalle": tit, "bases": fuente, "plazo": plazo or None,
+                    "fin": fin, "url": url, "fuente": fuente or "Recopilatorio", "fase": "plazo" if fin else "bases"})
+    return out
+
+
 def clave_anuncio(x):
     import unicodedata
     t = unicodedata.normalize("NFD", x["titulo"]).encode("ascii", "ignore").decode().lower()
@@ -379,6 +421,17 @@ def main():
     for c in nuevas_boja:
         espana.setdefault(c["id"], c)
         print("  + BOJA", c["organismo"], c["plazas"], c["fecha"])
+    # Toda España: convocatorias de bombero de turno libre publicadas en boletines autonómicos y provinciales.
+    try:
+        for c in canal_bombero():
+            if c["fecha"] < (hoy - timedelta(days=365)).isoformat():
+                continue
+            if c["id"] not in espana:
+                print("  + España", c["fuente"], c["organismo"], c["plazas"], c["fecha"])
+            espana[c["id"]] = {**espana.get(c["id"], {}), **c}
+    except Exception as e:
+        print("Recopilatorio nacional: error", e)
+        FALLOS.append("Recopilatorio nacional de convocatorias")
     print(f"BOJA revisado hasta el n.º {boja_ultimo}")
 
     fechas = [hoy - timedelta(days=i) for i in range(dias)]
@@ -422,6 +475,17 @@ def main():
                     if menciona(i, claves, t):
                         c.setdefault("novedades", []).append({"fecha": fecha.isoformat(), "texto": f"BOE: {t}", "url": url, "auto": True})
                         hechos.add(url)
+                        # Convocatorias cuyo plazo se abre con el anuncio del BOE: se calcula el fin y se pone como fase.
+                        if c.get("plazo_boe") and not c.get("fin"):
+                            try:
+                                r = analizar(i, t, d)
+                            except Exception:
+                                r = None
+                            if r and r.get("fin"):
+                                c["fin"] = r["fin"]
+                                c["estado"] = f"Plazo de solicitudes abierto hasta el {r['fin']} (fecha calculada; confírmala en el BOE)"
+                                c.setdefault("fases", []).append({"fecha": fecha.isoformat(), "texto": f"Anuncio en el BOE: abre el plazo ({r.get('plazo') or 'ver anuncio'})", "hecho": True, "url": url})
+                                c["fases"].append({"fecha": r["fin"], "texto": "Fin del plazo de solicitudes (fecha calculada, sin festivos autonómicos ni locales)", "hecho": False})
         # BOP de Sevilla: anuncios del día cuyo título o bloque nombran el organismo y la plaza (p. ej. listas de
         # admitidos de Alcalá de Guadaíra). Se mira el sumario de cada día y se apunta el enlace directo al anuncio.
         bs = c.get("bop_sevilla")

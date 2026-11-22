@@ -182,5 +182,69 @@
     ]
    }
   ]
+ },
+ {
+  "id": "badajoz-cpei",
+  "nombre": "Consorcio de Prevención y Extinción de Incendios (CPEI) de la Diputación de Badajoz · Conductor/a Bombero/a",
+  "organismo": "CPEI de la Diputación de Badajoz",
+  "lugar": "Provincia de Badajoz (Extremadura)",
+  "plazas": "38 plazas de Conductor/a Bombero/a (29 de la OEP 2026 y 9 de la OEP 2024), grupo C1",
+  "sistema": "Concurso-oposición, turno libre (oposición hasta 30 puntos, concurso hasta 20, reconocimiento médico y prácticas)",
+  "estado": "Bases publicadas. El plazo de solicitudes aún no se ha abierto: se abrirá con el extracto en el BOE (20 días hábiles)",
+  "resumen": "Bases en el BOP de Badajoz n.º 135 (17-07-2026, anuncio 2843/2026), rectificadas en la prueba física por el BOP n.º 221 (18-11-2026, anuncio 4591/2026). Solicitud solo por la sede electrónica de la Diputación de Badajoz, con certificado digital. Tasa: 37,76 € (18,88 € en desempleo). No confundir con el concurso de 58 puestos de Cabo Bombero/a (BOE 25-08-2026).",
+  "enlaces": [
+   {
+    "texto": "Bases: BOP de Badajoz n.º 135 (17-07-2026)",
+    "url": "https://www.dip-badajoz.es/bop/ventana_anuncio.php?id_anuncio=163564&FechaSolicitada=20260717000000"
+   },
+   {
+    "texto": "Rectificación de la prueba física: BOP n.º 221 (18-11-2026)",
+    "url": "https://www.dip-badajoz.es/bop/ventana_anuncio.php?id_anuncio=165324&FechaSolicitada=2026-11-18"
+   },
+   {
+    "texto": "Sede electrónica de la Diputación de Badajoz (solicitud)",
+    "url": "https://sede.dip-badajoz.es/portal/contenedor.do?det_cod=160&ent_id=10&idioma=1"
+   }
+  ],
+  "boe": [
+   [
+    "Incendios.*Badajoz|Badajoz.*Incendios",
+    "[Cc]onductor/a [Bb]ombero"
+   ]
+  ],
+  "plazo_boe": true,
+  "vigilar": [],
+  "aviso": "El plazo (20 días hábiles) empieza el día siguiente al extracto en el BOE. El BOE se revisa dos veces al día: en cuanto salga, te aparece la novedad y la fecha de fin calculada.",
+  "fases": [
+   {
+    "fecha": "2026-05-07",
+    "texto": "Oferta de empleo 2026 del CPEI en el DOE n.º 86 (29 plazas)",
+    "hecho": true
+   },
+   {
+    "fecha": "2026-07-17",
+    "texto": "Bases en el BOP de Badajoz n.º 135: 38 plazas de Conductor/a Bombero/a",
+    "hecho": true,
+    "url": "https://www.dip-badajoz.es/bop/ventana_anuncio.php?id_anuncio=163564&FechaSolicitada=20260717000000"
+   },
+   {
+    "fecha": "2026-11-18",
+    "texto": "Rectificación de la prueba física (circuito) en el BOP n.º 221",
+    "hecho": true,
+    "url": "https://www.dip-badajoz.es/bop/ventana_anuncio.php?id_anuncio=165324&FechaSolicitada=2026-11-18"
+   },
+   {
+    "fecha": null,
+    "texto": "Extracto en el BOE: abre el plazo de 20 días hábiles para presentar la solicitud",
+    "hecho": false
+   }
+  ],
+  "novedades": [
+   {
+    "fecha": "2026-11-22",
+    "texto": "Bases de 38 plazas de Conductor/a Bombero/a (BOP de Badajoz n.º 135) y rectificación de la prueba física (BOP n.º 221, 18-11). El plazo se abrirá con el extracto en el BOE.",
+    "url": "https://www.dip-badajoz.es/bop/ventana_anuncio.php?id_anuncio=165324&FechaSolicitada=2026-11-18"
+   }
+  ]
  }
 ]

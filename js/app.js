@@ -556,7 +556,7 @@ function vConvocatorias(hoy) {
       <div class="enlaces"><a href="${esc(c.url)}" target="_blank" rel="noopener">Anuncio en el ${c.fuente === "BOJA" ? "BOJA" : "BOE"}</a>${c.pdf ? `<a href="${esc(c.pdf)}" target="_blank" rel="noopener">PDF</a>` : ""}</div></div>`;
   }).join("") || `<div class="vacio"><p>No hay convocatorias con este filtro.</p></div>`;
   const abiertas = conv.espana.filter(c => c.fin && c.fin >= hoy).length;
-  return `<h1>Convocatorias</h1><p class="sub">Se revisan dos veces al día, por la mañana y por la tarde (BOE, BOJA, BOP de Sevilla, tablones de las sedes y páginas oficiales). Última revisión con cambios: ${E.fechaLarga(conv.actualizado.slice(0, 10), false)}.</p>
+  return `<h1>Convocatorias</h1><p class="sub">Se revisan dos veces al día, por la mañana y por la tarde: BOE, BOJA, BOP de Sevilla, boletines autonómicos y provinciales de toda España, tablones de las sedes y páginas oficiales. Última revisión con cambios: ${E.fechaLarga(conv.actualizado.slice(0, 10), false)}.</p>
     ${(conv.fallos || []).length ? `<div class="aviso">⚠️ En la última revisión no se pudo leer: ${esc(conv.fallos.join(", "))}. Se vuelve a intentar en la siguiente y no se pierde nada de esos días.</div>` : ""}
     <section class="bloque"><div class="bcab"><h2>Mis convocatorias</h2></div>${mias}</section>
     <section class="bloque"><div class="bcab"><h2>Radar BOP de Sevilla</h2><span>toda la provincia</span></div>
