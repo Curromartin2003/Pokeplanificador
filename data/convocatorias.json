@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-11-20T07:53+00:00",
+ "actualizado": "2026-11-22T20:37+00:00",
  "fuente": "BOE, sección II.B (datos abiertos)",
  "mias": [
   {
@@ -58,14 +58,14 @@
     {
      "nombre": "Portal de empleo de Aena",
      "url": "https://empleo.aena.es/",
-     "revisada": "2026-11-20",
+     "revisada": "2026-11-22",
      "hash": "1a82e3440c2325c2",
      "pdfs": []
     },
     {
      "nombre": "Programa IC10 (PDF)",
      "url": "https://empleo.aena.es/ocupaciones/Lists/Ocupaciones/Attachments/40/3.Programa_IC10.pdf",
-     "revisada": "2026-11-20",
+     "revisada": "2026-11-22",
      "hash": "8b0d482f844d991d",
      "pdfs": []
     }
@@ -316,6 +316,22 @@
    "fin": "2026-10-08",
    "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-19802",
    "fuente": "BOE",
+   "fase": "plazo"
+  },
+  {
+   "id": "CANAL-351048",
+   "fecha": "2026-09-15",
+   "titulo": "Concurso - Oposición: 300 plazas de Bombero de primera de la escala tecnica Generalitat de Catalunya",
+   "organismo": "Generalitat de Catalunya",
+   "provincia": "Cataluña",
+   "plazas": 300,
+   "sistema": "Concurso - Oposición",
+   "detalle": "Concurso - Oposición: 300 plazas de Bombero de primera de la escala tecnica Generalitat de Catalunya",
+   "bases": "DOGC Num 9751 15/09/2026",
+   "plazo": "Diez dias habiles a contar desde el siguiente al de la publicacion de esta convocatoria en el DOGC",
+   "fin": "2026-09-29",
+   "url": "https://portaldogc.gencat.cat/utilsEADOP/PDF/9751/2170231.pdf",
+   "fuente": "DOGC Num 9751 15/09/2026",
    "fase": "plazo"
   },
   {
