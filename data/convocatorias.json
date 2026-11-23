@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-11-22T20:37+00:00",
+ "actualizado": "2026-11-23T08:07+00:00",
  "fuente": "BOE, sección II.B (datos abiertos)",
  "mias": [
   {
@@ -58,14 +58,14 @@
     {
      "nombre": "Portal de empleo de Aena",
      "url": "https://empleo.aena.es/",
-     "revisada": "2026-11-22",
+     "revisada": "2026-11-23",
      "hash": "1a82e3440c2325c2",
      "pdfs": []
     },
     {
      "nombre": "Programa IC10 (PDF)",
      "url": "https://empleo.aena.es/ocupaciones/Lists/Ocupaciones/Attachments/40/3.Programa_IC10.pdf",
-     "revisada": "2026-11-22",
+     "revisada": "2026-11-23",
      "hash": "8b0d482f844d991d",
      "pdfs": []
     }
@@ -530,8 +530,15 @@
    "fase": "plazo"
   }
  ],
- "boja_ultimo": 225,
+ "boja_ultimo": 226,
  "sevilla": [
+  {
+   "fecha": "2026-11-23",
+   "org": "Área de Servicios Públicos SupraMunicipales",
+   "titulo": "Lista definitiva de personas admitidas y excluidas y fecha de comienzo de las pruebas de la convocatoria para la provisión, en turno libre, de cinco plazas de Bombero, vacantes en la plantilla de personal funcionario (OEP 2026)",
+   "tipo": "Lista",
+   "url": "https://bopsevilla.dipusevilla.es/publica/buscador-anuncios/anuncio/Lista-definitiva-de-personas-admitidas-y-excluidas-y-fecha-de-comienzo-de-las-pruebas-de-la-convocatoria-para-la-provision-en-turno-libre-de-cinco-plazas-de-Bombero-vacantes-en-la-plantilla-de-pers/"
+  },
   {
    "fecha": "2026-10-20",
    "org": "La Roda de Andalucia",
@@ -575,7 +582,8 @@
   "2026-11-17",
   "2026-11-18",
   "2026-11-19",
-  "2026-11-20"
+  "2026-11-20",
+  "2026-11-23"
  ],
  "fallos": []
 }
