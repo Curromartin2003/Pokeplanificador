@@ -1,0 +1,19 @@
+# Rescate de datos del planificador: guarda las versiones de la última hora del documento de cada cuenta
+# (Firestore conserva 1 h de versiones) en documentos rescate_* de la misma cuenta. Solo lee y copia; no borra nada.
+name: Rescate de datos
+on:
+  workflow_dispatch:
+jobs:
+  rescate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm i --no-save firebase-admin@12
+      - name: Leer versiones y guardarlas
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scripts/rescate.mjs
