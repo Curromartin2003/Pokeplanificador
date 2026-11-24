@@ -248,4 +248,8 @@ export const SEMILLAS = [{
 }, {
   id: 4,                                                // devolver la sesión de callejero de 33 min que se perdió
   devolverSesiones: {"2026-11-04": [{id: "dev33", tipo: "callejero", est: 33, obj: "extintor", ini: "2026-11-04T12:00:00.000Z"}]},
+}, {
+  id: 5,                                                // el lunes 23 cumplí todo aunque no marqué las casillas
+  diasCompletos: ["2026-11-23"],
+  tiempoTema: {"leg1|1": 120},                          // la Constitución me llevó unas 2 h (no 1 h 5 min)
 }];

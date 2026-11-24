@@ -191,7 +191,7 @@ test("puntos iniciales (7) y tiempo por tema con lo apuntado", () => {
   assert.equal(E.resumen(st, HOY).total, 7);
   let s2 = aplicar(st, E.marcar(st, HOY, HOY, E.I_ESTUDIO, true));
   s2 = E.completar({...s2, dias: {...s2.dias, [HOY]: {...s2.dias[HOY], s: {...s2.dias[HOY].s, real: 50}}}});
-  const t = E.tiemposTema(s2, HOY);
+  const t = E.tiemposTema({...s2, tiemposManual: {}}, HOY);  // sin las correcciones a mano de las semillas
   const total = Object.values(t).reduce((a, b) => a + b, 0);
   assert.ok(Math.abs(total - 50) < 0.5);
   assert.ok(t["leg1|1"] > 0);
@@ -249,7 +249,7 @@ test("semilla 4: devuelve la sesión perdida sin tocar las demás y sin duplicar
   const ses = [{tipo: "estudio", est: 20, obj: "extintor", ok: true, ini: "2026-11-04T08:00:00Z"}];
   const st = E.completar({...E.estadoNuevo("2026-11-03"), semilla: 3, dias: {"2026-11-04": {ses, c: [true]}}});
   const p = E.semilla(st, "2026-11-04");
-  assert.equal(p.semilla, 4);
+  assert.ok(p.semilla >= 4);
   assert.equal(p.dias["2026-11-04"].ses, undefined, "no reescribe la lista");
   assert.equal(p.dias["2026-11-04"].sesiones.dev33.est, 33);
   const st2 = E.completar({...st, dias: {"2026-11-04": {...st.dias["2026-11-04"], sesiones: p.dias["2026-11-04"].sesiones}}});
@@ -326,4 +326,18 @@ test("temporizador en la clase de Luis: cuenta como estudio y se lleva aparte", 
   assert.equal(m.est, 50); assert.equal(m.clase, 50); assert.equal(m.total, 65);
   const r = E.repartoMinutos(st, HOY);
   assert.deepEqual(r.total, {leg: 0, esp: 0, cal: 15, clase: 50, otro: 0});
+});
+
+test("semilla 5: día cumplido sin marcar y tiempo de tema corregido", () => {
+  // Lunes 23-11-2026 de estudio (sin clases de Luis esa semana).
+  const st = E.completar({inicio: "2026-11-02", semanas: {"2026-11-23": {libre: 6, luis: [1, 3]}}, semilla: 4});
+  const hoy = "2026-11-24";
+  const d = E.dia(st, hoy, "2026-11-23");
+  assert.equal(E.puntosDia(d, st.dias["2026-11-23"], st), -1);
+  const p = E.semilla(st, hoy);
+  assert.equal(p.semilla, 5);
+  const s2 = E.completar({...st, ...p, dias: {...st.dias, ...p.dias}});
+  assert.equal(E.puntosDia(E.dia(s2, hoy, "2026-11-23"), s2.dias["2026-11-23"], s2), 1);
+  assert.ok(s2.dias["2026-11-23"].s && s2.dias["2026-11-23"].s.items.length > 0, "apunta el estudio del plan de ese día");
+  assert.equal(E.tiemposTema(s2, hoy)["leg1|1"], 120);
 });

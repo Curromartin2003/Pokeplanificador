@@ -27,6 +27,8 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   normas largas como consulta.
 - Lo que el usuario cuenta por el chat y afecta a sus datos va en `SEMILLA` (temario.js): se aplica una vez al abrir la
   app (sube `id` para una nueva). Las novedades del plan van en `CAMBIOS` y la app las avisa con el cambio de fecha.
+  Semillas también admiten `diasCompletos: [fecha]` (día cumplido sin marcar: todos los objetivos y el estudio del plan) y
+  `tiempoTema: {"leg1|1": min}` → `tiemposManual` (corrección del tiempo de un tema; también con «⏱ Corregir el tiempo» en Temario).
 - Puntos: `puntosIniciales` (7, por SEMILLAS) + los de cada día. Tiempo: `atribuirDia` asigna cada minuto de estudio a su
   tema (parte del temporizador, lo apuntado con el temporizador libre; el resto, entre los `s.items` del día o a la materia
   del día). `tiemposTema` → Temario («Terminado en N min de estudio»); `repartoMinutos` → Mi parque (legislación,

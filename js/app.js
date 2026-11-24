@@ -351,6 +351,7 @@ function vTemario(hoy) {
       ${(() => { const fuera = tm.todas.filter(x => !tm.partes.includes(x));
         return fuera.length ? `<ul class="subidos fuera-lista"><li><b>No entran:</b></li>${fuera.map(x => `<li>${esc(x.nombre)} <button class="enlace peque" data-a="noEntra" data-t="${t}" data-n="${tm.n}" data-key="${esc(x.key)}" data-v="0">Volver a meter</button></li>`).join("")}</ul>` : ""; })()}
       <div class="acc-tema"><button class="btn peque sec" data-a="visto" data-t="${t}" data-n="${tm.n}" data-v="${visto ? 0 : 1}">${visto ? "Quitar «visto»" : "Marcar como visto"}</button>
+        <button class="btn peque sec" data-a="tiempoTema" data-k="${k}|${v}" data-m="${Math.round(tiempos[`${k}|${v}`] || 0)}">⏱ Corregir el tiempo</button>
         ${botonSubir(t, tm.n)}</div>
       ${subidos.length ? `<ul class="subidos">${subidos.map((d, i) => `<li>📎 ${esc(d.doc)} <small>(${d.pal.length} págs., subido el ${E.fechaLarga(d.t, false)})</small> <button class="enlace peque" data-a="quitarPdf" data-k="${k}" data-i="${i}">Quitar</button></li>`).join("")}</ul>` : ""}
       ${t === "esp" && tm.n > 33 ? `<button class="enlace peque" data-a="renombrar" data-k="${k}">Cambiar el título de este tema</button>` : ""}
@@ -1145,6 +1146,11 @@ function enlazar() {
       abrirHastaAqui(b.dataset.f || null, b.dataset.id, b.dataset.t);
     } else if (a === "reintentar3d") {
       location.reload();
+    } else if (a === "tiempoTema") {
+      const r = prompt("¿Cuántos minutos de estudio te ha llevado este tema en esta vuelta? (déjalo vacío para volver a lo que calcula la app)", b.dataset.m && b.dataset.m !== "0" ? b.dataset.m : "");
+      if (r === null) return;
+      const n = Math.round(+String(r).replace(",", ".").replace(/[^\d.]/g, ""));
+      guardar({tiemposManual: {[b.dataset.k]: r.trim() && n > 0 ? n : null}});
     } else if (a === "focoLibre") {
       elegirYEmpezar("estudio", null, true);
     } else if (a === "olvidado") {

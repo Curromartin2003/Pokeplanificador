@@ -91,7 +91,7 @@ export function estadoNuevo(hoy) {
 export const completar = s => {
   const b = estadoNuevo(s && s.inicio || hoyLocal());
   const o = {...b, ...(s || {})};
-  for (const k of ["semanas", "dias", "manual", "materiales", "titulos", "leidos", "fuera", "calle", "premios", "parque", "marcas"]) o[k] = {...((s && s[k]) || {})};
+  for (const k of ["semanas", "dias", "manual", "materiales", "titulos", "leidos", "fuera", "calle", "premios", "parque", "marcas", "tiemposManual"]) o[k] = {...((s && s[k]) || {})};
   o.cambios = Array.isArray(s && s.cambios) ? s.cambios : [];
   return o;
 };
@@ -524,6 +524,17 @@ export function semilla(st, hoy) {
     // Sesiones que se dieron por perdidas sin culpa (pantalla bloqueada): si duraron lo suficiente, cuentan.
     // (La semilla 3 reescribía la lista y podía borrar sesiones; ya no hace nada.)
     // Devolver sesiones perdidas: se añaden por separado si no hay ya una igual ese día.
+    // Días que se cumplieron aunque no se marcaran: todos los objetivos hechos y, si era de estudio, lo del plan de ese día.
+    for (const f of S.diasCompletos || []) {
+      if (f > hoy || dia(s2, hoy, f).tipo === "libre") continue;
+      const rec = st.dias[f] || {}, d = p.dias[f] = {...(p.dias[f] || {})};
+      const m = marcar(s2, hoy, f, I_ESTUDIO, true).dias[f];
+      d.c = listaObjetivos(s2).map(() => true);
+      if (!rec.s && m.s) d.s = m.s;
+      if (!rec.cal) d.cal = (s2.calle && s2.calle.sel) || [];
+    }
+    // Tiempo de un tema corregido a mano (minutos de estudio en total de esa vuelta).
+    if (S.tiempoTema) p.tiemposManual = {...(p.tiemposManual || {}), ...S.tiempoTema};
     for (const [f, lst] of Object.entries(S.devolverSesiones || {})) {
       if (!st.dias[f]) continue; // solo si ese día hubo actividad (es la cuenta del usuario, no una nueva)
       const hay = sesionesDe(st.dias[f]);
@@ -570,6 +581,8 @@ export function tiemposTema(st, hoy) {
     if (f > hoy || !r) continue;
     for (const x of atribuirDia(r, q, null).trozos) if (x.k) out[x.k] = (out[x.k] || 0) + x.min;
   }
+  // Lo corregido a mano manda sobre lo calculado.
+  for (const [k, m] of Object.entries(st.tiemposManual || {})) if (typeof m === "number" && m > 0) out[k] = m;
   return out;
 }
 // Reparto del tiempo entre legislación, específico y callejero (en total y esta semana). «otro»: estudio sin materia
