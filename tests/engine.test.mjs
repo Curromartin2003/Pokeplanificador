@@ -187,8 +187,8 @@ test("«No entra» quita una parte de todas las vueltas y se puede volver a mete
 test("puntos iniciales (7) y tiempo por tema con lo apuntado", () => {
   const st0 = E.completar(E.estadoNuevo(HOY));
   const st = aplicar(st0, E.semilla(st0, HOY));
-  assert.equal(st.puntosIniciales, 7);
-  assert.equal(E.resumen(st, HOY).total, 7);
+  // Las semillas dejan el total fijado en 12 (la 2 ponía 7; la 6 lo ajusta a 12).
+  assert.equal(E.resumen(st, HOY).total, 12);
   let s2 = aplicar(st, E.marcar(st, HOY, HOY, E.I_ESTUDIO, true));
   s2 = E.completar({...s2, dias: {...s2.dias, [HOY]: {...s2.dias[HOY], s: {...s2.dias[HOY].s, real: 50}}}});
   const t = E.tiemposTema({...s2, tiemposManual: {}}, HOY);  // sin las correcciones a mano de las semillas
@@ -335,7 +335,7 @@ test("semilla 5: día cumplido sin marcar y tiempo de tema corregido", () => {
   const d = E.dia(st, hoy, "2026-11-23");
   assert.equal(E.puntosDia(d, st.dias["2026-11-23"], st), -1);
   const p = E.semilla(st, hoy);
-  assert.equal(p.semilla, 5);
+  assert.ok(p.semilla >= 5);
   const s2 = E.completar({...st, ...p, dias: {...st.dias, ...p.dias}});
   assert.equal(E.puntosDia(E.dia(s2, hoy, "2026-11-23"), s2.dias["2026-11-23"], s2), 1);
   assert.ok(s2.dias["2026-11-23"].s && s2.dias["2026-11-23"].s.items.length > 0, "apunta el estudio del plan de ese día");
@@ -349,4 +349,15 @@ test("guardado en Firestore: listas dentro de listas se envuelven y se recuperan
   const anidada = v => Array.isArray(v) ? v.some(x => Array.isArray(x) || anidada(x)) : v && typeof v === "object" ? Object.values(v).some(anidada) : false;
   assert.equal(anidada(f), false, "no queda ninguna lista dentro de otra");
   assert.deepEqual(S.desdeFirestore(f), p);
+});
+
+test("semilla 6: el total de puntos queda fijado en 12", () => {
+  const st = E.completar({inicio: "2026-11-02", semanas: {"2026-11-23": {libre: 6, luis: [1, 3]}}, semilla: 4, puntosIniciales: 7});
+  const hoy = "2026-11-25";
+  const p = E.semilla(st, hoy);
+  assert.equal(p.semilla, 6);
+  const s2 = E.completar({...st, ...p, dias: {...st.dias, ...p.dias}});
+  assert.equal(E.resumen(s2, hoy).total, 12);
+  // Ya aplicada, no se repite.
+  assert.equal(E.semilla(s2, hoy), null);
 });

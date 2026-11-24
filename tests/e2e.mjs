@@ -65,11 +65,11 @@ try {
   // Al día siguiente, el punto de ayer cuenta.
   await p.goto(URL("2026-11-11"));
   await p.waitForSelector(".marcador");
-  ok((await p.textContent("#puntos")).includes("+8"), "empieza en 7 y el día cerrado suma 1 punto");
+  ok((await p.textContent("#puntos")).includes("+13"), "empieza en 12 (semilla 6) y el día cerrado suma 1 punto");
   await p.click("#puntos");
   await p.waitForSelector(".niveles");
   const tn = await p.textContent(".niveles");
-  ok(tn.includes("Comer fuera") && tn.includes("Te faltan 22 puntos") && tn.includes("Viaje de 3 o 4 días"), "niveles: los siguientes con sus recompensas");
+  ok(tn.includes("Comer fuera") && tn.includes("Te faltan 17 puntos") && tn.includes("Viaje de 3 o 4 días"), "niveles: los siguientes con sus recompensas");
   if (shots) await p.screenshot({path: shots + "/8-niveles.png", fullPage: true});
   await p.click("#modal [data-m=cerrar]");
   await p.click("nav [data-v=semana]");

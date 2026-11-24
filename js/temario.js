@@ -252,4 +252,7 @@ export const SEMILLAS = [{
   id: 5,                                                // el lunes 23 cumplí todo aunque no marqué las casillas
   diasCompletos: ["2026-11-23"],
   tiempoTema: {"leg1|1": 120},                          // la Constitución me llevó unas 2 h (no 1 h 5 min)
+}, {
+  id: 6,                                                // días cumplidos que no se guardaron por el fallo de guardado:
+  fijarPuntos: 12,                                      // el total queda en 12 puntos (y desde ahí, normal)
 }];
