@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-11-23T16:30+00:00",
+ "actualizado": "2026-11-24T07:58+00:00",
  "fuente": "BOE, sección II.B (datos abiertos)",
  "mias": [
   {
@@ -58,14 +58,14 @@
     {
      "nombre": "Portal de empleo de Aena",
      "url": "https://empleo.aena.es/",
-     "revisada": "2026-11-23",
+     "revisada": "2026-11-24",
      "hash": "1a82e3440c2325c2",
      "pdfs": []
     },
     {
      "nombre": "Programa IC10 (PDF)",
      "url": "https://empleo.aena.es/ocupaciones/Lists/Ocupaciones/Attachments/40/3.Programa_IC10.pdf",
-     "revisada": "2026-11-23",
+     "revisada": "2026-11-24",
      "hash": "8b0d482f844d991d",
      "pdfs": []
     }
@@ -252,6 +252,22 @@
   }
  ],
  "espana": [
+  {
+   "id": "BOE-A-2026-24660",
+   "fecha": "2026-11-24",
+   "titulo": "Resolución de 18 de noviembre de 2026, del Ayuntamiento de La Oliva (Las Palmas), referente a la convocatoria para proveer varias plazas.",
+   "organismo": "Ayuntamiento de La Oliva",
+   "provincia": "Las Palmas",
+   "plazas": 5,
+   "sistema": "Concurso-oposición",
+   "detalle": "Cinco plazas de Bombero/a Conductor/a, pertenecientes a la escala de Administración Especial, subescala Servicios Especiales y clase Servicio de Extinción de Incendios, por el sistema de concurso-oposición, en turno libre.",
+   "bases": null,
+   "plazo": "20 días hábiles desde el día siguiente a la publicación en el BOE",
+   "fin": "2026-12-23",
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24660",
+   "fuente": "BOE",
+   "fase": "plazo"
+  },
   {
    "id": "BOJA-2026-225-74",
    "fecha": "2026-11-20",
@@ -530,8 +546,15 @@
    "fase": "plazo"
   }
  ],
- "boja_ultimo": 226,
+ "boja_ultimo": 227,
  "sevilla": [
+  {
+   "fecha": "2026-11-24",
+   "org": "Servicio de Recursos Humanos",
+   "titulo": "Aprobación definitiva de la modificación de la plantilla municipal del Servicio de Prevención, Extinción de Incendios y Salvamento",
+   "tipo": "Plantilla",
+   "url": "https://bopsevilla.dipusevilla.es/publica/buscador-anuncios/anuncio/Aprobacion-definitiva-de-la-modificacion-de-la-plantilla-municipal-del-Servicio-de-Prevencion-Extincion-de-Incendios-y-Salvamento/"
+  },
   {
    "fecha": "2026-11-23",
    "org": "Área de Servicios Públicos SupraMunicipales",
@@ -583,7 +606,8 @@
   "2026-11-18",
   "2026-11-19",
   "2026-11-20",
-  "2026-11-23"
+  "2026-11-23",
+  "2026-11-24"
  ],
  "fallos": []
 }
