@@ -341,3 +341,12 @@ test("semilla 5: día cumplido sin marcar y tiempo de tema corregido", () => {
   assert.ok(s2.dias["2026-11-23"].s && s2.dias["2026-11-23"].s.items.length > 0, "apunta el estudio del plan de ese día");
   assert.equal(E.tiemposTema(s2, hoy)["leg1|1"], 120);
 });
+
+test("guardado en Firestore: listas dentro de listas se envuelven y se recuperan igual", async () => {
+  const S = await import("../js/store.js");
+  const p = {dias: {"2026-11-23": {c: [true, false], s: {t: "leg", items: [["leg1", 1], ["leg3", 0.34]]}, cal: ["Sur"]}}, parque: {pos: {a: [1, 2, 0]}}};
+  const f = S.aFirestore(p);
+  const anidada = v => Array.isArray(v) ? v.some(x => Array.isArray(x) || anidada(x)) : v && typeof v === "object" ? Object.values(v).some(anidada) : false;
+  assert.equal(anidada(f), false, "no queda ninguna lista dentro de otra");
+  assert.deepEqual(S.desdeFirestore(f), p);
+});

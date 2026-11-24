@@ -8,6 +8,9 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   PDF del específico en `js/docs_esp.js` (palabras por página de cada PDF; se generan con pdftotext).
 - Estado: un único documento Firestore `data/users/{uid}/planificador` (permitido por las reglas de Pokecallejero:
   `match /data/users/{uid}/{documento}`). Se escribe con `setDoc(..., {merge: true})` y parches parciales.
+  Firestore no admite listas dentro de listas (`s.items`): `aFirestore`/`desdeFirestore` (store.js) las envuelven en `{_a: [...]}`
+  al guardar y las desenvuelven al leer. Hasta el 24-11-2026 eso hacía fallar en silencio todo guardado de un día con estudio
+  marcado. Si un guardado falla, evento `pp-error-guardar` → aviso rojo en la app.
   Forma: `{inicio, ritmo, examen, semanas: {lunesISO: {libre: 5|6, luis: [dow]}}, dias: {fecha: {c: [8 bool], h?: minutos,
   s: {t, m, x, items: [[idTrozo, fracción]]} | null}}, manual: {idTrozo: ajuste}, materiales: {"esp16": [{id, doc, wpm, pal, t}]},
   titulos, callejeroUrl, base, cambios: [...], leidos, etaVista, semilla, objetivos}`. Días: lunes = 0.

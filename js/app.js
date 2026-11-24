@@ -59,6 +59,13 @@ function onEstado(raw, definitivo, desdeCache) {
   pintar();
 }
 
+// Si un cambio no se puede guardar en la cuenta, se avisa (antes se perdía sin decir nada).
+window.addEventListener("pp-error-guardar", () => {
+  let t = document.getElementById("errorGuardar");
+  if (!t) { t = document.createElement("div"); t.id = "errorGuardar"; t.className = "toast-error"; document.body.appendChild(t); }
+  t.textContent = "⚠️ No se ha podido guardar el último cambio en tu cuenta. Vuelve a intentarlo y, si sigue pasando, avísame.";
+  t.hidden = false; clearTimeout(t._h); t._h = setTimeout(() => { t.hidden = true; }, 9000);
+});
 async function guardar(parche) {
   st = E.completar(fusion(st, parche));
   pintar();

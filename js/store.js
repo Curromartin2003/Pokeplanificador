@@ -13,6 +13,25 @@ export function fusionar(a, b) {
   return o;
 }
 
+// Firestore no admite listas dentro de listas (p. ej. s.items = [[idTrozo, fracción]]): rechaza TODO el guardado.
+// Al guardar, cada lista que va dentro de otra lista se envuelve en {_a: [...]}; al leer se desenvuelve.
+export function aFirestore(v) {
+  if (Array.isArray(v)) return v.map(x => Array.isArray(x) ? {_a: aFirestore(x)} : aFirestore(x));
+  if (v && typeof v === "object") { const o = {}; for (const [k, x] of Object.entries(v)) o[k] = aFirestore(x); return o; }
+  return v;
+}
+export function desdeFirestore(v) {
+  if (Array.isArray(v)) return v.map(desdeFirestore);
+  if (v && typeof v === "object") {
+    const ks = Object.keys(v);
+    if (ks.length === 1 && ks[0] === "_a" && Array.isArray(v._a)) return desdeFirestore(v._a);
+    const o = {}; for (const [k, x] of Object.entries(v)) o[k] = desdeFirestore(x); return o;
+  }
+  return v;
+}
+// Si algo no se puede guardar, la app lo enseña (antes solo salía en la consola y se perdía sin avisar).
+const avisarError = e => { console.warn("guardar", e); try { window.dispatchEvent(new CustomEvent("pp-error-guardar", {detail: String(e && e.message || e)})); } catch (x) {} };
+
 export async function abrir({onEstado, onUsuario}) {
   const cfg = window.POKE_FB || {};
   const local = !cfg.firebase || new URLSearchParams(location.search).has("local");
@@ -59,7 +78,8 @@ async function abrirFirebase(cfg, onEstado, onUsuario) {
     async guardar(p) {
       if (!ref) return;
       // No se espera a que llegue al servidor: sin conexión, Firestore lo guarda y lo sube al volver.
-      FS.setDoc(ref, p, {merge: true}).catch(e => console.warn("guardar", e));
+      try { FS.setDoc(ref, aFirestore(p), {merge: true}).catch(avisarError); }
+      catch (e) { avisarError(e); }
     },
     async salir() { if (unsub) unsub(); await A.signOut(auth); location.reload(); },
   };
@@ -72,7 +92,7 @@ async function abrirFirebase(cfg, onEstado, onUsuario) {
     ref = FS.doc(db, `data/users/${u.uid}/planificador`);
     unsub = FS.onSnapshot(ref, {includeMetadataChanges: true}, s => {
       // Si aún no hay documento y la respuesta viene de la caché, se espera al servidor antes de crear uno nuevo.
-      onEstado(s.exists() ? s.data() : null, !s.metadata.fromCache || s.exists(), s.metadata.fromCache || s.metadata.hasPendingWrites);
+      onEstado(s.exists() ? desdeFirestore(s.data()) : null, !s.metadata.fromCache || s.exists(), s.metadata.fromCache || s.metadata.hasPendingWrites);
     }, e => onUsuario({email: u.email, error: e.code || String(e)}));
   });
   return api;

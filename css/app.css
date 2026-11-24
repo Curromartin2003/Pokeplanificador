@@ -485,3 +485,5 @@ body.p3d-completa { overflow: hidden; }
 .reparto.cuatro { grid-template-columns: repeat(2, 1fr); }
 .reparto .rp-clase::after { background: var(--luis); }
 .centro-btns { justify-content: center; }
+.toast-error { position: fixed; left: 12px; right: 12px; top: calc(70px + env(safe-area-inset-top)); z-index: 70; max-width: 560px; margin: 0 auto;
+  background: #B71C1C; color: #fff; border-radius: 14px; padding: 12px 14px; font-size: 14px; font-weight: 600; box-shadow: 0 10px 30px -8px rgba(0,0,0,.4); }
