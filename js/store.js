@@ -15,9 +15,21 @@ export function fusionar(a, b) {
 
 // Firestore no admite listas dentro de listas (p. ej. s.items = [[idTrozo, fracción]]): rechaza TODO el guardado.
 // Al guardar, cada lista que va dentro de otra lista se envuelve en {_a: [...]}; al leer se desenvuelve.
+// MUY IMPORTANTE: con {merge: true}, Firestore toma un objeto vacío ({}) como «deja este apartado vacío» y BORRA lo que
+// hubiera (así se borraron los días el 24-11-2026). Por eso los objetos vacíos y los undefined no se envían nunca.
+const vacio = x => x && typeof x === "object" && !Array.isArray(x) && Object.keys(x).length === 0;
 export function aFirestore(v) {
   if (Array.isArray(v)) return v.map(x => Array.isArray(x) ? {_a: aFirestore(x)} : aFirestore(x));
-  if (v && typeof v === "object") { const o = {}; for (const [k, x] of Object.entries(v)) o[k] = aFirestore(x); return o; }
+  if (v && typeof v === "object") {
+    const o = {};
+    for (const [k, x] of Object.entries(v)) {
+      if (x === undefined) continue;
+      const y = aFirestore(x);
+      if (vacio(y)) continue;
+      o[k] = y;
+    }
+    return o;
+  }
   return v;
 }
 export function desdeFirestore(v) {
@@ -78,7 +90,9 @@ async function abrirFirebase(cfg, onEstado, onUsuario) {
     async guardar(p) {
       if (!ref) return;
       // No se espera a que llegue al servidor: sin conexión, Firestore lo guarda y lo sube al volver.
-      try { FS.setDoc(ref, aFirestore(p), {merge: true}).catch(avisarError); }
+      const datos = aFirestore(p);
+      if (vacio(datos)) return;
+      try { FS.setDoc(ref, datos, {merge: true}).catch(avisarError); }
       catch (e) { avisarError(e); }
     },
     async salir() { if (unsub) unsub(); await A.signOut(auth); location.reload(); },

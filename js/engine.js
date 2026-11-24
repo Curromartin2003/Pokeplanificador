@@ -545,11 +545,13 @@ export function semilla(st, hoy) {
       }
     }
   }
+  // Nunca devolver apartados vacíos: en Firestore un {} borra lo que hubiera.
+  for (const k of ["semanas", "dias", "manual"]) if (!Object.keys(p[k]).length) delete p[k];
   // Fijar el total de puntos: se ajustan los puntos iniciales para que, con todo lo de esta semilla, salga ese total hoy.
   const fp = pend.filter(S => typeof S.fijarPuntos === "number").pop();
   if (fp) {
     const dias = {...st.dias};
-    for (const [f, d] of Object.entries(p.dias)) dias[f] = {...(st.dias[f] || {}), ...d};
+    for (const [f, d] of Object.entries(p.dias || {})) dias[f] = {...(st.dias[f] || {}), ...d};
     const s3 = completar({...st, dias, puntosIniciales: p.puntosIniciales ?? st.puntosIniciales});
     const r = resumen(s3, hoy);
     p.puntosIniciales = (r.inicial || 0) + (fp.fijarPuntos - r.total);

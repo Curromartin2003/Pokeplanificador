@@ -257,7 +257,7 @@ test("semilla 4: devuelve la sesión perdida sin tocar las demás y sin duplicar
   assert.equal(E.sesionesDe(st2.dias["2026-11-04"]).length, 2);
   // Si ya existe una sesión igual, no se duplica.
   const st3 = E.completar({...st2, semilla: 3});
-  assert.equal(E.semilla(st3, "2026-11-04").dias["2026-11-04"], undefined);
+  assert.equal((E.semilla(st3, "2026-11-04").dias || {})["2026-11-04"], undefined);
 });
 
 test("semana con 3 clases de Luis", () => {
@@ -360,4 +360,13 @@ test("semilla 6: el total de puntos queda fijado en 12", () => {
   assert.equal(E.resumen(s2, hoy).total, 12);
   // Ya aplicada, no se repite.
   assert.equal(E.semilla(s2, hoy), null);
+});
+
+test("nunca se envían objetos vacíos a Firestore (con merge borrarían lo que hay)", async () => {
+  const S = await import("../js/store.js");
+  const f = S.aFirestore({semilla: 6, dias: {}, semanas: {}, manual: {}, parque: {pos: {}}, x: undefined, puntosIniciales: 3});
+  assert.deepEqual(f, {semilla: 6, puntosIniciales: 3});
+  const st = E.completar({inicio: "2026-11-02", semilla: 5});
+  const p = E.semilla(st, "2026-11-25");
+  assert.ok(!("dias" in p) && !("semanas" in p) && !("manual" in p), "la semilla no lleva apartados vacíos");
 });

@@ -11,6 +11,9 @@ Pokecallejero (repo `Pokecallejero-oficial`), con el mismo proyecto de Firebase 
   Firestore no admite listas dentro de listas (`s.items`): `aFirestore`/`desdeFirestore` (store.js) las envuelven en `{_a: [...]}`
   al guardar y las desenvuelven al leer. Hasta el 24-11-2026 eso hacía fallar en silencio todo guardado de un día con estudio
   marcado. Si un guardado falla, evento `pp-error-guardar` → aviso rojo en la app.
+  NUNCA mandar `{}` con merge: Firestore lo toma como «vacía este apartado» y borra lo que había (el 24-11-2026 una semilla
+  con `dias: {}` borró días, semanas y avance). `aFirestore` quita objetos vacíos y undefined; las semillas no devuelven
+  apartados vacíos. Rescate: `rescate.yml` (copia las versiones de la última hora a `rescate_*`) y `restaurar.yml`.
   Forma: `{inicio, ritmo, examen, semanas: {lunesISO: {libre: 5|6, luis: [dow]}}, dias: {fecha: {c: [8 bool], h?: minutos,
   s: {t, m, x, items: [[idTrozo, fracción]]} | null}}, manual: {idTrozo: ajuste}, materiales: {"esp16": [{id, doc, wpm, pal, t}]},
   titulos, callejeroUrl, base, cambios: [...], leidos, etaVista, semilla, objetivos}`. Días: lunes = 0.

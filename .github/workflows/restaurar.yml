@@ -1,0 +1,18 @@
+# Restaura el planificador desde la mejor copia de rescate (ver scripts/restaurar.mjs). Solo se lanza a mano.
+name: Restaurar datos
+on:
+  workflow_dispatch:
+jobs:
+  restaurar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm i --no-save firebase-admin@12
+      - name: Restaurar
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scripts/restaurar.mjs 2026-11-24
