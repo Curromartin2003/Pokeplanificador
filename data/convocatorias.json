@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-11-25T08:05+00:00",
+ "actualizado": "2026-11-25T16:39+00:00",
  "fuente": "BOE, sección II.B (datos abiertos)",
  "mias": [
   {
@@ -562,7 +562,5 @@
   "2026-11-24",
   "2026-11-25"
  ],
- "fallos": [
-  "Tablón de la sede electrónica de Alcalá"
- ]
+ "fallos": []
 }
