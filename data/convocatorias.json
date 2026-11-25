@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-11-24T07:58+00:00",
+ "actualizado": "2026-11-25T08:05+00:00",
  "fuente": "BOE, sección II.B (datos abiertos)",
  "mias": [
   {
@@ -58,14 +58,14 @@
     {
      "nombre": "Portal de empleo de Aena",
      "url": "https://empleo.aena.es/",
-     "revisada": "2026-11-24",
+     "revisada": "2026-11-25",
      "hash": "1a82e3440c2325c2",
      "pdfs": []
     },
     {
      "nombre": "Programa IC10 (PDF)",
      "url": "https://empleo.aena.es/ocupaciones/Lists/Ocupaciones/Attachments/40/3.Programa_IC10.pdf",
-     "revisada": "2026-11-24",
+     "revisada": "2026-11-25",
      "hash": "8b0d482f844d991d",
      "pdfs": []
     }
@@ -252,6 +252,22 @@
   }
  ],
  "espana": [
+  {
+   "id": "BOE-A-2026-24746",
+   "fecha": "2026-11-25",
+   "titulo": "Resolución de 18 de noviembre de 2026, de la Diputación Provincial de Granada, Organismo Autónomo Agencia Provincial de Extinción de Incendios, referente a la convocatoria para proveer varias plazas.",
+   "organismo": "Diputación Provincial de Granada, Organismo Autónomo Agencia Provincial de Extinción de Incendios",
+   "provincia": "Extinción de Incendios",
+   "plazas": 9,
+   "sistema": "Oposición libre",
+   "detalle": "Nueve plazas de Bomberos/as, pertenecientes a la escala de Administración Especial, subescala Servicios especiales y clase Servicio de extinción de incendios, por el sistema de oposición, en turno libre.",
+   "bases": null,
+   "plazo": "10 días hábiles desde el día siguiente a la publicación en el BOE",
+   "fin": "2026-12-10",
+   "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24746",
+   "fuente": "BOE",
+   "fase": "plazo"
+  },
   {
    "id": "BOE-A-2026-24660",
    "fecha": "2026-11-24",
@@ -546,7 +562,7 @@
    "fase": "plazo"
   }
  ],
- "boja_ultimo": 227,
+ "boja_ultimo": 228,
  "sevilla": [
   {
    "fecha": "2026-11-24",
@@ -607,7 +623,10 @@
   "2026-11-19",
   "2026-11-20",
   "2026-11-23",
-  "2026-11-24"
+  "2026-11-24",
+  "2026-11-25"
  ],
- "fallos": []
+ "fallos": [
+  "Tablón de la sede electrónica de Alcalá"
+ ]
 }
