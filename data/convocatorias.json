@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-11-25T16:39+00:00",
+ "actualizado": "2026-11-26T08:00+00:00",
  "fuente": "BOE, sección II.B (datos abiertos)",
  "mias": [
   {
@@ -58,14 +58,14 @@
     {
      "nombre": "Portal de empleo de Aena",
      "url": "https://empleo.aena.es/",
-     "revisada": "2026-11-25",
+     "revisada": "2026-11-26",
      "hash": "1a82e3440c2325c2",
      "pdfs": []
     },
     {
      "nombre": "Programa IC10 (PDF)",
      "url": "https://empleo.aena.es/ocupaciones/Lists/Ocupaciones/Attachments/40/3.Programa_IC10.pdf",
-     "revisada": "2026-11-25",
+     "revisada": "2026-11-26",
      "hash": "8b0d482f844d991d",
      "pdfs": []
     }
@@ -498,8 +498,15 @@
    "fase": "plazo"
   }
  ],
- "boja_ultimo": 228,
+ "boja_ultimo": 229,
  "sevilla": [
+  {
+   "fecha": "2026-11-26",
+   "org": "Resultados del 1 al 39 de 39",
+   "titulo": "Anuncio de interposición de recurso contencioso-administrativo núm. 334/2026 contra el levantamiento de la suspensión del concurso para la provisión de puestos de trabajo de la RPT de personal funcionario transferido al Consorcio de Prevención, Extinción de Incendios y Salvamento de la provincia de ...",
+   "tipo": "Plantilla",
+   "url": "https://bopsevilla.dipusevilla.es/publica/buscador-anuncios/anuncio/Anuncio-de-interposicion-de-recurso-contencioso-administrativo-num-334-2026-contra-el-levantamiento-de-la-suspension-del-concurso-para-la-provision-de-puestos-de-trabajo-de-la-RPT-de-personal-funcion/"
+  },
   {
    "fecha": "2026-11-24",
    "org": "Servicio de Recursos Humanos",
@@ -560,7 +567,8 @@
   "2026-11-20",
   "2026-11-23",
   "2026-11-24",
-  "2026-11-25"
+  "2026-11-25",
+  "2026-11-26"
  ],
  "fallos": []
 }
